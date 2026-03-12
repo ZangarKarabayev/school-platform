@@ -1,0 +1,48 @@
+<?php
+
+return [
+    'groups' => [
+        'access' => 'Қолжетім',
+        'org_structure' => 'Ұйым құрылымы',
+    ],
+    'labels' => [
+        'name' => 'Атауы',
+        'code' => 'Код',
+        'description' => 'Сипаттама',
+        'permissions' => 'Құқықтар',
+        'system' => 'Жүйелік',
+        'system_role' => 'Жүйелік рөл',
+        'region' => 'Облыс',
+        'regions' => 'Облыстар',
+        'district' => 'Аудан',
+        'districts' => 'Аудандар',
+        'school' => 'Мектеп',
+        'schools' => 'Мектептер',
+        'schools_count' => 'Мектептер',
+        'districts_count' => 'Аудандар',
+        'bin' => 'БСН',
+        'address' => 'Мекенжай',
+        'active' => 'Белсенді',
+        'users' => 'Пайдаланушылар',
+        'user' => 'Пайдаланушы',
+        'role' => 'Рөл',
+        'roles' => 'Рөлдер',
+        'full_name' => 'Т.А.Ә.',
+        'last_login' => 'Соңғы кіру',
+        'language' => 'Тіл',
+        'status' => 'Мәртебе',
+        'phone' => 'Телефон',
+        'first_name' => 'Аты',
+        'last_name' => 'Тегі',
+        'middle_name' => 'Әкесінің аты',
+    ],
+    'status' => [
+        'active' => 'Белсенді',
+        'blocked' => 'Бұғатталған',
+        'pending' => 'Күтуде',
+    ],
+    'language' => [
+        'ru' => 'Орысша',
+        'kk' => 'Қазақша',
+    ],
+];

@@ -3,23 +3,28 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Modules\Access\Enums\RoleCode;
+use App\Modules\Access\Models\Role;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call(RolePermissionSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $admin = User::factory()->create([
+            'first_name' => 'System',
+            'last_name' => 'Administrator',
+            'middle_name' => null,
+            'phone' => '+77010000000',
+            'preferred_locale' => 'ru',
         ]);
+
+        $superAdminRole = Role::query()
+            ->where('code', RoleCode::SuperAdmin->value)
+            ->firstOrFail();
+
+        $admin->roles()->syncWithoutDetaching([$superAdminRole->id]);
     }
 }

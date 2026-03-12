@@ -1,0 +1,48 @@
+<?php
+
+return [
+    'groups' => [
+        'access' => 'Доступ',
+        'org_structure' => 'Оргструктура',
+    ],
+    'labels' => [
+        'name' => 'Название',
+        'code' => 'Код',
+        'description' => 'Описание',
+        'permissions' => 'Права',
+        'system' => 'Системная',
+        'system_role' => 'Системная роль',
+        'region' => 'Область',
+        'regions' => 'Области',
+        'district' => 'Район',
+        'districts' => 'Районы',
+        'school' => 'Школа',
+        'schools' => 'Школы',
+        'schools_count' => 'Школ',
+        'districts_count' => 'Районов',
+        'bin' => 'БИН',
+        'address' => 'Адрес',
+        'active' => 'Активна',
+        'users' => 'Пользователи',
+        'user' => 'Пользователь',
+        'role' => 'Роль',
+        'roles' => 'Роли',
+        'full_name' => 'ФИО',
+        'last_login' => 'Последний вход',
+        'language' => 'Язык',
+        'status' => 'Статус',
+        'phone' => 'Телефон',
+        'first_name' => 'Имя',
+        'last_name' => 'Фамилия',
+        'middle_name' => 'Отчество',
+    ],
+    'status' => [
+        'active' => 'Активен',
+        'blocked' => 'Заблокирован',
+        'pending' => 'Ожидает',
+    ],
+    'language' => [
+        'ru' => 'Русский',
+        'kk' => 'Казахский',
+    ],
+];
