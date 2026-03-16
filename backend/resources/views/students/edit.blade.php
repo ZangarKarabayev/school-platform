@@ -307,11 +307,11 @@
                             <tr>
                                 <th>#</th>
                                 <th>{{ __('admin.labels.dish') }}</th>
-                                <th>Дата</th>
+                                <th>{{ __('ui.orders.date') }}</th>
                                 <th>{{ __('ui.common.time') }}</th>
                                 <th>{{ __('admin.labels.status') }}</th>
-                                <th>Статус транзакции</th>
-                                <th>Ошибка транзакции</th>
+                                <th>{{ __('ui.orders.transaction_status') }}</th>
+                                <th>{{ __('ui.orders.transaction_error') }}</th>
                             </tr>
                         </thead>
                         <tbody>

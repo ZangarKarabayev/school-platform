@@ -1,4 +1,4 @@
-﻿<aside class="sidebar" id="app-sidebar" data-collapsed="false">
+<aside class="sidebar" id="app-sidebar" data-collapsed="false">
     @php
         $roleCodes = $user->roles->pluck('code')->values()->all();
         $canManageMenu = in_array('super_admin', $roleCodes, true) || in_array('support_admin', $roleCodes, true);
@@ -38,7 +38,7 @@
                 'icon' =>
                     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8M11 3v8M7 7h4M6 21V11h6v10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M16 3c2.21 0 4 1.79 4 4v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>',
                 'active' => request()->routeIs('kitchen.*'),
-                'allowed_roles' => ['director', 'super_admin'],
+                'allowed_roles' => ['director', 'kitchen', 'super_admin'],
             ],
             [
                 'key' => 'dishes',
@@ -47,7 +47,7 @@
                 'icon' =>
                     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M9 18h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
                 'active' => request()->routeIs('dishes.*'),
-                'allowed_roles' => ['director', 'super_admin'],
+                'allowed_roles' => ['director', 'kitchen', 'super_admin'],
             ],
             [
                 'key' => 'orders',
@@ -56,7 +56,7 @@
                 'icon' =>
                     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10l1 5H6l1-5Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 9h12v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 13h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
                 'active' => request()->routeIs('orders.*'),
-                'allowed_roles' => ['teacher', 'director', 'super_admin'],
+                'allowed_roles' => ['teacher', 'director', 'kitchen', 'super_admin'],
             ],
             [
                 'key' => 'library',
@@ -65,7 +65,7 @@
                 'icon' =>
                     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4v16H5zM10 4h4v16h-4zM15 4h4v16h-4z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 20h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
                 'active' => request()->routeIs('library.*'),
-                'allowed_roles' => ['teacher', 'director', 'super_admin'],
+                'allowed_roles' => ['teacher', 'director', 'library', 'super_admin'],
             ],
             [
                 'key' => 'reports',

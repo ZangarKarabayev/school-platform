@@ -675,11 +675,11 @@
                                     class="student-delete-form"
                                     method="POST"
                                     action="{{ route('students.destroy', $student) }}"
-                                    onsubmit="return confirm('РЈРґР°Р»РёС‚СЊ СѓС‡РµРЅРёРєР°?');"
+                                    onsubmit="return confirm(@js(__('ui.students.delete_confirm')));"
                                 >
                                     @csrf
                                     @method('DELETE')
-                                    <button class="student-delete-btn" type="submit" title="РЈРґР°Р»РёС‚СЊ" aria-label="РЈРґР°Р»РёС‚СЊ">
+                                    <button class="student-delete-btn" type="submit" title="{{ __('ui.students.delete') }}" aria-label="{{ __('ui.students.delete') }}">
                                         <svg viewBox="0 0 24 24" aria-hidden="true">
                                             <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v8h-2v-8Zm4 0h2v8h-2v-8ZM7 10h2v8H7v-8Zm-1 11a2 2 0 0 1-2-2V8h16v11a2 2 0 0 1-2 2H6Z" fill="currentColor"/>
                                         </svg>
@@ -792,11 +792,11 @@
                                     <td class="student-actions-cell">
                                         <form class="student-delete-form" method="POST"
                                             action="{{ route('students.destroy', $student) }}"
-                                            onsubmit="return confirm('Удалить ученика?');">
+                                            onsubmit="return confirm(@js(__('ui.students.delete_confirm')));">
                                             @csrf
                                             @method('DELETE')
-                                            <button class="student-delete-btn" type="submit" title="Удалить"
-                                                aria-label="Удалить">
+                                            <button class="student-delete-btn" type="submit" title="{{ __('ui.students.delete') }}"
+                                                aria-label="{{ __('ui.students.delete') }}">
                                                 <svg viewBox="0 0 24 24" aria-hidden="true">
                                                     <path
                                                         d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v8h-2v-8Zm4 0h2v8h-2v-8ZM7 10h2v8H7v-8Zm-1 11a2 2 0 0 1-2-2V8h16v11a2 2 0 0 1-2 2H6Z"

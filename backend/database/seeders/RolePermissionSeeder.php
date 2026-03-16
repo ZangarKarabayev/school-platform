@@ -14,6 +14,8 @@ class RolePermissionSeeder extends Seeder
         $roles = [
             RoleCode::Teacher->value => 'Учитель',
             RoleCode::Director->value => 'Директор',
+            RoleCode::Kitchen->value => 'Столовая',
+            RoleCode::Library->value => 'Библиотека',
             RoleCode::DistrictOperator->value => 'Ответственный по району',
             RoleCode::RegionOperator->value => 'Ответственный по области',
             RoleCode::SuperAdmin->value => 'Супер администратор',
@@ -46,6 +48,8 @@ class RolePermissionSeeder extends Seeder
         $rolePermissions = [
             RoleCode::Teacher->value => ['students.manage'],
             RoleCode::Director->value => ['schools.view', 'reports.school.view'],
+            RoleCode::Kitchen->value => ['schools.view'],
+            RoleCode::Library->value => ['schools.view'],
             RoleCode::DistrictOperator->value => ['schools.view', 'reports.district.view'],
             RoleCode::RegionOperator->value => ['schools.view', 'reports.region.view'],
             RoleCode::SuperAdmin->value => ['filament.access', 'schools.view', 'reports.school.view', 'reports.district.view', 'reports.region.view', 'students.manage'],
