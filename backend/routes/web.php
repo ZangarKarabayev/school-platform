@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Auth\WebAuthController;
+use App\Http\Controllers\DishController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
@@ -23,6 +26,35 @@ Route::middleware('guest')->group(function (): void {
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', [WebAuthController::class, 'dashboard'])->name('dashboard');
+    Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+    Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+    Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
+    Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
+    Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
+    Route::post('/students/{student}/photo', [StudentController::class, 'updatePhoto'])->name('students.photo.update');
+    Route::view('/classes', 'sections.show', [
+        'sectionKey' => 'classes',
+    ])->name('classes.index');
+    Route::view('/kitchen', 'sections.show', [
+        'sectionKey' => 'kitchen',
+    ])->name('kitchen.index');
+    Route::get('/dishes', [DishController::class, 'index'])->name('dishes.index');
+    Route::post('/dishes', [DishController::class, 'store'])->name('dishes.store');
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+    Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
+    Route::view('/library', 'sections.show', [
+        'sectionKey' => 'library',
+    ])->name('library.index');
+    Route::view('/reports', 'sections.show', [
+        'sectionKey' => 'reports',
+    ])->name('reports.index');
+    Route::view('/devices', 'sections.show', [
+        'sectionKey' => 'devices',
+    ])->name('devices.index');
+    Route::view('/support', 'sections.show', [
+        'sectionKey' => 'support',
+    ])->name('support.index');
     Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 });
 

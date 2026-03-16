@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('regions', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('name_ru')->nullable();
+            $table->string('name_kk')->nullable();
             $table->string('code')->unique();
             $table->timestamps();
         });
@@ -19,6 +21,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('region_id')->constrained()->cascadeOnDelete();
             $table->string('name');
+            $table->string('name_ru')->nullable();
+            $table->string('name_kk')->nullable();
             $table->string('code')->unique();
             $table->timestamps();
         });
@@ -27,6 +31,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('district_id')->constrained()->cascadeOnDelete();
             $table->string('name');
+            $table->string('name_ru')->nullable();
+            $table->string('name_kk')->nullable();
             $table->string('code')->unique();
             $table->string('bin', 12)->nullable()->unique();
             $table->string('address')->nullable();

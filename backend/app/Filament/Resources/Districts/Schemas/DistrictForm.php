@@ -15,11 +15,16 @@ class DistrictForm
                 Select::make('region_id')
                     ->label(__('admin.labels.region'))
                     ->relationship('region', 'name')
+                    ->getOptionLabelFromRecordUsing(fn ($record): string => $record->display_name)
                     ->searchable()
                     ->preload()
                     ->required(),
-                TextInput::make('name')
-                    ->label(__('admin.labels.name'))
+                TextInput::make('name_ru')
+                    ->label(__('admin.labels.name_ru'))
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('name_kk')
+                    ->label(__('admin.labels.name_kk'))
                     ->required()
                     ->maxLength(255),
                 TextInput::make('code')

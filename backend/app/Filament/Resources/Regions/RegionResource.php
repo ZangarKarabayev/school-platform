@@ -29,7 +29,7 @@ class RegionResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = null;
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?string $recordTitleAttribute = 'name_ru';
 
     public static function form(Schema $schema): Schema
     {

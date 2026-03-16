@@ -18,6 +18,10 @@ return new class extends Migration
             $table->string('middle_name')->nullable();
             $table->string('phone', 20)->nullable()->unique();
             $table->string('status')->default('active');
+            $table->foreignId('school_id')->nullable();
+            $table->foreignId('city_id')->nullable();
+            $table->foreignId('district_id')->nullable();
+            $table->foreignId('region_id')->nullable();
             $table->string('preferred_locale', 5)->default('ru');
             $table->timestamp('last_login_at')->nullable();
             $table->string('password')->nullable();

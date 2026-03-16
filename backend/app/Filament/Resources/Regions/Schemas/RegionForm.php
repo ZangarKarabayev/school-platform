@@ -11,8 +11,12 @@ class RegionForm
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->label(__('admin.labels.name'))
+                TextInput::make('name_ru')
+                    ->label(__('admin.labels.name_ru'))
+                    ->required()
+                    ->maxLength(255),
+                TextInput::make('name_kk')
+                    ->label(__('admin.labels.name_kk'))
                     ->required()
                     ->maxLength(255),
                 TextInput::make('code')

@@ -48,6 +48,13 @@
         .field { margin-bottom: 14px; }
         .field label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 700; }
         .field input { width: 100%; height: 44px; padding: 0 14px; border: 1px solid #c7d4e6; border-radius: 14px; background: #fff; font-size: 15px; color: var(--text); }
+        .password-field { position: relative; }
+        .password-field input { position: relative; z-index: 1; padding-right: 52px; }
+        .password-toggle { position: absolute; top: 50%; right: 8px; z-index: 2; width: 36px; height: 36px; padding: 0; margin: 0; transform: translateY(-50%); border: 0; border-radius: 10px; background: rgba(255, 255, 255, 0.96); color: #5d6f88; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; appearance: none; -webkit-appearance: none; }
+        .password-toggle:hover { background: #edf4ff; color: #22518f; box-shadow: 0 0 0 1px rgba(40, 118, 221, 0.12); }
+        .password-toggle svg { width: 18px; height: 18px; display: block; }
+        .password-field[data-visible="true"] .icon-eye { display: none; }
+        .password-field[data-visible="false"] .icon-eye-off { display: none; }
         .field input[readonly] { background: #f5f8fd; color: #5d6f88; }
         .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
         .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--primary); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 22px rgba(40, 118, 221, 0.24); }
@@ -70,17 +77,12 @@
 <body>
     <div class="shell">
         <main class="content">
-            <div class="topbar">
-                <nav class="lang-switcher" aria-label="{{ __('ui.language') }}">
-                    @foreach (['ru', 'kk'] as $locale)
-                        <a href="{{ request()->fullUrlWithQuery(['lang' => $locale]) }}" @class(['active' => app()->getLocale() === $locale])>{{ __('ui.languages.'.$locale) }}</a>
-                    @endforeach
-                </nav>
-            </div>
+            @include('partials.topbar-auth')
             @yield('content')
         </main>
     </div>
     @include('auth.partials.phone-mask-script')
+    @include('auth.partials.password-toggle-script')
 </body>
 
 </html>

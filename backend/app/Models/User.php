@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Modules\Organizations\Models\City;
+use App\Modules\Organizations\Models\District;
+use App\Modules\Organizations\Models\Region;
+use App\Modules\Organizations\Models\School;
 use App\Modules\Access\Models\Role;
 use App\Modules\Access\Models\UserScope;
 use App\Modules\Identity\Models\ApiToken;
@@ -10,6 +14,7 @@ use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -31,6 +36,10 @@ class User extends Authenticatable implements FilamentUser, HasName
         'middle_name',
         'phone',
         'status',
+        'school_id',
+        'city_id',
+        'district_id',
+        'region_id',
         'preferred_locale',
         'password',
     ];
@@ -77,6 +86,26 @@ class User extends Authenticatable implements FilamentUser, HasName
     public function scopes(): HasMany
     {
         return $this->hasMany(UserScope::class);
+    }
+
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
+    }
+
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class);
+    }
+
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
     }
 
     public function getFullNameAttribute(): string

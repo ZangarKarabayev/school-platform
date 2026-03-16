@@ -14,8 +14,12 @@ class RegionsTable
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->label(__('admin.labels.name'))
+                TextColumn::make('name_ru')
+                    ->label(__('admin.labels.name_ru'))
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('name_kk')
+                    ->label(__('admin.labels.name_kk'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('code')
@@ -25,9 +29,7 @@ class RegionsTable
                     ->label(__('admin.labels.districts_count'))
                     ->counts('districts'),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->recordActions([
                 EditAction::make(),
             ])

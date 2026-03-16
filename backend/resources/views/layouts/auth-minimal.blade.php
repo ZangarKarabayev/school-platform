@@ -117,16 +117,14 @@
             font-weight: 700;
         }
 
-        .field input {
-            width: 100%;
-            height: 42px;
-            padding: 0 12px;
-            border: 1px solid #c7d4e6;
-            border-radius: 12px;
-            background: #fff;
-            font-size: 14px;
-            color: var(--text);
-        }
+        .field input { width: 100%; height: 42px; padding: 0 12px; border: 1px solid #c7d4e6; border-radius: 12px; background: #fff; font-size: 14px; color: var(--text); }
+        .password-field { position: relative; }
+        .password-field input { position: relative; z-index: 1; padding-right: 52px; }
+        .password-toggle { position: absolute; top: 50%; right: 8px; z-index: 2; width: 36px; height: 36px; padding: 0; margin: 0; transform: translateY(-50%); border: 0; border-radius: 10px; background: rgba(255, 255, 255, 0.96); color: #5d6f88; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; appearance: none; -webkit-appearance: none; }
+        .password-toggle:hover { background: #edf4ff; color: #22518f; box-shadow: 0 0 0 1px rgba(40, 118, 221, 0.12); }
+        .password-toggle svg { width: 18px; height: 18px; display: block; }
+        .password-field[data-visible="true"] .icon-eye { display: none; }
+        .password-field[data-visible="false"] .icon-eye-off { display: none; }
 
         .field input[readonly] {
             background: #f5f8fd;
@@ -230,12 +228,7 @@
         <div class="card">
             <div class="hero">
                 <h1>{{ __('ui.app_name') }}</h1>
-                <nav class="lang-switcher" aria-label="{{ __('ui.language') }}">
-                    @foreach (['ru', 'kk'] as $locale)
-                        <a href="{{ request()->fullUrlWithQuery(['lang' => $locale]) }}"
-                            @class(['active' => app()->getLocale() === $locale])>{{ __('ui.languages.' . $locale) }}</a>
-                    @endforeach
-                </nav>
+                @include('partials.lang-switcher')
             </div>
             <div class="body">
                 @yield('content')
@@ -243,6 +236,7 @@
         </div>
     </div>
     @include('auth.partials.phone-mask-script')
+    @include('auth.partials.password-toggle-script')
 </body>
 
 </html>

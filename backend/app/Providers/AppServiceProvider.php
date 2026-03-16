@@ -8,6 +8,7 @@ use App\Modules\Identity\Infrastructure\Security\KalkanHttpEdsSignatureVerifier;
 use App\Modules\Identity\Models\ApiToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -31,6 +32,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        URL::forceRootUrl(config('app.url'));
+
+        if (str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
+
         Auth::viaRequest('api-token', function (Request $request) {
             $plainTextToken = $request->bearerToken();
 
