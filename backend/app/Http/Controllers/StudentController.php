@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ImportStudentsJob;
 use App\Models\AcademicClass;
 use App\Models\MealBenefit;
 use App\Models\Student;
+use App\Models\StudentImport;
 use App\Modules\Organizations\Models\School;
+use App\Services\Students\StudentImportService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -13,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class StudentController extends Controller
 {
@@ -26,8 +30,11 @@ class StudentController extends Controller
             'classroom_id' => ['nullable', 'integer', 'exists:classrooms,id'],
             'language' => ['nullable', Rule::in(['ru', 'kk'])],
             'shift' => ['nullable', Rule::in([1, 2, '1', '2'])],
-            'status' => ['nullable', Rule::in(['active', 'archived'])],
+            'meal_benefit_type' => ['nullable', Rule::in(MealBenefit::TYPES)],
         ]);
+
+        $mealBenefitType = $data['meal_benefit_type'] ?? null;
+        unset($data['meal_benefit_type']);
 
         $data['school_id'] = $this->resolveSchoolIdForUser($request);
         $data['birth_date'] = $this->extractBirthDateFromIin($data['iin'] ?? null);
@@ -35,7 +42,53 @@ class StudentController extends Controller
 
         $student = Student::query()->create($data);
 
+        if ($mealBenefitType !== null && $mealBenefitType !== '') {
+            $student->mealBenefits()->create([
+                'type' => $mealBenefitType,
+            ]);
+        }
+
         return redirect()->route('students.edit', $student);
+    }
+
+    public function import(Request $request, StudentImportService $studentImportService): RedirectResponse
+    {
+        $data = $request->validate([
+            'students_file' => ['required', File::types(['xlsx', 'csv', 'txt'])->max(10 * 1024)],
+        ]);
+
+        $storedFile = $studentImportService->storeUploadedFile($data['students_file']);
+        $studentImport = StudentImport::query()->create([
+            'user_id' => $request->user()?->id,
+            'school_id' => $this->resolveSchoolIdForUser($request),
+            'disk' => $storedFile['disk'],
+            'file_path' => $storedFile['path'],
+            'original_name' => $storedFile['original_name'],
+            'status' => 'pending',
+        ]);
+
+        ImportStudentsJob::dispatch($studentImport);
+
+        return redirect()
+            ->route('students.index')
+            ->with('student_status', __('ui.students.import_queued'));
+    }
+
+    public function downloadImportTemplate(StudentImportService $studentImportService): BinaryFileResponse
+    {
+        $tempPath = tempnam(sys_get_temp_dir(), 'students-import-template-');
+
+        if ($tempPath === false) {
+            abort(500, 'Unable to create temporary template file.');
+        }
+
+        $xlsxPath = $tempPath . '.xlsx';
+
+        @unlink($tempPath);
+
+        $studentImportService->createTemplate($xlsxPath);
+
+        return response()->download($xlsxPath, 'students-import-template.xlsx')->deleteFileAfterSend(true);
     }
 
     public function index(Request $request): View
@@ -112,6 +165,11 @@ class StudentController extends Controller
                 ->get(),
             'schools' => School::query()->orderBy('name_ru')->orderBy('name_kk')->get(),
             'statuses' => collect(MealBenefit::TYPES),
+            'studentImports' => StudentImport::query()
+                ->where('user_id', $request->user()?->id)
+                ->latest()
+                ->limit(5)
+                ->get(),
             'filters' => $filters,
             'title' => __('ui.menu.students'),
         ]);

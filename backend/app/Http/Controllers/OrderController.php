@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\CreateOrdersJob;
+use App\Models\AcademicClass;
 use App\Models\Dish;
 use App\Models\Order;
 use App\Models\Student;
-use App\Models\AcademicClass;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -113,26 +114,18 @@ class OrderController extends Controller
 
         if ($studentIds->isEmpty()) {
             return redirect()->route('orders.index')
-                ->withErrors(['target_type' => 'Не выбраны ученики для создания заказа.']);
+                ->withErrors(['target_type' => __('ui.orders.no_target_students')]);
         }
 
-        foreach ($studentIds as $studentId) {
-            Order::query()->updateOrCreate(
-                [
-                    'student_id' => $studentId,
-                    'order_date' => $data['order_date'],
-                ],
-                [
-                    'dish_id' => null,
-                    'order_time' => $data['order_time'] ?? null,
-                    'status' => 'created',
-                    'transaction_status' => null,
-                    'transaction_error' => null,
-                ]
-            );
-        }
+        CreateOrdersJob::dispatch(
+            $studentIds->map(fn ($studentId) => (int) $studentId)->all(),
+            $data['order_date'],
+            $data['order_time'] ?? null,
+        );
 
-        return redirect()->route('orders.index');
+        return redirect()
+            ->route('orders.index')
+            ->with('order_status', __('ui.orders.create_queued'));
     }
 
     public function destroy(Request $request, Order $order): RedirectResponse

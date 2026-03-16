@@ -49,6 +49,15 @@
             padding: 0;
         }
 
+        .orders-notice {
+            margin: 0 24px 24px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #eaf6ea;
+            color: #22653a;
+            font-weight: 700;
+        }
+
         .orders-table-wrap {
             overflow: auto;
         }
@@ -670,6 +679,10 @@
                     </div>
                 </div>
             </div>
+
+            @if (session('order_status'))
+                <div class="orders-notice">{{ session('order_status') }}</div>
+            @endif
 
             <form method="GET" action="{{ route('orders.index') }}" class="orders-filters">
                 <div class="orders-form-field">

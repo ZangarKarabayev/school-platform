@@ -71,6 +71,113 @@
             font-weight: 700;
         }
 
+        .students-imports {
+            margin: 0 24px 24px;
+            padding: 18px;
+            border: 1px solid #e1e8f2;
+            border-radius: 18px;
+            background: #f8fbff;
+            display: grid;
+            gap: 14px;
+        }
+
+        .students-imports-title {
+            margin: 0;
+            font-size: 16px;
+            color: #1d3151;
+        }
+
+        .students-imports-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .students-import-item {
+            padding: 14px;
+            border-radius: 14px;
+            background: #fff;
+            border: 1px solid #dde6f3;
+            display: grid;
+            gap: 10px;
+        }
+
+        .students-import-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .students-import-name {
+            font-weight: 700;
+            color: #1d3151;
+            word-break: break-word;
+        }
+
+        .students-import-meta {
+            color: #71829a;
+            font-size: 13px;
+        }
+
+        .students-import-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eef5ff;
+            color: #1f5cb8;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .students-import-status.status-processing {
+            background: #fff4dd;
+            color: #9a6400;
+        }
+
+        .students-import-status.status-completed {
+            background: #eaf6ea;
+            color: #22653a;
+        }
+
+        .students-import-status.status-failed {
+            background: #fdecee;
+            color: #c43b52;
+        }
+
+        .students-import-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .students-import-stat {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eef3fb;
+            color: #446389;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .students-import-errors {
+            display: grid;
+            gap: 6px;
+        }
+
+        .students-import-error {
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: #fff3f1;
+            color: #b43e2a;
+            font-size: 13px;
+        }
+
         .students-filters {
             padding: 0 24px 24px;
             display: grid;
@@ -565,6 +672,8 @@
                     <div class="students-subtitle">{{ __('admin.labels.students') }}</div>
                 </div>
                 <div class="students-header-actions">
+                    <button class="btn secondary" type="button"
+                        id="student-import-open">{{ __('ui.students.import_button') }}</button>
                     <button class="btn" type="button" id="student-create-open">{{ __('ui.common.add') }}</button>
                     <div class="students-count">
                         {{ $students->total() }}
@@ -574,6 +683,59 @@
 
             @if (session('student_status'))
                 <div class="students-notice">{{ session('student_status') }}</div>
+            @endif
+
+            @if ($studentImports->isNotEmpty())
+                <div class="students-imports">
+                    <h2 class="students-imports-title">{{ __('ui.students.import_history') }}</h2>
+
+                    <div class="students-imports-list">
+                        @foreach ($studentImports as $studentImport)
+                            @php
+                                $statusClass = 'status-' . $studentImport->status;
+                                $statusLabel = __('ui.students.import_statuses.' . $studentImport->status);
+                            @endphp
+
+                            <article class="students-import-item">
+                                <div class="students-import-top">
+                                    <div>
+                                        <div class="students-import-name">{{ $studentImport->original_name }}</div>
+                                        <div class="students-import-meta">
+                                            {{ optional($studentImport->created_at)->format('Y-m-d H:i') }}
+                                        </div>
+                                    </div>
+
+                                    <span class="students-import-status {{ $statusClass }}">
+                                        {{ $statusLabel !== 'ui.students.import_statuses.' . $studentImport->status ? $statusLabel : ucfirst($studentImport->status) }}
+                                    </span>
+                                </div>
+
+                                <div class="students-import-stats">
+                                    <span class="students-import-stat">{{ __('ui.students.import_total', ['count' => $studentImport->total_rows]) }}</span>
+                                    <span class="students-import-stat">{{ __('ui.students.import_added', ['count' => $studentImport->imported_count]) }}</span>
+                                    <span class="students-import-stat">{{ __('ui.students.import_updated', ['count' => $studentImport->updated_count]) }}</span>
+                                    <span class="students-import-stat">{{ __('ui.students.import_skipped', ['count' => $studentImport->skipped_count]) }}</span>
+                                </div>
+
+                                @if ($studentImport->error_message)
+                                    <div class="students-import-errors">
+                                        <div class="students-import-error">{{ $studentImport->error_message }}</div>
+                                    </div>
+                                @endif
+
+                                @if (! empty($studentImport->error_rows))
+                                    <div class="students-import-errors">
+                                        @foreach ($studentImport->error_rows as $errorRow)
+                                            <div class="students-import-error">
+                                                {{ $errorRow['message'] ?? '-' }}
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </article>
+                        @endforeach
+                    </div>
+                </div>
             @endif
 
             <form method="GET" action="{{ route('students.index') }}" class="students-filters">
@@ -891,7 +1053,49 @@
         </div>
     </div>
 
-    <div class="student-create-modal" id="student-create-modal" data-open="{{ $errors->any() ? 'true' : 'false' }}">
+    <div class="student-create-modal" id="student-import-modal"
+        data-open="{{ $errors->has('students_file') ? 'true' : 'false' }}">
+        <div class="student-create-panel" style="width: min(100%, 560px);">
+            <div class="student-create-header">
+                <div>
+                    <div class="muted">{{ __('ui.menu.students') }}</div>
+                    <strong>{{ __('ui.students.import_title') }}</strong>
+                </div>
+                <button class="btn secondary" type="button"
+                    id="student-import-close">{{ __('ui.common.close') }}</button>
+            </div>
+
+            <div class="student-create-body">
+                @if ($errors->has('students_file'))
+                    <div class="student-create-error">{{ $errors->first('students_file') }}</div>
+                @endif
+
+                <form method="POST" action="{{ route('students.import') }}" enctype="multipart/form-data">
+                    @csrf
+
+                    <div class="field">
+                        <label for="students_file">{{ __('ui.students.import_file') }}</label>
+                        <input id="students_file" name="students_file" type="file" accept=".xlsx,.csv,.txt" required>
+                    </div>
+
+                    <div class="students-subtitle" style="margin-top: 12px;">
+                        {{ __('ui.students.import_hint') }}
+                    </div>
+
+                    <div class="students-actions" style="margin-top: 16px;">
+                        <a class="btn secondary"
+                            href="{{ route('students.import.template') }}">{{ __('ui.students.import_template') }}</a>
+                        <button class="btn" type="submit">{{ __('ui.students.import_submit') }}</button>
+                        <button class="btn secondary" type="button"
+                            id="student-import-cancel">{{ __('ui.common.close') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="student-create-modal" id="student-create-modal"
+        data-open="{{ $errors->any() && ! $errors->has('students_file') ? 'true' : 'false' }}">
         <div class="student-create-panel">
             <div class="student-create-header">
                 <div>
@@ -966,13 +1170,14 @@
                         </div>
 
                         <div class="field">
-                            <label for="create_status">{{ __('admin.labels.status') }}</label>
-                            <select id="create_status" name="status">
+                            <label for="create_meal_benefit_type">{{ __('admin.labels.status') }}</label>
+                            <select id="create_meal_benefit_type" name="meal_benefit_type">
                                 <option value="">-</option>
-                                <option value="active" @selected(old('status') === 'active')>{{ __('admin.status.active') }}
-                                </option>
-                                <option value="archived" @selected(old('status') === 'archived')>{{ __('admin.labels.archived') }}
-                                </option>
+                                @foreach ($statuses as $status)
+                                    <option value="{{ $status }}" @selected(old('meal_benefit_type') === $status)>
+                                        {{ __('admin.meal_benefit_types.' . $status) !== 'admin.meal_benefit_types.' . $status ? __('admin.meal_benefit_types.' . $status) : str_replace('_', ' ', ucfirst($status)) }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
@@ -989,6 +1194,10 @@
 
     <script>
         (function() {
+            const studentImportModal = document.getElementById('student-import-modal');
+            const studentImportOpen = document.getElementById('student-import-open');
+            const studentImportClose = document.getElementById('student-import-close');
+            const studentImportCancel = document.getElementById('student-import-cancel');
             const studentCreateModal = document.getElementById('student-create-modal');
             const studentCreateOpen = document.getElementById('student-create-open');
             const studentCreateClose = document.getElementById('student-create-close');
@@ -1012,6 +1221,14 @@
                 });
             });
 
+            const openStudentImportModal = () => {
+                studentImportModal.dataset.open = 'true';
+            };
+
+            const closeStudentImportModal = () => {
+                studentImportModal.dataset.open = 'false';
+            };
+
             const openStudentCreateModal = () => {
                 studentCreateModal.dataset.open = 'true';
             };
@@ -1020,6 +1237,9 @@
                 studentCreateModal.dataset.open = 'false';
             };
 
+            studentImportOpen?.addEventListener('click', openStudentImportModal);
+            studentImportClose?.addEventListener('click', closeStudentImportModal);
+            studentImportCancel?.addEventListener('click', closeStudentImportModal);
             studentCreateOpen?.addEventListener('click', openStudentCreateModal);
             studentCreateClose?.addEventListener('click', closeStudentCreateModal);
             studentCreateCancel?.addEventListener('click', closeStudentCreateModal);
@@ -1170,6 +1390,11 @@
             photoModal.addEventListener('click', (event) => {
                 if (event.target === photoModal) {
                     closePhotoModal();
+                }
+            });
+            studentImportModal?.addEventListener('click', (event) => {
+                if (event.target === studentImportModal) {
+                    closeStudentImportModal();
                 }
             });
             studentCreateModal?.addEventListener('click', (event) => {
