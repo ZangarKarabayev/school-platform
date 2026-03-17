@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AcademicClass extends Model
 {
@@ -22,5 +23,10 @@ class AcademicClass extends Model
             $academicClass->letter = mb_strtoupper(trim($academicClass->letter));
             $academicClass->full_name = $academicClass->grade . $academicClass->letter;
         });
+    }
+
+    public function students(): HasMany
+    {
+        return $this->hasMany(Student::class, 'classroom_id');
     }
 }

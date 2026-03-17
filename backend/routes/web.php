@@ -1,8 +1,12 @@
 <?php
 
 use App\Http\Controllers\Auth\WebAuthController;
+use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\DishController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,7 +29,7 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::middleware('auth')->group(function (): void {
-    Route::get('/dashboard', [WebAuthController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/students', [StudentController::class, 'index'])->name('students.index');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
     Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
@@ -34,9 +38,8 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
     Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
     Route::post('/students/{student}/photo', [StudentController::class, 'updatePhoto'])->name('students.photo.update');
-    Route::view('/classes', 'sections.show', [
-        'sectionKey' => 'classes',
-    ])->name('classes.index');
+    Route::get('/classes', [ClassroomController::class, 'index'])->name('classes.index');
+    Route::get('/classes/{academicClass}', [ClassroomController::class, 'show'])->name('classes.show');
     Route::view('/kitchen', 'sections.show', [
         'sectionKey' => 'kitchen',
     ])->name('kitchen.index');
@@ -48,12 +51,10 @@ Route::middleware('auth')->group(function (): void {
     Route::view('/library', 'sections.show', [
         'sectionKey' => 'library',
     ])->name('library.index');
-    Route::view('/reports', 'sections.show', [
-        'sectionKey' => 'reports',
-    ])->name('reports.index');
-    Route::view('/devices', 'sections.show', [
-        'sectionKey' => 'devices',
-    ])->name('devices.index');
+    Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
+    Route::post('/reports', [ReportsController::class, 'store'])->name('reports.store');
+    Route::get('/reports/{report}/download', [ReportsController::class, 'download'])->name('reports.download');
+    Route::get('/devices', [DeviceController::class, 'index'])->name('devices.index');
     Route::view('/support', 'sections.show', [
         'sectionKey' => 'support',
     ])->name('support.index');

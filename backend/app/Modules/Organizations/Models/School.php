@@ -2,8 +2,10 @@
 
 namespace App\Modules\Organizations\Models;
 
+use App\Models\Student;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class School extends Model
 {
@@ -35,6 +37,11 @@ class School extends Model
     public function district(): BelongsTo
     {
         return $this->belongsTo(District::class);
+    }
+
+    public function students(): HasMany
+    {
+        return $this->hasMany(Student::class, 'school_id');
     }
 
     public function getDisplayNameAttribute(): string
