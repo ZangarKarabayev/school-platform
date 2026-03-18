@@ -865,13 +865,15 @@
                                     <div class="students-mobile-label">{{ __('admin.labels.class_full_name') }}</div>
                                     <div class="students-mobile-value">{{ $student->classroom?->full_name ?: '-' }}</div>
                                 </div>
+                                @if ($showSchoolFilter)
+                                    <div class="students-mobile-item">
+                                        <div class="students-mobile-label">{{ __('admin.labels.organization') }}</div>
+                                        <div class="students-mobile-value">{{ $student->school?->display_name ?: '-' }}</div>
+                                    </div>
+                                @endif
                                 <div class="students-mobile-item">
-                                    <div class="students-mobile-label">{{ __('admin.labels.organization') }}</div>
-                                    <div class="students-mobile-value">{{ $student->school?->display_name ?: '-' }}</div>
-                                </div>
-                                <div class="students-mobile-item">
-                                    <div class="students-mobile-label">{{ __('admin.labels.student_number') }}</div>
-                                    <div class="students-mobile-value">{{ $student->student_number ?: '-' }}</div>
+                                    <div class="students-mobile-label">Р’СЂРµРјСЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё</div>
+                                    <div class="students-mobile-value">{{ $student->photo_synced_at?->format('Y-m-d H:i:s') ?: '-' }}</div>
                                 </div>
                                 <div class="students-mobile-item">
                                     <div class="students-mobile-label">{{ __('admin.labels.status') }}</div>
@@ -894,8 +896,10 @@
                                 <th>{{ __('admin.labels.full_name') }}</th>
                                 <th>{{ __('admin.labels.iin') }}</th>
                                 <th>{{ __('admin.labels.class_full_name') }}</th>
-                                <th>{{ __('admin.labels.organization') }}</th>
-                                <th>{{ __('admin.labels.student_number') }}</th>
+                                @if ($showSchoolFilter)
+                                    <th>{{ __('admin.labels.organization') }}</th>
+                                @endif
+                                <th>????? ?????????????</th>
                                 <th>{{ __('admin.labels.status') }}</th>
                                 <th></th>
                             </tr>
@@ -938,8 +942,10 @@
                                     </td>
                                     <td>{{ $student->iin ?: '-' }}</td>
                                     <td>{{ $student->classroom?->full_name ?: '-' }}</td>
-                                    <td>{{ $student->school?->display_name ?: '-' }}</td>
-                                    <td>{{ $student->student_number ?: '-' }}</td>
+                                    @if ($showSchoolFilter)
+                                        <td>{{ $student->school?->display_name ?: '-' }}</td>
+                                    @endif
+                                    <td>{{ $student->photo_synced_at?->format('Y-m-d H:i:s') ?: '-' }}</td>
                                     <td>
                                         @php
                                             $mealStatus = $student->latestMealBenefit?->type;
