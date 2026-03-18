@@ -8,6 +8,7 @@ use App\Modules\Organizations\Models\School;
 use App\Services\Mqtt\MqttService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -80,6 +81,10 @@ class FaceIdSyncStudents extends Command
             Student::query()
                 ->where('school_id', $school->id)
                 ->whereNotNull('photo')
+                ->where(function (Builder $query): void {
+                    $query->whereNull('photo_synced_at')
+                        ->orWhereColumn('photo_updated_at', '>', 'photo_synced_at');
+                })
                 ->orderBy('id')
                 ->chunk(200, function ($students) use ($mqttService, $terminalId, $school, $delayMicros, &$sentCount): void {
                     foreach ($students as $student) {
@@ -97,8 +102,8 @@ class FaceIdSyncStudents extends Command
 
                         $info = [
                             'personId' => '',
-                            'customId' => $student->iin ?? $student->student_number ?? (string) $student->id,
-                            'name' => trim(implode(' ', array_filter([$student->last_name, $student->first_name, $student->middle_name]))),
+                            'customId' =>  (string) $student->id,
+                            'name' => trim(implode(' ', array_filter([$student->last_name, $student->first_name]))),
                             'nation' => 1,
                             'gender' => ((string) $student->gender === 'female') ? 1 : 0,
                             'birthday' => $birthdayValue,
@@ -114,7 +119,7 @@ class FaceIdSyncStudents extends Command
                             'Native' => 'KZ',
                             'cardType2' => 0,
                             'cardNum2' => '',
-                            'notes' => $student->student_number ?? '',
+                            'notes' => (string) $student->id,
                             'personType' => 0,
                             'cardType' => 0,
                             'dwidentity' => 0,
@@ -156,6 +161,3 @@ class FaceIdSyncStudents extends Command
         return self::SUCCESS;
     }
 }
-
-
-

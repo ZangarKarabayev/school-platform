@@ -22,6 +22,8 @@ class Student extends Model
         'phone',
         'address',
         'photo',
+        'photo_updated_at',
+        'photo_synced_at',
         'status',
         'student_number',
         'language',
@@ -33,6 +35,8 @@ class Student extends Model
     {
         return [
             'birth_date' => 'date',
+            'photo_updated_at' => 'datetime',
+            'photo_synced_at' => 'datetime',
         ];
     }
 

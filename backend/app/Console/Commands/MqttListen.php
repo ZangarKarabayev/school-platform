@@ -92,9 +92,18 @@ class MqttListen extends Command
             if ($operator === 'EditPerson-Ack' && $code === '200' && $result === 'ok' && $customId) {
                 Cache::forget("faceid:retry:{$terminalId}:{$customId}");
 
+                $student = $this->resolveStudentForTerminalCustomId((string) $terminalId, (string) $customId);
+
+                if ($student) {
+                    $student->forceFill([
+                        'photo_synced_at' => now(),
+                    ])->save();
+                }
+
                 Log::channel('faceid')->info('TERMINAL ACK APPLIED', [
                     'terminal_id' => $terminalId,
                     'custom_id' => $customId,
+                    'student_id' => $student?->id,
                     'message_id' => $messageId,
                 ]);
 
@@ -133,21 +142,7 @@ class MqttListen extends Command
                     ->first();
 
                 $customIdValue = trim((string) $customId);
-
-                $student = Student::query()
-                    ->with('school')
-                    ->when($terminal?->school_id !== null, function (Builder $query) use ($terminal): void {
-                        $query->where('school_id', $terminal->school_id);
-                    })
-                    ->where(function (Builder $query) use ($customIdValue): void {
-                        $query->where('iin', $customIdValue)
-                            ->orWhere('student_number', $customIdValue);
-
-                        if (ctype_digit($customIdValue)) {
-                            $query->orWhere('id', (int) $customIdValue);
-                        }
-                    })
-                    ->first();
+                $student = $this->resolveStudentForTerminalCustomId((string) $terminalId, $customIdValue);
 
                 if (!$student || !$student->photo || !Storage::disk('public')->exists($student->photo)) {
                     Log::channel('faceid')->warning('FACEID RETRY WITH SIMILARITY OFF SKIPPED', [
@@ -165,8 +160,8 @@ class MqttListen extends Command
 
                 $info = [
                     'personId' => '',
-                    'customId' => $student->iin ?? $student->student_number ?? (string) $student->id,
-                    'name' => trim(implode(' ', array_filter([$student->last_name, $student->first_name, $student->middle_name]))),
+                    'customId' => (string) $student->id,
+                    'name' => trim(implode(' ', array_filter([$student->last_name, $student->first_name]))),
                     'nation' => 1,
                     'gender' => ((string) $student->gender === 'female') ? 1 : 0,
                     'birthday' => $birthdayValue,
@@ -182,7 +177,7 @@ class MqttListen extends Command
                     'Native' => 'KZ',
                     'cardType2' => 0,
                     'cardNum2' => '',
-                    'notes' => $student->student_number ?? '',
+                    'notes' => (string) $student->id,
                     'personType' => 0,
                     'cardType' => 0,
                     'dwidentity' => 0,
@@ -204,5 +199,28 @@ class MqttListen extends Command
             $mqtt->loop(true);
         }
     }
-}
 
+    private function resolveStudentForTerminalCustomId(string $terminalId, string $customId): ?Student
+    {
+        $terminal = Terminal::query()
+            ->where('device_id', (int) $terminalId)
+            ->first();
+
+        $customIdValue = trim($customId);
+
+        return Student::query()
+            ->with('school')
+            ->when($terminal?->school_id !== null, function (Builder $query) use ($terminal): void {
+                $query->where('school_id', $terminal->school_id);
+            })
+            ->where(function (Builder $query) use ($customIdValue): void {
+                $query->where('iin', $customIdValue)
+                    ->orWhere('student_number', $customIdValue);
+
+                if (ctype_digit($customIdValue)) {
+                    $query->orWhere('id', (int) $customIdValue);
+                }
+            })
+            ->first();
+    }
+}

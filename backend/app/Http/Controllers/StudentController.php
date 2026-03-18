@@ -262,6 +262,8 @@ class StudentController extends Controller
 
         $student->forceFill([
             'photo' => $path,
+            'photo_updated_at' => now(),
+            'photo_synced_at' => null,
         ])->save();
     }
 
