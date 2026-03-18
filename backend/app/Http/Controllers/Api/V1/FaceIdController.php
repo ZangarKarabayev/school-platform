@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\HandleFaceIdEventJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class FaceIdController extends Controller
 {
@@ -35,6 +36,11 @@ class FaceIdController extends Controller
             }
         }
 
+        Log::info('FaceID HTTP event received', [
+            'fallback_operator' => $fallbackOperator,
+            'raw' => $raw,
+        ]);
+
         $response = response()->json([
             'code' => 200,
             'desc' => 'OK',
@@ -47,6 +53,10 @@ class FaceIdController extends Controller
         }
 
         HandleFaceIdEventJob::dispatch($raw);
+
+        Log::info('FaceID HTTP event queued', [
+            'fallback_operator' => $fallbackOperator,
+        ]);
 
         return $response;
     }

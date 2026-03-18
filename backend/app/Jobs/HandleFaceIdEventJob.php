@@ -24,8 +24,16 @@ class HandleFaceIdEventJob implements ShouldQueue
     public function handle(): void
     {
         try {
+            Log::info('FaceID job started', [
+                'raw' => $this->raw,
+            ]);
+
             $payload = json_decode($this->raw, true, 512, JSON_THROW_ON_ERROR);
             FaceIDEventService::handle($payload);
+
+            Log::info('FaceID job finished', [
+                'operator' => $payload['operator'] ?? null,
+            ]);
         } catch (\Throwable $exception) {
             Log::error('FaceID job error', [
                 'error' => $exception->getMessage(),

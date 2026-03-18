@@ -8,6 +8,7 @@ use App\Models\Terminal;
 use App\Models\VerifyEvent;
 use App\Modules\Organizations\Models\School;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class FaceIDEventService
 {
@@ -19,6 +20,10 @@ class FaceIDEventService
             throw new \InvalidArgumentException('Missing operator field.');
         }
 
+        Log::info('FaceID event handling', [
+            'operator' => $operator,
+        ]);
+
         match ($operator) {
             'VerifyPush' => self::handleVerify($data),
             'HeartBeat' => self::handleHeartBeat($data),
@@ -29,42 +34,65 @@ class FaceIDEventService
     protected static function handleVerify(array $data): void
     {
         $info = self::normalizeInfo($data);
+        $deviceId = self::nullableInt($info['DeviceID'] ?? null);
+        $studentId = self::nullableInt($info['Notes'] ?? null);
 
-        $uniqueQr = trim((string) ($info['Notes'] ?? ''));
-        if ($uniqueQr === '') {
+        if ($studentId === null) {
+            Log::warning('FaceID verify skipped: invalid student_id in Notes', [
+                'device_id' => $deviceId,
+                'payload' => $info,
+            ]);
             return;
         }
 
         $createTime = self::parseTimestamp($info['CreateTime'] ?? null);
         if ($createTime->isBefore(Carbon::parse('2026-01-01'))) {
+            Log::warning('FaceID verify skipped: create_time too old', [
+                'device_id' => $deviceId,
+                'student_id' => $studentId,
+                'create_time' => $createTime->toDateTimeString(),
+            ]);
             return;
         }
 
         $school = self::resolveSchoolByAddress($info['Address'] ?? null);
 
-        VerifyEvent::query()->updateOrCreate(
+        $verifyEvent = VerifyEvent::query()->updateOrCreate(
             [
-                'device_id' => self::nullableInt($info['DeviceID'] ?? null),
-                'unique_qr' => $uniqueQr,
+                'device_id' => $deviceId,
+                'unique_qr' => (string) $studentId,
                 'create_time' => $createTime,
             ],
             [
                 'person_id' => self::nullableInt($info['PersonID'] ?? null),
                 'name' => self::nullableString($info['Name'] ?? null),
                 'verify_status' => self::nullableInt($info['VerifyStatus'] ?? null),
-                'bin' => self::resolveBin($info['Address'] ?? null) ?? 'нет данных',
+                'bin' => self::resolveBin($info['Address'] ?? null) ?? 'no data',
             ],
         );
+
+        Log::info('FaceID verify event saved', [
+            'verify_event_id' => $verifyEvent->id,
+            'device_id' => $verifyEvent->device_id,
+            'student_id' => $studentId,
+            'create_time' => optional($verifyEvent->create_time)?->toDateTimeString(),
+            'verify_status' => $verifyEvent->verify_status,
+        ]);
 
         self::upsertTerminal($info, $school?->id, $createTime);
 
         $student = Student::query()
             ->with(['classroom', 'latestMealBenefit'])
-            ->where('student_number', $uniqueQr)
-            ->orWhere('iin', $uniqueQr)
-            ->first();
+            ->find($studentId);
 
         if (!$student || !$student->classroom_id || !$student->school_id) {
+            Log::warning('FaceID verify saved without matched student', [
+                'verify_event_id' => $verifyEvent->id,
+                'student_id' => $studentId,
+                'student_found' => (bool) $student,
+                'classroom_id' => $student?->classroom_id,
+                'school_id' => $student?->school_id,
+            ]);
             return;
         }
 
@@ -73,10 +101,16 @@ class FaceIDEventService
         $eligibleByBenefit = in_array($benefitType, ['susn', 'voucher'], true);
 
         if (($grade < 1 || $grade > 4) && !$eligibleByBenefit) {
+            Log::info('FaceID verify order skipped by eligibility', [
+                'verify_event_id' => $verifyEvent->id,
+                'student_id' => $student->id,
+                'grade' => $grade,
+                'benefit_type' => $benefitType,
+            ]);
             return;
         }
 
-        Order::query()->firstOrCreate(
+        $order = Order::query()->firstOrCreate(
             [
                 'student_id' => $student->id,
                 'order_date' => $createTime->toDateString(),
@@ -87,6 +121,13 @@ class FaceIDEventService
                 'transaction_status' => true,
             ],
         );
+
+        Log::info('FaceID order ensured', [
+            'verify_event_id' => $verifyEvent->id,
+            'student_id' => $student->id,
+            'order_id' => $order->id,
+            'order_date' => $order->order_date,
+        ]);
     }
 
     protected static function handleHeartBeat(array $data): void
@@ -96,6 +137,12 @@ class FaceIDEventService
         $time = self::parseTimestamp($info['Time'] ?? null);
 
         self::upsertTerminal($info, $school?->id, $time);
+
+        Log::info('FaceID heartbeat handled', [
+            'device_id' => self::nullableInt($info['DeviceID'] ?? null),
+            'school_id' => $school?->id,
+            'time' => $time->toDateTimeString(),
+        ]);
     }
 
     protected static function normalizeInfo(array $data): array
@@ -169,4 +216,3 @@ class FaceIDEventService
         return $normalized !== '' ? $normalized : null;
     }
 }
-
