@@ -53,20 +53,20 @@ class GeneratedReport extends Model
     public static function typeOptions(): array
     {
         return [
-            self::TYPE_SCHOOL => 'Отчет по школе',
-            self::TYPE_1_4 => 'Отчет по 1-4',
-            self::TYPE_1_5_SUSN => 'Отчет по 1-5 СУСН',
-            self::TYPE_5_11 => 'Отчет по 5-11',
-            self::TYPE_5_11_SUSN => 'Отчет по 5-11 СУСН',
+            self::TYPE_SCHOOL => __('ui.reports_page.type_school'),
+            self::TYPE_1_4 => __('ui.reports_page.type_1_4'),
+            self::TYPE_1_5_SUSN => __('ui.reports_page.type_1_5_susn'),
+            self::TYPE_5_11 => __('ui.reports_page.type_5_11'),
+            self::TYPE_5_11_SUSN => __('ui.reports_page.type_5_11_susn'),
         ];
     }
 
     public static function statusOptions(): array
     {
         return [
-            self::STATUS_PENDING => 'В очереди',
-            self::STATUS_COMPLETED => 'Готов',
-            self::STATUS_FAILED => 'Ошибка',
+            self::STATUS_PENDING => __('ui.reports_page.status_pending'),
+            self::STATUS_COMPLETED => __('ui.reports_page.status_completed'),
+            self::STATUS_FAILED => __('ui.reports_page.status_failed'),
         ];
     }
 

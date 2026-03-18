@@ -21,20 +21,20 @@
             <div style="background:#fff;border:1px solid #d1d8e5;border-radius:20px;box-shadow:0 12px 32px rgba(35,64,103,0.08);overflow:hidden;">
                 @php
                     $reportTypes = [
-                        'Отчет по школе',
-                        'Отчет по 1-4',
-                        'Отчет по 1-5 СУСН',
-                        'Отчет по 5-11',
-                        'Отчет по 5-11 СУСН',
+                        __('ui.reports_page.type_school'),
+                        __('ui.reports_page.type_1_4'),
+                        __('ui.reports_page.type_1_5_susn'),
+                        __('ui.reports_page.type_5_11'),
+                        __('ui.reports_page.type_5_11_susn'),
                     ];
                 @endphp
 
                 <div style="padding:24px;">
                     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
                         <label style="display:grid;gap:6px;">
-                            <span style="font-size:13px;font-weight:700;color:#4e607d;">Вид отчета</span>
+                            <span style="font-size:13px;font-weight:700;color:#4e607d;">{{ __('ui.reports_page.date_to') }}</span>
                             <select name="report_type" style="width:100%;min-height:44px;padding:10px 12px;border:1px solid #d1d8e5;border-radius:12px;background:#fff;color:#16253d;">
-                                <option value="">Выберите отчет</option>
+                                <option value="">{{ __('ui.reports_page.select_report') }}</option>
                                 @foreach ($reportTypes as $reportType)
                                     <option value="{{ $reportType }}">{{ $reportType }}</option>
                                 @endforeach
@@ -42,12 +42,12 @@
                         </label>
 
                         <label style="display:grid;gap:6px;">
-                            <span style="font-size:13px;font-weight:700;color:#4e607d;">Дата от</span>
+                            <span style="font-size:13px;font-weight:700;color:#4e607d;">{{ __('ui.reports_page.date_from') }}</span>
                             <input type="date" name="date_from" style="width:100%;min-height:44px;padding:10px 12px;border:1px solid #d1d8e5;border-radius:12px;background:#fff;color:#16253d;">
                         </label>
 
                         <label style="display:grid;gap:6px;">
-                            <span style="font-size:13px;font-weight:700;color:#4e607d;">Дата до</span>
+                            <span style="font-size:13px;font-weight:700;color:#4e607d;">{{ __('ui.reports_page.date_to') }}</span>
                             <input type="date" name="date_to" style="width:100%;min-height:44px;padding:10px 12px;border:1px solid #d1d8e5;border-radius:12px;background:#fff;color:#16253d;">
                         </label>
                     </div>

@@ -872,7 +872,7 @@
                                     </div>
                                 @endif
                                 <div class="students-mobile-item">
-                                    <div class="students-mobile-label">Р’СЂРµРјСЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё</div>
+                                    <div class="students-mobile-label">{{ __('ui.students.photo_synced_at') }}</div>
                                     <div class="students-mobile-value">{{ $student->photo_synced_at?->format('Y-m-d H:i:s') ?: '-' }}</div>
                                 </div>
                                 <div class="students-mobile-item">
@@ -899,7 +899,7 @@
                                 @if ($showSchoolFilter)
                                     <th>{{ __('admin.labels.organization') }}</th>
                                 @endif
-                                <th>????? ?????????????</th>
+                                <th>{{ __('ui.students.photo_synced_at') }}</th>
                                 <th>{{ __('admin.labels.status') }}</th>
                                 <th></th>
                             </tr>

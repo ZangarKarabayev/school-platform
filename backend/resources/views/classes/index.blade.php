@@ -136,18 +136,18 @@
     <section>
         <form class="classes-card classes-filters" method="get" action="{{ route('classes.index') }}">
             <div class="classes-field">
-                <label for="search">Поиск</label>
+                <label for="search">{{ __('ui.classes.search') }}</label>
                 <input
                     id="search"
                     type="text"
                     name="search"
                     value="{{ $filters['search'] }}"
-                    placeholder="Например, 1А или 10"
+                    placeholder="{{ __('ui.classes.search_placeholder') }}"
                 >
             </div>
 
             <div class="classes-field">
-                <label for="grade">Параллель</label>
+                <label for="grade">{{ __('ui.classes.grade') }}</label>
                 <select id="grade" name="grade">
                     <option value="">{{ __('ui.common.all') }}</option>
                     @foreach ($grades as $grade)
@@ -157,11 +157,11 @@
             </div>
 
             <div class="classes-field">
-                <label for="filled">Наполненность</label>
+                <label for="filled">{{ __('ui.classes.filled') }}</label>
                 <select id="filled" name="filled">
                     <option value="">{{ __('ui.common.all') }}</option>
-                    <option value="with" @selected($filters['filled'] === 'with')>С учениками</option>
-                    <option value="without" @selected($filters['filled'] === 'without')>Без учеников</option>
+                    <option value="with" @selected($filters['filled'] === 'with')>{{ __('ui.classes.with_students') }}</option>
+                    <option value="without" @selected($filters['filled'] === 'without')>{{ __('ui.classes.without_students') }}</option>
                 </select>
             </div>
 

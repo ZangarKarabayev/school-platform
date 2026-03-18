@@ -153,9 +153,9 @@
                 @csrf
 
                 <div class="reports-field">
-                    <label for="report_type">Вид отчета</label>
+                    <label for="report_type">{{ __('ui.reports_page.report_type') }}</label>
                     <select id="report_type" name="report_type" required>
-                        <option value="">Выберите отчет</option>
+                        <option value="">{{ __('ui.reports_page.select_report') }}</option>
                         @foreach ($reportTypes as $value => $label)
                             <option value="{{ $value }}" @selected(old('report_type') === $value)>{{ $label }}</option>
                         @endforeach
@@ -163,17 +163,17 @@
                 </div>
 
                 <div class="reports-field">
-                    <label for="date_from">Дата от</label>
+                    <label for="date_from">{{ __('ui.reports_page.date_from') }}</label>
                     <input id="date_from" type="date" name="date_from" value="{{ old('date_from') }}" required>
                 </div>
 
                 <div class="reports-field">
-                    <label for="date_to">Дата до</label>
+                    <label for="date_to">{{ __('ui.reports_page.date_to') }}</label>
                     <input id="date_to" type="date" name="date_to" value="{{ old('date_to') }}" required>
                 </div>
 
                 <div>
-                    <button class="btn" type="submit">Сформировать</button>
+                    <button class="btn" type="submit">{{ __('ui.reports_page.generate') }}</button>
                 </div>
             </form>
         </section>
@@ -195,14 +195,14 @@
                         <div class="reports-side">
                             <span class="reports-status status-{{ $report->status }}">{{ $report->status_label }}</span>
                             @if ($report->status === \App\Models\GeneratedReport::STATUS_COMPLETED && $report->file_path)
-                                <a class="btn secondary" href="{{ route('reports.download', $report) }}">Скачать</a>
+                                <a class="btn secondary" href="{{ route('reports.download', $report) }}">{{ __('ui.reports_page.download') }}</a>
                             @endif
                         </div>
                     </div>
                 @empty
                     <div class="reports-row">
                         <div class="reports-main">
-                            <div class="reports-meta">Отчеты пока не формировались.</div>
+                            <div class="reports-meta">{{ __('ui.reports_page.empty') }}</div>
                         </div>
                     </div>
                 @endforelse

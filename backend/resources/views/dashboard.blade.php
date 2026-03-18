@@ -25,9 +25,9 @@
         ->implode(', ');
 
     $studentBenefitItems = [
-        ['label' => 'СУСН', 'value' => $susnStudents, 'color' => '#f59f00'],
-        ['label' => 'Voucher', 'value' => $voucherStudents, 'color' => '#3b82f6'],
-        ['label' => 'Другие', 'value' => $otherStudents, 'color' => '#94a3b8'],
+        ['label' => __('ui.dashboard_page.susn'), 'value' => $susnStudents, 'color' => '#f59f00'],
+        ['label' => __('ui.dashboard_page.voucher'), 'value' => $voucherStudents, 'color' => '#3b82f6'],
+        ['label' => __('ui.dashboard_page.other'), 'value' => $otherStudents, 'color' => '#94a3b8'],
     ];
     $studentBenefitsTotal = max(collect($studentBenefitItems)->sum('value'), 1);
     $studentBenefitOffset = 0;
@@ -283,26 +283,26 @@
         <section>
             <form class="dashboard-card dashboard-filters" method="get" action="{{ route('dashboard') }}">
                 <div class="dashboard-field">
-                    <label for="date_from">Дата от</label>
+                    <label for="date_from">{{ __('ui.dashboard_page.date_from') }}</label>
                     <input id="date_from" type="date" name="date_from" value="{{ $filters['date_from'] }}">
                 </div>
 
                 <div class="dashboard-field">
-                    <label for="date_to">Дата до</label>
+                    <label for="date_to">{{ __('ui.dashboard_page.date_to') }}</label>
                     <input id="date_to" type="date" name="date_to" value="{{ $filters['date_to'] }}">
                 </div>
 
                 @if ($scopeConfig['mode'] === 'district')
                     <div class="dashboard-field">
-                        <label for="scope_kind">Охват</label>
+                        <label for="scope_kind">{{ __('ui.dashboard_page.scope') }}</label>
                         <select id="scope_kind" name="scope_kind">
-                            <option value="district" @selected($filters['scope_kind'] === 'district')>Весь район</option>
-                            <option value="school" @selected($filters['scope_kind'] === 'school')>Школа</option>
+                            <option value="district" @selected($filters['scope_kind'] === 'district')>{{ __('ui.dashboard_page.district') }}</option>
+                            <option value="school" @selected($filters['scope_kind'] === 'school')>{{ __('ui.dashboard_page.school') }}</option>
                         </select>
                     </div>
 
                     <div class="dashboard-field">
-                        <label for="school_id">Школа</label>
+                        <label for="school_id">{{ __('ui.dashboard_page.school') }}</label>
                         <select id="school_id" name="school_id">
                             <option value="">{{ __('ui.common.all') }}</option>
                             @foreach ($scopeConfig['schools'] as $school)
@@ -313,15 +313,15 @@
                     </div>
                 @elseif ($scopeConfig['mode'] === 'region')
                     <div class="dashboard-field">
-                        <label for="scope_kind">Охват</label>
+                        <label for="scope_kind">{{ __('ui.dashboard_page.scope') }}</label>
                         <select id="scope_kind" name="scope_kind">
-                            <option value="region" @selected($filters['scope_kind'] === 'region')>Целая область</option>
-                            <option value="district" @selected($filters['scope_kind'] === 'district')>Район</option>
+                            <option value="region" @selected($filters['scope_kind'] === 'region')>{{ __('ui.dashboard_page.whole_region') }}</option>
+                            <option value="district" @selected($filters['scope_kind'] === 'district')>{{ __('ui.dashboard_page.district') }}</option>
                         </select>
                     </div>
 
                     <div class="dashboard-field">
-                        <label for="district_id">Район</label>
+                        <label for="district_id">{{ __('ui.dashboard_page.district') }}</label>
                         <select id="district_id" name="district_id">
                             <option value="">{{ __('ui.common.all') }}</option>
                             @foreach ($scopeConfig['districts'] as $district)
@@ -341,36 +341,36 @@
 
         <section class="dashboard-stats">
             <div class="dashboard-card dashboard-stat">
-                <div class="dashboard-stat-label">Всего заказов</div>
+                <div class="dashboard-stat-label">{{ __('ui.dashboard_page.transaction_error') }}</div>
                 <div class="dashboard-stat-value">{{ $stats['orders_count'] }}</div>
             </div>
 
             <div class="dashboard-card dashboard-stat">
-                <div class="dashboard-stat-label">Успешные транзакции</div>
+                <div class="dashboard-stat-label">{{ __('ui.dashboard_page.transactions_success') }}</div>
                 <div class="dashboard-stat-value">{{ $stats['success_count'] }}</div>
             </div>
 
             <div class="dashboard-card dashboard-stat">
-                <div class="dashboard-stat-label">Неуспешные транзакции</div>
+                <div class="dashboard-stat-label">{{ __('ui.dashboard_page.transactions_failed') }}</div>
                 <div class="dashboard-stat-value">{{ $stats['failed_count'] }}</div>
             </div>
 
             <div class="dashboard-card dashboard-stat">
-                <div class="dashboard-stat-label">Ошибки transaction_error</div>
+                <div class="dashboard-stat-label">{{ __('ui.dashboard_page.transaction_error') }}</div>
                 <div class="dashboard-stat-value">{{ $stats['error_count'] }}</div>
             </div>
         </section>
 
         <section class="dashboard-charts">
             <div class="dashboard-card dashboard-chart-card">
-                <h2 class="dashboard-chart-title">Ученики</h2>
+                <h2 class="dashboard-chart-title">{{ __('ui.dashboard_page.transactions') }}</h2>
                 <div class="dashboard-donut-wrap">
                     <div class="dashboard-donut"
                         style="background: conic-gradient({{ $studentBenefitGradient ?: '#eef3fb 0deg 360deg' }});"></div>
                     <div class="dashboard-legend">
                         <div class="dashboard-legend-item">
                             <div class="dashboard-legend-left">
-                                <span>Общее кол-во учеников</span>
+                                <span>{{ __('ui.dashboard_page.orders_total') }}</span>
                             </div>
                             <strong>{{ $totalStudents }}</strong>
                         </div>
@@ -388,14 +388,14 @@
             </div>
 
             <div class="dashboard-card dashboard-chart-card">
-                <h2 class="dashboard-chart-title">Заказы</h2>
+                <h2 class="dashboard-chart-title">{{ __('ui.dashboard_page.orders') }}</h2>
                 <div class="dashboard-donut-wrap">
                     <div class="dashboard-donut"
                         style="background: conic-gradient({{ $classGroupGradient ?: '#eef3fb 0deg 360deg' }});"></div>
                     <div class="dashboard-legend">
                         <div class="dashboard-legend-item">
                             <div class="dashboard-legend-left">
-                                <span>Всего заказов</span>
+                                <span>{{ __('ui.dashboard_page.orders_total') }}</span>
                             </div>
                             <strong>{{ $stats['orders_count'] }}</strong>
                         </div>
@@ -413,7 +413,7 @@
             </div>
 
             <div class="dashboard-card dashboard-chart-card">
-                <h2 class="dashboard-chart-title">Транзакции</h2>
+                <h2 class="dashboard-chart-title">{{ __('ui.dashboard_page.transactions') }}</h2>
                 <div class="dashboard-donut-wrap">
                     <div class="dashboard-donut"
                         style="background: conic-gradient({{ $transactionGradient ?: '#eef3fb 0deg 360deg' }});"></div>
