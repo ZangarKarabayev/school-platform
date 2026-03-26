@@ -50,6 +50,23 @@ DB_PASSWORD=secret \
 bash tools/bootstrap-ubuntu.sh
 ```
 
+## Supervisor
+
+The bootstrap script also installs `supervisor` and creates a Laravel queue worker config:
+
+- `/etc/supervisor/conf.d/school-platform-worker.conf`
+
+It runs:
+
+- `php8.3 /var/www/school-platform/backend/artisan queue:work --sleep=3 --tries=3 --timeout=120`
+
+Useful commands:
+
+```bash
+supervisorctl status
+supervisorctl restart school-platform-worker:*
+```
+
 ## After Bootstrap
 
 1. Copy the verifier template to `/root/kalkan-verifier/public/index.php`.
@@ -58,4 +75,6 @@ bash tools/bootstrap-ubuntu.sh
 4. Add the same certificates into Ubuntu trust store and run `update-ca-certificates`.
 5. Put required KATO files into `storage/app/private`.
 6. Restart verifier: `systemctl restart kalkan-verifier`.
-7. Seed demo data if needed: `php artisan setup:demo`.
+7. Set the correct `QUEUE_CONNECTION` in `.env` if background jobs are used.
+8. Verify supervisor worker: `supervisorctl status`.
+9. Seed demo data if needed: `php artisan setup:demo`.
