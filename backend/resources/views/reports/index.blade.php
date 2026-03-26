@@ -10,8 +10,6 @@
     <style>
         .reports-page {
             padding: 24px 0;
-            display: grid;
-            gap: 18px;
         }
 
         .reports-card {
@@ -21,7 +19,52 @@
             box-shadow: 0 12px 32px rgba(35, 64, 103, 0.08);
         }
 
-        .reports-form {
+        .reports-header {
+            padding: 24px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            border-bottom: 1px solid #e4e9f1;
+        }
+
+        .reports-title {
+            margin: 8px 0 0;
+            font-size: 30px;
+            line-height: 1.1;
+            color: #16345f;
+        }
+
+        .reports-header-actions {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .reports-count {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f3f7fd;
+            color: #234067;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .reports-notice {
+            margin: 0 24px 24px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: #eaf6ea;
+            color: #22653a;
+            font-weight: 700;
+        }
+
+        .reports-filters {
             padding: 24px;
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
@@ -51,8 +94,14 @@
             color: #16253d;
         }
 
+        .reports-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
         .reports-list {
-            overflow: hidden;
+            border-top: 1px solid #e4e9f1;
         }
 
         .reports-row {
@@ -61,27 +110,30 @@
             justify-content: space-between;
             gap: 16px;
             padding: 18px 24px;
-            border-top: 1px solid #e4e9f1;
+            border-bottom: 1px solid #e8edf5;
         }
 
-        .reports-row:first-child {
-            border-top: none;
+        .reports-row:last-child {
+            border-bottom: none;
         }
 
         .reports-main {
             display: grid;
             gap: 4px;
+            min-width: 0;
         }
 
-        .reports-title {
+        .reports-row-title {
             font-size: 18px;
             font-weight: 700;
             color: #1d3151;
+            word-break: break-word;
         }
 
         .reports-meta {
             color: #71829a;
             font-size: 14px;
+            word-break: break-word;
         }
 
         .reports-side {
@@ -90,15 +142,20 @@
             gap: 10px;
             flex-wrap: wrap;
             justify-content: flex-end;
+            flex-shrink: 0;
         }
 
         .reports-status {
-            padding: 8px 12px;
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
             border-radius: 999px;
-            background: #eef3fb;
-            color: #234067;
-            font-size: 13px;
+            background: #eef5ff;
+            color: #1f5cb8;
+            font-size: 12px;
             font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1;
         }
 
         .reports-status.status-pending {
@@ -116,40 +173,61 @@
             color: #c43b52;
         }
 
-        .reports-notice {
-            padding: 12px 14px;
-            border-radius: 12px;
-            background: #eaf6ea;
-            color: #22653a;
-            font-weight: 700;
+        .reports-empty {
+            padding: 28px 24px 32px;
+            color: #71829a;
         }
 
-        @media (max-width: 900px) {
-            .reports-form {
+        @media (max-width: 980px) {
+            .reports-filters {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 720px) {
+            .reports-header {
+                flex-direction: column;
+            }
+
+            .reports-filters {
                 grid-template-columns: 1fr;
+            }
+
+            .reports-count {
+                min-width: 0;
+                width: 100%;
+                border-radius: 12px;
             }
 
             .reports-row {
                 align-items: flex-start;
                 flex-direction: column;
             }
+
+            .reports-side {
+                width: 100%;
+                justify-content: flex-start;
+            }
         }
     </style>
 
-    <div class="reports-page">
-        <section>
-            <div class="reports-card" style="padding:24px;">
-                <div class="muted" style="margin-bottom:8px;">{{ __('ui.common.home') }}</div>
-                <h1 style="margin:0;font-size:28px;line-height:1.2;">{{ __('ui.menu.reports') }}</h1>
+    <section class="reports-page">
+        <div class="reports-card">
+            <div class="reports-header">
+                <div>
+                    <div class="muted">{{ __('ui.common.home') }}</div>
+                    <h1 class="reports-title">{{ __('ui.menu.reports') }}</h1>
+                </div>
+                <div class="reports-header-actions">
+                    <div class="reports-count">{{ $reports->count() }}</div>
+                </div>
             </div>
-        </section>
 
-        @if (session('report_status'))
-            <div class="reports-notice">{{ session('report_status') }}</div>
-        @endif
+            @if (session('report_status'))
+                <div class="reports-notice">{{ session('report_status') }}</div>
+            @endif
 
-        <section>
-            <form class="reports-card reports-form" method="post" action="{{ route('reports.store') }}">
+            <form class="reports-filters" method="post" action="{{ route('reports.store') }}">
                 @csrf
 
                 <div class="reports-field">
@@ -172,18 +250,16 @@
                     <input id="date_to" type="date" name="date_to" value="{{ old('date_to') }}" required>
                 </div>
 
-                <div>
+                <div class="reports-actions">
                     <button class="btn" type="submit">{{ __('ui.reports_page.generate') }}</button>
                 </div>
             </form>
-        </section>
 
-        <section>
-            <div class="reports-card reports-list">
+            <div class="reports-list">
                 @forelse ($reports as $report)
                     <div class="reports-row">
                         <div class="reports-main">
-                            <div class="reports-title">{{ $report->type_label }}</div>
+                            <div class="reports-row-title">{{ $report->type_label }}</div>
                             <div class="reports-meta">
                                 {{ optional($report->date_from)->format('Y-m-d') }} - {{ optional($report->date_to)->format('Y-m-d') }}
                             </div>
@@ -200,13 +276,9 @@
                         </div>
                     </div>
                 @empty
-                    <div class="reports-row">
-                        <div class="reports-main">
-                            <div class="reports-meta">{{ __('ui.reports_page.empty') }}</div>
-                        </div>
-                    </div>
+                    <div class="reports-empty">{{ __('ui.reports_page.empty') }}</div>
                 @endforelse
             </div>
-        </section>
-    </div>
+        </div>
+    </section>
 @endsection

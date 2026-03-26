@@ -98,7 +98,7 @@ class FaceIDEventService
 
         $grade = (int) ($student->classroom?->grade ?? 0);
         $benefitType = $student->latestMealBenefit?->type;
-        $eligibleByBenefit = in_array($benefitType, ['susn', 'voucher'], true);
+        $eligibleByBenefit = $student->canCreateOrder();
 
         if (($grade < 1 || $grade > 4) && !$eligibleByBenefit) {
             Log::info('FaceID verify order skipped by eligibility', [

@@ -81,6 +81,49 @@
             font-size: 14px;
         }
 
+        .student-qr-card {
+            background: #fff;
+            border: 1px solid #d1d8e5;
+            border-radius: 20px;
+            box-shadow: 0 12px 32px rgba(35, 64, 103, 0.08);
+            padding: 24px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .student-qr-title {
+            margin: 0;
+            font-size: 24px;
+            line-height: 1.2;
+            color: #1d3151;
+        }
+
+        .student-qr-body {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .student-qr-meta {
+            display: grid;
+            gap: 10px;
+            color: #71829a;
+            font-size: 14px;
+            line-height: 1.5;
+            max-width: 420px;
+        }
+
+        .student-qr-image {
+            width: 220px;
+            height: 220px;
+            padding: 14px;
+            border-radius: 20px;
+            border: 1px solid #dbe4f2;
+            background: #fff;
+        }
+
         .student-orders-card {
             background: #fff;
             border: 1px solid #d1d8e5;
@@ -289,6 +332,20 @@
                         <a class="btn secondary" href="{{ route('students.index') }}">{{ __('ui.common.back') }}</a>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <div class="student-qr-card">
+            <h2 class="student-qr-title">QR ученика</h2>
+            <div class="student-qr-body">
+                <div class="student-qr-meta">
+                    <div>Сканируйте этот QR или DataMatrix-эквивалент на странице кухни.</div>
+                    <div>Полезная нагрузка кода строится по ID ученика и имеет формат <strong>student:{{ $student->id }}</strong>.</div>
+                    <div>
+                        <a class="btn secondary" href="{{ route('students.qr', $student) }}" target="_blank" rel="noopener noreferrer">Открыть QR</a>
+                    </div>
+                </div>
+                <img class="student-qr-image" src="{{ route('students.qr', $student) }}" alt="QR ученика {{ $student->full_name ?: $student->id }}">
             </div>
         </div>
 

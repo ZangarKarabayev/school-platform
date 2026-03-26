@@ -2,10 +2,15 @@
 
 namespace App\Filament\Resources\Schools\Schemas;
 
+use Filament\Actions\Action;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 
 class SchoolForm
 {
@@ -40,6 +45,37 @@ class SchoolForm
                 TextInput::make('address')
                     ->label(__('admin.labels.address'))
                     ->maxLength(255),
+                TextInput::make('kitchen_access_token')
+                    ->label('Токен кухни')
+                    ->required()
+                    ->default(fn (): string => Str::random(40))
+                    ->minLength(24)
+                    ->maxLength(64)
+                    ->unique(ignoreRecord: true)
+                    ->suffixAction(
+                        Action::make('generateKitchenToken')
+                            ->label('Сгенерировать')
+                            ->icon('heroicon-m-arrow-path')
+                            ->requiresConfirmation()
+                            ->modalHeading('Изменить токен кухни?')
+                            ->modalDescription('После изменения токена старый QR кухни перестанет работать. Понадобится распечатать или раздать новый QR для этой школы.')
+                            ->action(fn (Set $set) => $set('kitchen_access_token', Str::random(40))),
+                        isInline: true,
+                    )
+                    ->helperText('Создается и редактируется в админке школы. Этот токен попадает в QR кухни и открывает страницу /kitchen/{token}. После изменения токена старый QR кухни перестанет работать.'),
+                Placeholder::make('kitchen_qr')
+                    ->label('QR кухни')
+                    ->content(function ($record): HtmlString|string {
+                        if (! $record?->kitchen_access_token) {
+                            return 'Сохраните школу, чтобы получить QR кухни.';
+                        }
+
+                        $url = route('kitchen.access', $record->kitchen_access_token);
+
+                        return new HtmlString(
+                            '<div style="font-size:12px;line-height:1.5;word-break:break-all;color:#4e607d;">'.$url.'</div>'
+                        );
+                    }),
                 Toggle::make('is_active')
                     ->label(__('admin.labels.active'))
                     ->default(true),

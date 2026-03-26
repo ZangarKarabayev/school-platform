@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Modules\Organizations\Models\School;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Student extends Model
 {
+    public const ORDER_ELIGIBLE_BENEFIT_TYPES = ['susn', 'voucher'];
+
     protected $fillable = [
         'iin',
         'first_name',
@@ -63,6 +66,18 @@ class Student extends Model
     public function latestMealBenefit(): HasOne
     {
         return $this->hasOne(MealBenefit::class)->latestOfMany();
+    }
+
+    public function scopeEligibleForOrder(Builder $query): Builder
+    {
+        return $query->whereHas('latestMealBenefit', function (Builder $benefitQuery): void {
+            $benefitQuery->whereIn('type', self::ORDER_ELIGIBLE_BENEFIT_TYPES);
+        });
+    }
+
+    public function canCreateOrder(): bool
+    {
+        return in_array($this->latestMealBenefit?->type, self::ORDER_ELIGIBLE_BENEFIT_TYPES, true);
     }
 
     public function getFullNameAttribute(): string

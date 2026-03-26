@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Order;
+use App\Models\Student;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -28,7 +29,13 @@ class CreateOrdersJob implements ShouldQueue
 
     public function handle(): void
     {
-        foreach ($this->studentIds as $studentId) {
+        $eligibleStudentIds = Student::query()
+            ->eligibleForOrder()
+            ->whereIn('id', $this->studentIds)
+            ->pluck('id')
+            ->all();
+
+        foreach ($eligibleStudentIds as $studentId) {
             Order::query()->firstOrCreate(
                 [
                     'student_id' => $studentId,

@@ -24,7 +24,6 @@ class OrderController extends Controller
         $filters = [
             'search' => trim((string) $request->string('search')),
             'order_date' => (string) $request->string('order_date'),
-            'status' => (string) $request->string('status'),
             'transaction_status' => (string) $request->string('transaction_status'),
             'transaction_error' => trim((string) $request->string('transaction_error')),
         ];
@@ -47,7 +46,6 @@ class OrderController extends Controller
                 });
             })
             ->when($filters['order_date'] !== '', fn ($query) => $query->whereDate('order_date', $filters['order_date']))
-            ->when($filters['status'] !== '', fn ($query) => $query->where('status', $filters['status']))
             ->when($filters['transaction_status'] !== '', function ($query) use ($filters): void {
                 $query->where('transaction_status', $filters['transaction_status'] === '1');
             })
@@ -89,11 +87,6 @@ class OrderController extends Controller
                 ->orderBy('name')
                 ->get(),
             'filters' => $filters,
-            'statuses' => Order::query()
-                ->whereNotNull('status')
-                ->distinct()
-                ->orderBy('status')
-                ->pluck('status'),
             'title' => __('ui.menu.orders'),
         ]);
     }
@@ -156,6 +149,7 @@ class OrderController extends Controller
         $userSchoolId = $user?->school_id;
 
         $query = Student::query()
+            ->eligibleForOrder()
             ->when($restrictBySchool && $userSchoolId !== null, fn ($studentQuery) => $studentQuery->where('school_id', $userSchoolId));
 
         return match ($data['target_type']) {

@@ -15,7 +15,6 @@
 
         .orders-header {
             padding: 24px;
-            border-bottom: 1px solid #e4e9f1;
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
@@ -195,10 +194,9 @@
         .orders-filters {
             padding: 0 24px 24px;
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
             gap: 12px;
             align-items: end;
-            border-bottom: 1px solid #e4e9f1;
         }
 
         .orders-pagination {
@@ -236,11 +234,14 @@
         }
 
         .orders-modal-panel {
-            width: min(100%, 620px);
+            width: min(100%, 980px);
+            max-height: min(88vh, 920px);
             background: #fff;
             border-radius: 24px;
             box-shadow: 0 24px 60px rgba(19, 41, 77, 0.28);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .orders-modal-header,
@@ -260,6 +261,10 @@
             margin: 8px 0 0;
             font-size: 24px;
             line-height: 1.15;
+        }
+
+        .orders-modal-body {
+            overflow: auto;
         }
 
         .orders-form {
@@ -344,7 +349,7 @@
             transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        .orders-target-option input:checked + span {
+        .orders-target-option input:checked+span {
             background: #2876dd;
             color: #fff;
             box-shadow: 0 10px 20px rgba(40, 118, 221, 0.22);
@@ -415,13 +420,22 @@
             border-radius: 14px;
             background: #fff;
             cursor: pointer;
-            transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+            transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
         }
 
-        .orders-check-card input:checked + .orders-check-card-body {
-            border-color: #2876dd;
-            background: #eef5ff;
-            box-shadow: 0 10px 24px rgba(40, 118, 221, 0.12);
+        .orders-check-card input:checked+.orders-check-card-body {
+            border-color: #1459b8;
+            background: linear-gradient(135deg, #dcecff 0%, #eef4ff 100%);
+            box-shadow: 0 14px 28px rgba(20, 89, 184, 0.22);
+            transform: translateY(-1px);
+        }
+
+        .orders-check-card input:checked+.orders-check-card-body .orders-check-card-title {
+            color: #0f4188;
+        }
+
+        .orders-check-card input:checked+.orders-check-card-body .orders-check-card-meta {
+            color: #1f5cb8;
         }
 
         .orders-check-card-title {
@@ -537,13 +551,23 @@
             border-radius: 14px;
             background: #fff;
             cursor: pointer;
-            transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+            transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
         }
 
-        .orders-student-row input:checked + .orders-student-row-body {
-            border-color: #2876dd;
-            background: #eef5ff;
-            box-shadow: 0 10px 24px rgba(40, 118, 221, 0.12);
+        .orders-student-row input:checked+.orders-student-row-body {
+            border-color: #1459b8;
+            background: linear-gradient(135deg, #dcecff 0%, #eef4ff 100%);
+            box-shadow: 0 14px 28px rgba(20, 89, 184, 0.22);
+            transform: translateY(-1px);
+        }
+
+        .orders-student-row input:checked+.orders-student-row-body .orders-student-name,
+        .orders-student-row input:checked+.orders-student-row-body .orders-student-class {
+            color: #0f4188;
+        }
+
+        .orders-student-row input:checked+.orders-student-row-body .orders-student-meta {
+            color: #1f5cb8;
         }
 
         .orders-student-name {
@@ -623,6 +647,15 @@
         }
 
         @media (max-width: 780px) {
+            .orders-modal {
+                padding: 14px;
+            }
+
+            .orders-modal-panel {
+                width: 100%;
+                max-height: 92vh;
+            }
+
             .orders-filters {
                 grid-template-columns: 1fr;
             }
@@ -697,26 +730,13 @@
                 </div>
 
                 <div class="orders-form-field">
-                    <label for="filter_status">{{ __('admin.labels.status') }}</label>
-                    <select id="filter_status" name="status">
-                        <option value="">-</option>
-                        @foreach ($statuses as $status)
-                            @php
-                                $statusLabel = __('ui.orders.statuses.' . $status);
-                            @endphp
-                            <option value="{{ $status }}" @selected($filters['status'] === $status)>
-                                {{ $statusLabel !== 'ui.orders.statuses.' . $status ? $statusLabel : $status }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="orders-form-field">
                     <label for="filter_transaction_status">{{ __('ui.orders.transaction_status') }}</label>
                     <select id="filter_transaction_status" name="transaction_status">
                         <option value="">-</option>
-                        <option value="1" @selected($filters['transaction_status'] === '1')>{{ __('ui.orders.transaction_result.success') }}</option>
-                        <option value="0" @selected($filters['transaction_status'] === '0')>{{ __('ui.orders.transaction_result.failed') }}</option>
+                        <option value="1" @selected($filters['transaction_status'] === '1')>
+                            {{ __('ui.orders.transaction_result.success') }}</option>
+                        <option value="0" @selected($filters['transaction_status'] === '0')>{{ __('ui.orders.transaction_result.failed') }}
+                        </option>
                     </select>
                 </div>
 
@@ -758,12 +778,15 @@
                                     <td>{{ $order->dish?->name ?: '-' }}</td>
                                     <td>
                                         <div>{{ optional($order->order_date)->format('Y-m-d') ?: '-' }}</div>
-                                        <div class="muted">{{ $order->order_time ? substr($order->order_time, 0, 5) : '-' }}</div>
+                                        <div class="muted">
+                                            {{ $order->order_time ? substr($order->order_time, 0, 5) : '-' }}</div>
                                     </td>
                                     <td>
                                         @php
                                             $orderStatus = $order->status;
-                                            $orderStatusLabel = $orderStatus ? __('ui.orders.statuses.' . $orderStatus) : '-';
+                                            $orderStatusLabel = $orderStatus
+                                                ? __('ui.orders.statuses.' . $orderStatus)
+                                                : '-';
                                         @endphp
                                         <span class="orders-status {{ $orderStatus ? '' : 'muted-state' }}">
                                             {{ $orderStatus && $orderStatusLabel !== 'ui.orders.statuses.' . $orderStatus ? $orderStatusLabel : ($orderStatus ?: '-') }}
@@ -806,7 +829,9 @@
                     @foreach ($orders as $order)
                         @php
                             $mobileOrderStatus = $order->status;
-                            $mobileOrderStatusLabel = $mobileOrderStatus ? __('ui.orders.statuses.' . $mobileOrderStatus) : '-';
+                            $mobileOrderStatusLabel = $mobileOrderStatus
+                                ? __('ui.orders.statuses.' . $mobileOrderStatus)
+                                : '-';
                         @endphp
                         <article class="orders-mobile-card">
                             <div class="orders-mobile-top">
@@ -842,7 +867,8 @@
                                     <div class="orders-mobile-label">{{ __('ui.orders.date') }}</div>
                                     <div class="orders-mobile-value">
                                         <div>{{ optional($order->order_date)->format('Y-m-d') ?: '-' }}</div>
-                                        <div class="muted">{{ $order->order_time ? substr($order->order_time, 0, 5) : '-' }}</div>
+                                        <div class="muted">
+                                            {{ $order->order_time ? substr($order->order_time, 0, 5) : '-' }}</div>
                                     </div>
                                 </div>
                                 <div class="orders-mobile-item">
@@ -882,7 +908,8 @@
                         @if ($orders->onFirstPage())
                             <span class="btn secondary" aria-disabled="true">{{ __('ui.common.previous') }}</span>
                         @else
-                            <a class="btn secondary" href="{{ $orders->previousPageUrl() }}">{{ __('ui.common.previous') }}</a>
+                            <a class="btn secondary"
+                                href="{{ $orders->previousPageUrl() }}">{{ __('ui.common.previous') }}</a>
                         @endif
 
                         @if ($orders->hasMorePages())
@@ -903,7 +930,8 @@
                     <div class="muted">{{ __('ui.menu.orders') }}</div>
                     <h2 class="orders-modal-title">{{ __('ui.orders.create_order') }}</h2>
                 </div>
-                <button class="btn secondary" type="button" id="orders-create-close">{{ __('ui.common.close') }}</button>
+                <button class="btn secondary" type="button"
+                    id="orders-create-close">{{ __('ui.common.close') }}</button>
             </div>
 
             <div class="orders-modal-body">
@@ -916,18 +944,19 @@
 
                     <div class="orders-form-grid">
                         <div class="orders-form-field full">
-                            <label>{{ __('ui.orders.recipient_type') }}</label>
                             <div class="orders-target-switcher">
                                 <label class="orders-target-option">
                                     <input type="radio" name="target_type" value="all" @checked(old('target_type', 'all') === 'all')>
                                     <span>{{ __('ui.orders.recipient_all') }}</span>
                                 </label>
                                 <label class="orders-target-option">
-                                    <input type="radio" name="target_type" value="classes" @checked(old('target_type') === 'classes')>
+                                    <input type="radio" name="target_type" value="classes"
+                                        @checked(old('target_type') === 'classes')>
                                     <span>{{ __('ui.orders.recipient_classes') }}</span>
                                 </label>
                                 <label class="orders-target-option">
-                                    <input type="radio" name="target_type" value="students" @checked(old('target_type') === 'students')>
+                                    <input type="radio" name="target_type" value="students"
+                                        @checked(old('target_type') === 'students')>
                                     <span>{{ __('ui.orders.recipient_students') }}</span>
                                 </label>
                             </div>
@@ -935,15 +964,17 @@
 
                         <div class="orders-form-field full" data-target-section="classes"
                             style="{{ old('target_type') === 'classes' ? '' : 'display:none;' }}">
-                            <label>{{ __('ui.orders.recipient_classes') }}</label>
                             <div class="orders-target-panel">
                                 <div class="orders-target-toolbar">
-                                    <div class="orders-target-hint">{{ __('ui.orders.choose_classes_hint') }}</div>
-                                    <div class="orders-selection-count" id="classroom-selection-count">0 {{ __('ui.orders.selected') }}</div>
+
+                                    <div class="orders-selection-count" id="classroom-selection-count">0
+                                        {{ __('ui.orders.selected') }}</div>
                                 </div>
                                 <div class="orders-target-toolbar">
-                                    <button class="orders-link-btn" type="button" data-select-all="classes">{{ __('ui.orders.select_all') }}</button>
-                                    <button class="orders-link-btn" type="button" data-clear-all="classes">{{ __('ui.orders.clear_all') }}</button>
+                                    <button class="orders-link-btn" type="button"
+                                        data-select-all="classes">{{ __('ui.orders.select_all') }}</button>
+                                    <button class="orders-link-btn" type="button"
+                                        data-clear-all="classes">{{ __('ui.orders.clear_all') }}</button>
                                 </div>
                                 @if ($classrooms->isEmpty())
                                     <div class="orders-empty-state">{{ __('ui.orders.no_classes') }}</div>
@@ -951,16 +982,23 @@
                                     <div class="orders-class-grid">
                                         @foreach ($classrooms as $classroom)
                                             @php
-                                                $classroomStudentsCount = $students->where('classroom_id', $classroom->id)->count();
-                                                $isClassroomSelected = collect(old('classroom_ids', []))->contains((string) $classroom->id)
-                                                    || collect(old('classroom_ids', []))->contains($classroom->id);
+                                                $classroomStudentsCount = $students
+                                                    ->where('classroom_id', $classroom->id)
+                                                    ->count();
+                                                $isClassroomSelected =
+                                                    collect(old('classroom_ids', []))->contains(
+                                                        (string) $classroom->id,
+                                                    ) || collect(old('classroom_ids', []))->contains($classroom->id);
                                             @endphp
                                             <label class="orders-check-card">
-                                                <input type="checkbox" name="classroom_ids[]" value="{{ $classroom->id }}"
-                                                    data-classroom-checkbox @checked($isClassroomSelected)>
+                                                <input type="checkbox" name="classroom_ids[]"
+                                                    value="{{ $classroom->id }}" data-classroom-checkbox
+                                                    @checked($isClassroomSelected)>
                                                 <span class="orders-check-card-body">
-                                                    <span class="orders-check-card-title">{{ $classroom->full_name }}</span>
-                                                    <span class="orders-check-card-meta">{{ __('ui.orders.students_count', ['count' => $classroomStudentsCount]) }}</span>
+                                                    <span
+                                                        class="orders-check-card-title">{{ $classroom->full_name }}</span>
+                                                    <span
+                                                        class="orders-check-card-meta">{{ __('ui.orders.students_count', ['count' => $classroomStudentsCount]) }}</span>
                                                 </span>
                                             </label>
                                         @endforeach
@@ -971,22 +1009,24 @@
 
                         <div class="orders-form-field full" data-target-section="students"
                             style="{{ old('target_type') === 'students' ? '' : 'display:none;' }}">
-                            <label>{{ __('admin.labels.student') }}</label>
                             <div class="orders-target-panel">
                                 <div class="orders-target-toolbar">
                                     <input class="orders-student-search" type="search" id="student-search"
                                         placeholder="{{ __('ui.orders.student_search_placeholder') }}">
-                                    <div class="orders-selection-count" id="student-selection-count">0 {{ __('ui.orders.selected') }}</div>
+                                    <div class="orders-selection-count" id="student-selection-count">0
+                                        {{ __('ui.orders.selected') }}</div>
                                 </div>
                                 <div class="orders-target-toolbar">
-                                    <button class="orders-link-btn" type="button" data-select-all="students">{{ __('ui.orders.select_all') }}</button>
-                                    <button class="orders-link-btn" type="button" data-clear-all="students">{{ __('ui.orders.clear_all') }}</button>
+                                    <button class="orders-link-btn" type="button"
+                                        data-select-all="students">{{ __('ui.orders.select_all') }}</button>
+                                    <button class="orders-link-btn" type="button"
+                                        data-clear-all="students">{{ __('ui.orders.clear_all') }}</button>
                                 </div>
                                 @if ($students->isEmpty())
                                     <div class="orders-empty-state">{{ __('ui.orders.no_students') }}</div>
                                 @else
                                     <div class="orders-student-list" id="orders-student-list">
-                                        @foreach ($students->groupBy(fn ($student) => $student->classroom?->full_name ?: '-') as $classroomName => $groupStudents)
+                                        @foreach ($students->groupBy(fn($student) => $student->classroom?->full_name ?: '-') as $classroomName => $groupStudents)
                                             <div class="orders-student-group" data-student-group data-collapsed="false">
                                                 <div class="orders-student-group-title">
                                                     <div class="orders-student-group-title-left">
@@ -995,8 +1035,6 @@
                                                         <span>{{ $classroomName }}</span>
                                                     </div>
                                                     <div class="orders-student-group-actions">
-                                                        <button class="orders-link-btn" type="button"
-                                                            data-select-group>{{ __('ui.orders.select_group') }}</button>
                                                         <button class="orders-student-group-toggle" type="button"
                                                             data-toggle-group>{{ __('ui.orders.collapse') }}</button>
                                                     </div>
@@ -1005,21 +1043,27 @@
                                                 <div class="orders-student-group-body">
                                                     @foreach ($groupStudents as $student)
                                                         @php
-                                                            $isStudentSelected = collect(old('student_ids', []))->contains((string) $student->id)
-                                                                || collect(old('student_ids', []))->contains($student->id);
+                                                            $isStudentSelected =
+                                                                collect(old('student_ids', []))->contains(
+                                                                    (string) $student->id,
+                                                                ) ||
+                                                                collect(old('student_ids', []))->contains($student->id);
                                                         @endphp
                                                         <label class="orders-student-row"
                                                             data-student-search="{{ mb_strtolower(trim(($student->full_name ?: '') . ' ' . ($student->iin ?: '') . ' ' . ($student->classroom?->full_name ?: ''))) }}">
-                                                            <input type="checkbox" name="student_ids[]" value="{{ $student->id }}"
-                                                                data-student-checkbox @checked($isStudentSelected)>
+                                                            <input type="checkbox" name="student_ids[]"
+                                                                value="{{ $student->id }}" data-student-checkbox
+                                                                @checked($isStudentSelected)>
                                                             <span class="orders-student-row-body">
                                                                 <span>
-                                                                    <span class="orders-student-name">{{ $student->full_name ?: ('#' . $student->id) }}</span>
+                                                                    <span
+                                                                        class="orders-student-name">{{ $student->full_name ?: '#' . $student->id }}</span>
                                                                     <span class="orders-student-meta">
                                                                         {{ $student->iin ?: '-' }}
                                                                     </span>
                                                                 </span>
-                                                                <span class="orders-student-class">{{ $student->classroom?->full_name ?: '-' }}</span>
+                                                                <span
+                                                                    class="orders-student-class">{{ $student->classroom?->full_name ?: '-' }}</span>
                                                             </span>
                                                         </label>
                                                     @endforeach
@@ -1033,18 +1077,21 @@
 
                         <div class="orders-form-field">
                             <label for="order_date">{{ __('ui.orders.date') }}</label>
-                            <input id="order_date" name="order_date" type="date" value="{{ old('order_date', now()->format('Y-m-d')) }}" required>
+                            <input id="order_date" name="order_date" type="date"
+                                value="{{ old('order_date', now()->format('Y-m-d')) }}" required>
                         </div>
 
                         <div class="orders-form-field">
                             <label for="order_time">{{ __('ui.common.time') }}</label>
-                            <input id="order_time" name="order_time" type="time" value="{{ old('order_time', now()->format('H:i')) }}">
+                            <input id="order_time" name="order_time" type="time"
+                                value="{{ old('order_time', now()->format('H:i')) }}">
                         </div>
                     </div>
 
                     <div class="orders-form-actions">
                         <button class="btn" type="submit">{{ __('ui.common.save') }}</button>
-                        <button class="btn secondary" type="button" id="orders-create-cancel">{{ __('ui.common.close') }}</button>
+                        <button class="btn secondary" type="button"
+                            id="orders-create-cancel">{{ __('ui.common.close') }}</button>
                     </div>
                 </form>
             </div>
@@ -1100,11 +1147,13 @@
 
             const syncCounts = () => {
                 if (classroomSelectionCount) {
-                    classroomSelectionCount.textContent = `${Array.from(classroomCheckboxes).filter((input) => input.checked).length} ${translations.selected}`;
+                    classroomSelectionCount.textContent =
+                        `${Array.from(classroomCheckboxes).filter((input) => input.checked).length} ${translations.selected}`;
                 }
 
                 if (studentSelectionCount) {
-                    studentSelectionCount.textContent = `${Array.from(studentCheckboxes).filter((input) => input.checked).length} ${translations.selected}`;
+                    studentSelectionCount.textContent =
+                        `${Array.from(studentCheckboxes).filter((input) => input.checked).length} ${translations.selected}`;
                 }
 
                 studentGroups.forEach((group) => {
@@ -1127,7 +1176,8 @@
 
                     const checkedCount = groupStudents.filter((input) => input.checked).length;
                     groupCheckbox.checked = checkedCount === groupStudents.length;
-                    groupCheckbox.indeterminate = checkedCount > 0 && checkedCount < groupStudents.length;
+                    groupCheckbox.indeterminate = checkedCount > 0 && checkedCount < groupStudents
+                        .length;
                 });
             };
 
@@ -1149,7 +1199,8 @@
                 const selectGroupButton = group.querySelector('[data-select-group]');
 
                 groupCheckbox?.addEventListener('change', () => {
-                    Array.from(group.querySelectorAll('[data-student-checkbox]')).forEach((input) => {
+                    Array.from(group.querySelectorAll('[data-student-checkbox]')).forEach((
+                        input) => {
                         const row = input.closest('[data-student-search]');
                         if (row && row.style.display === 'none') {
                             return;
@@ -1162,7 +1213,8 @@
                 });
 
                 selectGroupButton?.addEventListener('click', () => {
-                    Array.from(group.querySelectorAll('[data-student-checkbox]')).forEach((input) => {
+                    Array.from(group.querySelectorAll('[data-student-checkbox]')).forEach((
+                        input) => {
                         const row = input.closest('[data-student-search]');
                         if (row && row.style.display === 'none') {
                             return;
@@ -1177,7 +1229,8 @@
                 groupToggle?.addEventListener('click', () => {
                     const collapsed = group.dataset.collapsed === 'true';
                     group.dataset.collapsed = collapsed ? 'false' : 'true';
-                    groupToggle.textContent = collapsed ? translations.collapse : translations.expand;
+                    groupToggle.textContent = collapsed ? translations.collapse : translations
+                        .expand;
                 });
             });
 
@@ -1223,7 +1276,8 @@
                 });
 
                 studentGroups.forEach((group) => {
-                    const hasVisibleRows = Array.from(group.querySelectorAll('[data-student-search]'))
+                    const hasVisibleRows = Array.from(group.querySelectorAll(
+                            '[data-student-search]'))
                         .some((row) => row.style.display !== 'none');
 
                     group.style.display = hasVisibleRows ? '' : 'none';
@@ -1243,5 +1297,3 @@
         });
     </script>
 @endsection
-
-

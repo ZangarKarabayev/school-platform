@@ -19,7 +19,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('register.phone') }}" id="register-phone-form">
+                <form method="POST" action="{{ route('register.phone.store') }}" id="register-phone-form">
                     @csrf
                     <div class="field">
                         <label for="register_last_name">{{ __('ui.common.last_name') }} *</label>
@@ -102,3 +102,4 @@
         })();
     </script>
 @endsection
+

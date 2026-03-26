@@ -17,6 +17,7 @@ class School extends Model
         'code',
         'bin',
         'address',
+        'kitchen_access_token',
         'is_active',
     ];
 

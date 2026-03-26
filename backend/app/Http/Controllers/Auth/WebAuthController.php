@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\Access\Enums\RoleCode;
 use App\Modules\Identity\Application\Actions\StartEdsLoginAction;
 use App\Modules\Identity\Application\Actions\ValidateEdsChallengeAction;
 use App\Modules\Identity\Application\DTO\EdsChallengeData;
@@ -70,7 +71,9 @@ class WebAuthController extends Controller
         }
 
         $request->session()->regenerate();
-        $request->user()?->forceFill(['last_login_at' => now()])->save();
+        $user = $request->user();
+        $user?->forceFill(['last_login_at' => now()])->save();
+        $this->syncKitchenGuard($user, (bool) $request->boolean('remember'));
 
         return redirect()->intended(route('dashboard'));
     }
@@ -110,6 +113,7 @@ class WebAuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $this->syncKitchenGuard($user);
 
         return redirect()->intended(route('dashboard'));
     }
@@ -165,6 +169,7 @@ class WebAuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $this->syncKitchenGuard($user);
 
         return redirect()->intended(route('dashboard'));
     }
@@ -257,6 +262,7 @@ class WebAuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $this->syncKitchenGuard($user);
 
         return redirect()->intended(route('dashboard'));
     }
@@ -270,6 +276,7 @@ class WebAuthController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        Auth::guard('kitchen')->logout();
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -358,5 +365,26 @@ class WebAuthController extends Controller
         $locale = app()->getLocale();
 
         return in_array($locale, ['ru', 'kk'], true) ? $locale : 'ru';
+    }
+
+    private function syncKitchenGuard(?User $user, bool $remember = false): void
+    {
+        if (! $user) {
+            return;
+        }
+
+        $user->loadMissing('roles');
+
+        $hasKitchenAccess = $user->hasRole(RoleCode::Kitchen->value)
+            || $user->hasRole(RoleCode::SuperAdmin->value)
+            || $user->hasRole(RoleCode::SupportAdmin->value);
+
+        if ($hasKitchenAccess) {
+            Auth::guard('kitchen')->login($user, $remember);
+
+            return;
+        }
+
+        Auth::guard('kitchen')->logout();
     }
 }

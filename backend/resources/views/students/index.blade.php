@@ -286,6 +286,8 @@
         .students-mobile-actions {
             display: flex;
             justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .students-table {
@@ -323,8 +325,33 @@
         }
 
         .student-actions-cell {
-            width: 72px;
+            width: 132px;
             text-align: center;
+        }
+
+        .student-actions-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .student-qr-link {
+            min-width: 40px;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #eef5ff;
+            color: #1f5cb8;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .student-qr-link:hover {
+            background: #dce9ff;
         }
 
         .student-delete-form {
@@ -669,7 +696,6 @@
                 <div>
                     <div class="muted">{{ __('ui.common.home') }}</div>
                     <h1 class="students-title">{{ __('ui.menu.students') }}</h1>
-                    <div class="students-subtitle">{{ __('admin.labels.students') }}</div>
                 </div>
                 <div class="students-header-actions">
                     <button class="btn secondary" type="button"
@@ -711,10 +737,14 @@
                                 </div>
 
                                 <div class="students-import-stats">
-                                    <span class="students-import-stat">{{ __('ui.students.import_total', ['count' => $studentImport->total_rows]) }}</span>
-                                    <span class="students-import-stat">{{ __('ui.students.import_added', ['count' => $studentImport->imported_count]) }}</span>
-                                    <span class="students-import-stat">{{ __('ui.students.import_updated', ['count' => $studentImport->updated_count]) }}</span>
-                                    <span class="students-import-stat">{{ __('ui.students.import_skipped', ['count' => $studentImport->skipped_count]) }}</span>
+                                    <span
+                                        class="students-import-stat">{{ __('ui.students.import_total', ['count' => $studentImport->total_rows]) }}</span>
+                                    <span
+                                        class="students-import-stat">{{ __('ui.students.import_added', ['count' => $studentImport->imported_count]) }}</span>
+                                    <span
+                                        class="students-import-stat">{{ __('ui.students.import_updated', ['count' => $studentImport->updated_count]) }}</span>
+                                    <span
+                                        class="students-import-stat">{{ __('ui.students.import_skipped', ['count' => $studentImport->skipped_count]) }}</span>
                                 </div>
 
                                 @if ($studentImport->error_message)
@@ -723,7 +753,7 @@
                                     </div>
                                 @endif
 
-                                @if (! empty($studentImport->error_rows))
+                                @if (!empty($studentImport->error_rows))
                                     <div class="students-import-errors">
                                         @foreach ($studentImport->error_rows as $errorRow)
                                             <div class="students-import-error">
@@ -805,7 +835,8 @@
             @else
                 <div class="students-mobile-list">
                     @foreach ($students as $student)
-                        <article class="students-mobile-card" data-student-edit-url="{{ route('students.edit', $student) }}">
+                        <article class="students-mobile-card"
+                            data-student-edit-url="{{ route('students.edit', $student) }}">
                             <div class="students-mobile-top">
                                 <div class="students-mobile-identity">
                                     @if ($student->photo)
@@ -816,8 +847,7 @@
                                             data-photo-url="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo) }}"
                                             data-photo-initial="{{ mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1) }}">
                                     @else
-                                        <div class="student-photo-placeholder"
-                                            data-photo-open="{{ $student->id }}"
+                                        <div class="student-photo-placeholder" data-photo-open="{{ $student->id }}"
                                             data-camera-name="{{ $student->full_name ?: __('ui.dashboard.user_fallback') }}"
                                             data-photo-url=""
                                             data-photo-initial="{{ mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1) }}">
@@ -833,27 +863,31 @@
                                     </div>
                                 </div>
 
-                                <form
-                                    class="student-delete-form"
-                                    method="POST"
-                                    action="{{ route('students.destroy', $student) }}"
-                                    onsubmit="return confirm(@js(__('ui.students.delete_confirm')));"
-                                >
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="student-delete-btn" type="submit" title="{{ __('ui.students.delete') }}" aria-label="{{ __('ui.students.delete') }}">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                                            <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v8h-2v-8Zm4 0h2v8h-2v-8ZM7 10h2v8H7v-8Zm-1 11a2 2 0 0 1-2-2V8h16v11a2 2 0 0 1-2 2H6Z" fill="currentColor"/>
-                                        </svg>
-                                    </button>
-                                </form>
+                                <div class="students-mobile-actions">
+                                    <a class="student-qr-link" href="{{ route('students.qr', ['student' => $student, 'download' => 1]) }}">
+                                        QR
+                                    </a>
+                                    <form class="student-delete-form" method="POST"
+                                        action="{{ route('students.destroy', $student) }}"
+                                        onsubmit="return confirm(@js(__('ui.students.delete_confirm')));">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="student-delete-btn" type="submit"
+                                            title="{{ __('ui.students.delete') }}"
+                                            aria-label="{{ __('ui.students.delete') }}">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                <path
+                                                    d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v8h-2v-8Zm4 0h2v8h-2v-8ZM7 10h2v8H7v-8Zm-1 11a2 2 0 0 1-2-2V8h16v11a2 2 0 0 1-2 2H6Z"
+                                                    fill="currentColor" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
 
                             @php
                                 $mealStatus = $student->latestMealBenefit?->type;
-                                $mealStatusLabel = $mealStatus
-                                    ? __('admin.meal_benefit_types.' . $mealStatus)
-                                    : '-';
+                                $mealStatusLabel = $mealStatus ? __('admin.meal_benefit_types.' . $mealStatus) : '-';
                             @endphp
 
                             <div class="students-mobile-grid">
@@ -868,12 +902,14 @@
                                 @if ($showSchoolFilter)
                                     <div class="students-mobile-item">
                                         <div class="students-mobile-label">{{ __('admin.labels.organization') }}</div>
-                                        <div class="students-mobile-value">{{ $student->school?->display_name ?: '-' }}</div>
+                                        <div class="students-mobile-value">{{ $student->school?->display_name ?: '-' }}
+                                        </div>
                                     </div>
                                 @endif
                                 <div class="students-mobile-item">
                                     <div class="students-mobile-label">{{ __('ui.students.photo_synced_at') }}</div>
-                                    <div class="students-mobile-value">{{ $student->photo_synced_at?->format('Y-m-d H:i:s') ?: '-' }}</div>
+                                    <div class="students-mobile-value">
+                                        {{ $student->photo_synced_at?->format('Y-m-d H:i:s') ?: '-' }}</div>
                                 </div>
                                 <div class="students-mobile-item">
                                     <div class="students-mobile-label">{{ __('admin.labels.status') }}</div>
@@ -920,7 +956,8 @@
                                             @if ($student->photo)
                                                 <img class="student-photo"
                                                     src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo) }}"
-                                                    alt="{{ $student->full_name }}" data-photo-open="{{ $student->id }}"
+                                                    alt="{{ $student->full_name }}"
+                                                    data-photo-open="{{ $student->id }}"
                                                     data-camera-name="{{ $student->full_name ?: __('ui.dashboard.user_fallback') }}"
                                                     data-photo-url="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo) }}"
                                                     data-photo-initial="{{ mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1) }}">
@@ -958,20 +995,26 @@
                                         </span>
                                     </td>
                                     <td class="student-actions-cell">
-                                        <form class="student-delete-form" method="POST"
-                                            action="{{ route('students.destroy', $student) }}"
-                                            onsubmit="return confirm(@js(__('ui.students.delete_confirm')));">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="student-delete-btn" type="submit" title="{{ __('ui.students.delete') }}"
-                                                aria-label="{{ __('ui.students.delete') }}">
-                                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                                    <path
-                                                        d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v8h-2v-8Zm4 0h2v8h-2v-8ZM7 10h2v8H7v-8Zm-1 11a2 2 0 0 1-2-2V8h16v11a2 2 0 0 1-2 2H6Z"
-                                                        fill="currentColor" />
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        <div class="student-actions-group">
+                                            <a class="student-qr-link" href="{{ route('students.qr', ['student' => $student, 'download' => 1]) }}">
+                                                QR
+                                            </a>
+                                            <form class="student-delete-form" method="POST"
+                                                action="{{ route('students.destroy', $student) }}"
+                                                onsubmit="return confirm(@js(__('ui.students.delete_confirm')));">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="student-delete-btn" type="submit"
+                                                    title="{{ __('ui.students.delete') }}"
+                                                    aria-label="{{ __('ui.students.delete') }}">
+                                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                                        <path
+                                                            d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 7h2v8h-2v-8Zm4 0h2v8h-2v-8ZM7 10h2v8H7v-8Zm-1 11a2 2 0 0 1-2-2V8h16v11a2 2 0 0 1-2 2H6Z"
+                                                            fill="currentColor" />
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -1021,7 +1064,8 @@
                 <div class="photo-panel-actions">
                     <button class="btn secondary" type="button"
                         id="photo-upload-trigger">{{ __('ui.common.upload') }}</button>
-                    <button class="btn" type="button" id="photo-camera-trigger">{{ __('ui.common.photo') }}</button>
+                    <button class="btn" type="button"
+                        id="photo-camera-trigger">{{ __('ui.common.photo') }}</button>
                 </div>
             </div>
         </div>
@@ -1101,7 +1145,7 @@
     </div>
 
     <div class="student-create-modal" id="student-create-modal"
-        data-open="{{ $errors->any() && ! $errors->has('students_file') ? 'true' : 'false' }}">
+        data-open="{{ $errors->any() && !$errors->has('students_file') ? 'true' : 'false' }}">
         <div class="student-create-panel">
             <div class="student-create-header">
                 <div>
@@ -1415,7 +1459,7 @@
 
             document.querySelectorAll('[data-student-edit-url]').forEach((row) => {
                 row.addEventListener('click', (event) => {
-                    if (event.target.closest('[data-photo-open], form, input, button, a')) {
+                    if (event.target.closest('[data-photo-open], form, input, button, a, .student-qr-link')) {
                         return;
                     }
 

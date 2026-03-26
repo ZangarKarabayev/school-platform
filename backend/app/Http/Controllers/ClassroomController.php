@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicClass;
 use App\Models\Student;
+use App\Support\QrCodeService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use ZipArchive;
 
 class ClassroomController extends Controller
 {
@@ -67,11 +70,50 @@ class ClassroomController extends Controller
 
     public function show(Request $request, AcademicClass $academicClass): View
     {
-        $user = $request->user()?->loadMissing('roles', 'scopes');
-        $roleCodes = $user?->roles?->pluck('code')->all() ?? [];
-        $canOpenStudents = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
+        [$user, $students] = $this->resolveAuthorizedClassroomContext($request, $academicClass);
 
-        abort_unless($canOpenStudents, 403);
+        return view('classes.show', [
+            'user' => $user,
+            'classroom' => $academicClass,
+            'students' => $students,
+            'title' => $academicClass->full_name,
+        ]);
+    }
+
+    public function downloadQrs(Request $request, AcademicClass $academicClass)
+    {
+        [, $students] = $this->resolveAuthorizedClassroomContext($request, $academicClass);
+
+        abort_if($students->isEmpty(), 404);
+
+        $zipPath = tempnam(sys_get_temp_dir(), 'class-qrs-');
+
+        abort_if($zipPath === false, 500, 'Unable to create temporary archive file.');
+
+        $archive = new ZipArchive();
+        $archive->open($zipPath, ZipArchive::OVERWRITE);
+
+        foreach ($students as $student) {
+            $filename = $this->makeQrFilename($student);
+            $png = QrCodeService::studentCardPng(
+                KitchenController::studentPayload($student->id),
+                $student->full_name,
+                $student->classroom?->full_name ?? $academicClass->full_name
+            );
+
+            $archive->addFromString($filename, $png);
+        }
+
+        $archive->close();
+
+        return response()->download($zipPath, 'class-'.$academicClass->full_name.'-qrs.zip')->deleteFileAfterSend(true);
+    }
+
+    private function resolveAuthorizedClassroomContext(Request $request, AcademicClass $academicClass): array
+    {
+        $user = $request->user()?->loadMissing('roles', 'scopes');
+
+        abort_unless($user !== null, 403);
 
         $userSchoolId = $this->resolveSchoolIdForUser($request);
 
@@ -83,6 +125,7 @@ class ClassroomController extends Controller
         }
 
         $students = Student::query()
+            ->with('classroom')
             ->where('classroom_id', $academicClass->id)
             ->when($userSchoolId !== null, fn ($query) => $query->where('school_id', $userSchoolId))
             ->orderBy('last_name')
@@ -90,12 +133,14 @@ class ClassroomController extends Controller
             ->orderBy('middle_name')
             ->get();
 
-        return view('classes.show', [
-            'user' => $user,
-            'classroom' => $academicClass,
-            'students' => $students,
-            'title' => $academicClass->full_name,
-        ]);
+        return [$user, $students];
+    }
+
+    private function makeQrFilename(Student $student): string
+    {
+        $name = $student->full_name !== '' ? $student->full_name : 'student-'.$student->id;
+
+        return Str::slug($name, '-') . '-qr.png';
     }
 
     private function resolveSchoolIdForUser(Request $request): ?int

@@ -25,6 +25,20 @@
             overflow: hidden;
         }
 
+        .class-show-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .class-show-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
         .class-show-row {
             display: flex;
             align-items: center;
@@ -54,6 +68,13 @@
             font-size: 14px;
         }
 
+        .class-show-side {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
         .class-show-badge {
             flex-shrink: 0;
             padding: 8px 12px;
@@ -62,6 +83,25 @@
             color: #234067;
             font-size: 13px;
             font-weight: 700;
+        }
+
+        .class-show-qr-link {
+            min-width: 44px;
+            height: 40px;
+            padding: 0 12px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #eef5ff;
+            color: #1f5cb8;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .class-show-qr-link:hover {
+            background: #dce9ff;
         }
 
         @media (max-width: 900px) {
@@ -75,12 +115,21 @@
     <div class="class-show-page">
         <section>
             <div class="class-show-card" style="padding:24px;">
-                <div class="muted" style="margin-bottom:8px;">
-                    <a href="{{ route('classes.index') }}" style="color:inherit;text-decoration:none;">{{ __('ui.menu.classes') }}</a>
-                </div>
-                <h1 style="margin:0;font-size:28px;line-height:1.2;">{{ $classroom->full_name }}</h1>
-                <div class="muted" style="margin-top:10px;">
-                    {{ __('ui.orders.students_count', ['count' => $students->count()]) }}
+                <div class="class-show-header">
+                    <div>
+                        <div class="muted" style="margin-bottom:8px;">
+                            <a href="{{ route('classes.index') }}" style="color:inherit;text-decoration:none;">{{ __('ui.menu.classes') }}</a>
+                        </div>
+                        <h1 style="margin:0;font-size:28px;line-height:1.2;">{{ $classroom->full_name }}</h1>
+                        <div class="muted" style="margin-top:10px;">
+                            {{ __('ui.orders.students_count', ['count' => $students->count()]) }}
+                        </div>
+                    </div>
+                    @if ($students->isNotEmpty())
+                        <div class="class-show-actions">
+                            <a class="btn" href="{{ route('classes.qr.download', $classroom) }}">Скачать QR класса</a>
+                        </div>
+                    @endif
                 </div>
             </div>
         </section>
@@ -100,7 +149,10 @@
                                     {{ $student->iin ?: __('ui.common.not_specified') }}
                                 </div>
                             </div>
-                            <div class="class-show-badge">{{ $classroom->full_name }}</div>
+                            <div class="class-show-side">
+                                <div class="class-show-badge">{{ $classroom->full_name }}</div>
+                                <a class="class-show-qr-link" href="{{ route('students.qr', ['student' => $student, 'download' => 1]) }}">QR</a>
+                            </div>
                         </div>
                     @endforeach
                 </div>

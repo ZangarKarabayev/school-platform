@@ -68,27 +68,29 @@
             gap: 16px;
             padding: 18px 24px;
             border-top: 1px solid #e4e9f1;
-            color: inherit;
-            text-decoration: none;
         }
 
         .classes-list-row:first-child {
             border-top: none;
         }
 
-        .classes-list-row.clickable {
-            cursor: pointer;
-            transition: background-color 0.18s ease;
-        }
-
-        .classes-list-row.clickable:hover,
-        .classes-list-row.clickable:focus-visible {
-            background: #f8fbff;
-        }
-
         .classes-list-main {
             display: grid;
             gap: 4px;
+            min-width: 0;
+        }
+
+        .classes-list-link {
+            color: inherit;
+            text-decoration: none;
+            display: grid;
+            gap: 4px;
+            padding: 4px 0;
+        }
+
+        .classes-list-link:hover .classes-list-title,
+        .classes-list-link:focus-visible .classes-list-title {
+            color: #266ccc;
         }
 
         .classes-list-title {
@@ -96,11 +98,19 @@
             font-weight: 700;
             line-height: 1.1;
             color: #1d3151;
+            transition: color 0.18s ease;
         }
 
         .classes-list-meta {
             color: #71829a;
             font-size: 14px;
+        }
+
+        .classes-list-side {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
         }
 
         .classes-list-count {
@@ -113,6 +123,26 @@
             font-weight: 700;
         }
 
+        .classes-qr-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 0 14px;
+            border-radius: 10px;
+            background: #edf4ff;
+            color: #1f5cb8;
+            font-size: 13px;
+            font-weight: 800;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .classes-qr-link:hover,
+        .classes-qr-link:focus-visible {
+            background: #dceaff;
+        }
+
         @media (max-width: 900px) {
             .classes-filters {
                 grid-template-columns: 1fr;
@@ -121,6 +151,11 @@
             .classes-list-row {
                 align-items: flex-start;
                 flex-direction: column;
+            }
+
+            .classes-list-side {
+                width: 100%;
+                justify-content: space-between;
             }
         }
     </style>
@@ -180,23 +215,25 @@
         @else
             <div class="classes-card classes-list">
                 @foreach ($classes as $classroom)
-                    @if ($canOpenStudents)
-                        <a class="classes-list-row clickable" href="{{ route('classes.show', $classroom) }}">
-                            <div class="classes-list-main">
+                    <div class="classes-list-row">
+                        <div class="classes-list-main">
+                            @if ($canOpenStudents)
+                                <a class="classes-list-link" href="{{ route('classes.show', $classroom) }}">
+                                    <div class="classes-list-title">{{ $classroom->full_name }}</div>
+                                    <div class="classes-list-meta">{{ $classroom->grade }} {{ __('ui.menu.classes') }}</div>
+                                </a>
+                            @else
                                 <div class="classes-list-title">{{ $classroom->full_name }}</div>
                                 <div class="classes-list-meta">{{ $classroom->grade }} {{ __('ui.menu.classes') }}</div>
-                            </div>
-                            <div class="classes-list-count">{{ __('ui.orders.students_count', ['count' => $classroom->students_count]) }}</div>
-                        </a>
-                    @else
-                        <div class="classes-list-row">
-                            <div class="classes-list-main">
-                                <div class="classes-list-title">{{ $classroom->full_name }}</div>
-                                <div class="classes-list-meta">{{ $classroom->grade }} {{ __('ui.menu.classes') }}</div>
-                            </div>
-                            <div class="classes-list-count">{{ __('ui.orders.students_count', ['count' => $classroom->students_count]) }}</div>
+                            @endif
                         </div>
-                    @endif
+                        <div class="classes-list-side">
+                            <div class="classes-list-count">{{ __('ui.orders.students_count', ['count' => $classroom->students_count]) }}</div>
+                            @if ($classroom->students_count > 0)
+                                <a class="classes-qr-link" href="{{ route('classes.qr.download', $classroom) }}">Скачать QR</a>
+                            @endif
+                        </div>
+                    </div>
                 @endforeach
             </div>
         @endif
