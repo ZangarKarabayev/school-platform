@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Schools\Pages;
 
 use App\Filament\Resources\Schools\SchoolResource;
+use App\Jobs\SyncFaceIdStudentsJob;
 use App\Models\Terminal;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -23,6 +24,7 @@ class CreateSchool extends CreateRecord
     protected function afterCreate(): void
     {
         $this->syncTerminals();
+        $this->queueSyncJobsForAssignedTerminals();
     }
 
     protected function syncTerminals(): void
@@ -42,5 +44,17 @@ class CreateSchool extends CreateRecord
         Terminal::query()
             ->whereIn('id', $this->terminalIds)
             ->update(['school_id' => $this->record->id]);
+    }
+
+    protected function queueSyncJobsForAssignedTerminals(): void
+    {
+        Terminal::query()
+            ->where('school_id', $this->record->id)
+            ->whereNotNull('device_id')
+            ->pluck('device_id')
+            ->map(fn ($deviceId) => trim((string) $deviceId))
+            ->filter()
+            ->unique()
+            ->each(fn (string $deviceId) => SyncFaceIdStudentsJob::dispatch($this->record->id, $deviceId));
     }
 }

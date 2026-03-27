@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\Schools\Tables;
 
+use App\Jobs\SyncFaceIdStudentsJob;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -52,6 +55,37 @@ class SchoolsTable
                     ->label(__('admin.labels.district')),
             ])
             ->recordActions([
+                Action::make('send_to_terminal')
+                    ->label('Отправить на терминал')
+                    ->icon('heroicon-m-paper-airplane')
+                    ->color('primary')
+                    ->action(function ($record): void {
+                        $deviceIds = $record->terminals()
+                            ->whereNotNull('device_id')
+                            ->pluck('device_id')
+                            ->map(fn ($deviceId) => trim((string) $deviceId))
+                            ->filter()
+                            ->unique()
+                            ->values();
+
+                        if ($deviceIds->isEmpty()) {
+                            Notification::make()
+                                ->title('У школы нет привязанных терминалов')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $deviceIds->each(
+                            fn (string $deviceId) => SyncFaceIdStudentsJob::dispatch($record->id, $deviceId)
+                        );
+
+                        Notification::make()
+                            ->title("Постановлено в очередь терминалов: {$deviceIds->count()}")
+                            ->success()
+                            ->send();
+                    }),
                 EditAction::make(),
             ])
             ->toolbarActions([
