@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Schools\Schemas;
 
+use App\Models\Terminal;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
@@ -45,6 +46,24 @@ class SchoolForm
                 TextInput::make('address')
                     ->label(__('admin.labels.address'))
                     ->maxLength(255),
+                Select::make('terminal_ids')
+                    ->label(__('admin.labels.terminals'))
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->options(fn (): array => Terminal::query()
+                        ->orderByRaw('CASE WHEN device_id IS NULL THEN 1 ELSE 0 END')
+                        ->orderBy('device_id')
+                        ->orderBy('id')
+                        ->get()
+                        ->mapWithKeys(fn (Terminal $terminal): array => [
+                            $terminal->id => (string) ($terminal->device_id ?? $terminal->id),
+                        ])
+                        ->all())
+                    ->afterStateHydrated(function (Select $component, $record): void {
+                        $component->state($record?->terminals()->pluck('id')->all() ?? []);
+                    })
+                    ->helperText('Selected terminals will be assigned to this school. If a terminal is already linked to another school, the link will be moved.'),
                 TextInput::make('kitchen_access_token')
                     ->label('Токен кухни')
                     ->required()

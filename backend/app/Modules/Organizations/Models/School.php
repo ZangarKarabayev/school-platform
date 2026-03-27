@@ -3,6 +3,7 @@
 namespace App\Modules\Organizations\Models;
 
 use App\Models\Student;
+use App\Models\Terminal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -43,6 +44,11 @@ class School extends Model
     public function students(): HasMany
     {
         return $this->hasMany(Student::class, 'school_id');
+    }
+
+    public function terminals(): HasMany
+    {
+        return $this->hasMany(Terminal::class, 'school_id');
     }
 
     public function getDisplayNameAttribute(): string

@@ -214,6 +214,41 @@
             flex-wrap: wrap;
         }
 
+        .students-bulk-toolbar {
+            padding: 0 24px 20px;
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .students-bulk-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .students-bulk-actions {
+            display: flex;
+            align-items: end;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+
+        .students-bulk-counter {
+            min-height: 44px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: #f3f7fd;
+            color: #234067;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+        }
+
         .students-table-wrap {
             overflow: auto;
             border-top: 1px solid #e4e9f1;
@@ -383,8 +418,21 @@
         }
 
         .student-photo-wrap {
-            display: grid;
+            display: flex;
+            align-items: center;
             gap: 10px;
+        }
+
+        .students-select-control {
+            width: 18px;
+            height: 18px;
+            accent-color: #1f5cb8;
+            cursor: pointer;
+            flex: 0 0 auto;
+        }
+
+        .students-select-control.master {
+            margin-right: -2px;
         }
 
         .student-photo {
@@ -828,6 +876,31 @@
                 </div>
             </form>
 
+            <form class="students-bulk-toolbar" method="POST" action="{{ route('students.bulk-meal-benefit') }}" id="students-bulk-form">
+                @csrf
+                <div class="students-bulk-controls">
+                    <input class="students-select-control master" type="checkbox" id="students-select-all">
+                    <div class="students-bulk-counter" id="students-selected-counter">0 {{ __('ui.orders.selected') }}</div>
+                </div>
+                <div class="students-bulk-actions">
+                    <div class="field">
+                        <select id="bulk_meal_benefit_type" name="meal_benefit_type" required>
+                            <option value="">{{ __('ui.students.bulk_select_status') }}</option>
+                            @foreach (['susn', 'voucher', 'paid'] as $statusValue)
+                                @php
+                                    $bulkStatusLabel = __('admin.meal_benefit_types.' . $statusValue);
+                                @endphp
+                                <option value="{{ $statusValue }}">{{ $bulkStatusLabel !== 'admin.meal_benefit_types.' . $statusValue ? $bulkStatusLabel : str_replace('_', ' ', ucfirst($statusValue)) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="students-actions">
+                        <div id="students-bulk-hidden-inputs"></div>
+                        <button class="btn" type="submit" id="students-bulk-submit" disabled>{{ __('ui.students.bulk_apply_status') }}</button>
+                    </div>
+                </div>
+            </form>
+
             @if ($students->isEmpty())
                 <div class="students-empty">
                     {{ __('admin.labels.students') }}: 0
@@ -839,6 +912,7 @@
                             data-student-edit-url="{{ route('students.edit', $student) }}">
                             <div class="students-mobile-top">
                                 <div class="students-mobile-identity">
+                                    <input class="students-select-control" type="checkbox" value="{{ $student->id }}" data-student-bulk-checkbox>
                                     @if ($student->photo)
                                         <img class="student-photo"
                                             src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo) }}"
@@ -945,6 +1019,7 @@
                                 <tr data-student-edit-url="{{ route('students.edit', $student) }}">
                                     <td class="student-photo-cell">
                                         <div class="student-photo-wrap">
+                                            <input class="students-select-control" type="checkbox" value="{{ $student->id }}" data-student-bulk-checkbox>
                                             <form method="POST" action="{{ route('students.photo.update', $student) }}"
                                                 enctype="multipart/form-data">
                                                 @csrf
@@ -1457,6 +1532,55 @@
                 stopStream();
             });
 
+            const bulkForm = document.getElementById('students-bulk-form');
+            const bulkStatusSelect = document.getElementById('bulk_meal_benefit_type');
+            const bulkSubmitButton = document.getElementById('students-bulk-submit');
+            const bulkCounter = document.getElementById('students-selected-counter');
+            bulkCounter.dataset.selectedLabel = @json(__('ui.orders.selected'));
+            const bulkHiddenInputs = document.getElementById('students-bulk-hidden-inputs');
+            const bulkSelectAll = document.getElementById('students-select-all');
+            const bulkCheckboxes = Array.from(document.querySelectorAll('[data-student-bulk-checkbox]'));
+
+            const syncBulkSelection = () => {
+                const selectedIds = Array.from(new Set(
+                    bulkCheckboxes.filter((input) => input.checked).map((input) => input.value)
+                ));
+
+                bulkCounter.textContent = `${selectedIds.length} ${bulkCounter.dataset.selectedLabel}`;
+                bulkHiddenInputs.innerHTML = selectedIds
+                    .map((id) => `<input type="hidden" name="student_ids[]" value="${id}">`)
+                    .join('');
+                if (bulkSelectAll) {
+                    bulkSelectAll.checked = bulkCheckboxes.length > 0 && bulkCheckboxes.every((input) => input.checked);
+                    bulkSelectAll.indeterminate = selectedIds.length > 0 && !bulkSelectAll.checked;
+                }
+                bulkSubmitButton.disabled = selectedIds.length === 0 || !bulkStatusSelect.value;
+            };
+
+            bulkCheckboxes.forEach((input) => {
+                input.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                });
+                input.addEventListener('change', syncBulkSelection);
+            });
+
+            bulkSelectAll?.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
+            bulkSelectAll?.addEventListener('change', () => {
+                bulkCheckboxes.forEach((input) => {
+                    input.checked = bulkSelectAll.checked;
+                });
+                syncBulkSelection();
+            });
+
+            bulkStatusSelect?.addEventListener('change', syncBulkSelection);
+            bulkForm?.addEventListener('submit', (event) => {
+                if (bulkSubmitButton.disabled) {
+                    event.preventDefault();
+                }
+            });
+
             document.querySelectorAll('[data-student-edit-url]').forEach((row) => {
                 row.addEventListener('click', (event) => {
                     if (event.target.closest('[data-photo-open], form, input, button, a, .student-qr-link')) {
@@ -1466,6 +1590,8 @@
                     window.location.href = row.dataset.studentEditUrl;
                 });
             });
+
+            syncBulkSelection();
         })();
     </script>
 @endsection

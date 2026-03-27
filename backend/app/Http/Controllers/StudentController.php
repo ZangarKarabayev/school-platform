@@ -175,6 +175,48 @@ class StudentController extends Controller
         ]);
     }
 
+    public function bulkUpdateMealBenefit(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'student_ids' => ['required', 'array', 'min:1'],
+            'student_ids.*' => ['integer', 'exists:students,id'],
+            'meal_benefit_type' => ['required', Rule::in(MealBenefit::TYPES)],
+        ]);
+
+        $studentIds = array_values(array_unique(array_map('intval', $data['student_ids'])));
+        $schoolId = $this->resolveSchoolIdForUser($request);
+
+        $studentsQuery = Student::query()
+            ->with('latestMealBenefit')
+            ->whereIn('id', $studentIds);
+
+        if ($schoolId !== null) {
+            $studentsQuery->where('school_id', $schoolId);
+        }
+
+        $students = $studentsQuery->get();
+
+        if ($students->count() !== count($studentIds)) {
+            abort(403);
+        }
+
+        $updatedCount = 0;
+
+        foreach ($students as $student) {
+            if ($student->latestMealBenefit?->type === $data['meal_benefit_type']) {
+                continue;
+            }
+
+            $student->mealBenefits()->create([
+                'type' => $data['meal_benefit_type'],
+            ]);
+
+            $updatedCount++;
+        }
+
+        return back()->with('student_status', __('ui.students.bulk_meal_benefit_updated', ['count' => $updatedCount]));
+    }
+
     public function edit(Request $request, Student $student): View
     {
         return view('students.edit', [

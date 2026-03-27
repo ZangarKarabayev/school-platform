@@ -207,7 +207,8 @@
     <section class="student-edit-page">
         <div class="student-edit-card">
             <div class="student-edit-header">
-                <div class="muted">{{ __('ui.common.home') }} / <a href="{{ route('students.index') }}">{{ __('ui.menu.students') }}</a></div>
+                <div class="muted">{{ __('ui.common.home') }} / <a
+                        href="{{ route('students.index') }}">{{ __('ui.menu.students') }}</a></div>
                 <h1 class="student-edit-title">{{ $student->full_name ?: __('admin.labels.student') }}</h1>
                 <div class="student-edit-note">
                     {{ __('admin.labels.status') }}:
@@ -223,32 +224,38 @@
                     <div class="student-edit-grid">
                         <div class="student-edit-field">
                             <label for="iin">{{ __('admin.labels.iin') }}</label>
-                            <input id="iin" name="iin" type="text" maxlength="12" value="{{ old('iin', $student->iin) }}">
+                            <input id="iin" name="iin" type="text" maxlength="12"
+                                value="{{ old('iin', $student->iin) }}">
                         </div>
 
                         <div class="student-edit-field">
                             <label for="student_number">{{ __('admin.labels.student_number') }}</label>
-                            <input id="student_number" name="student_number" type="text" value="{{ old('student_number', $student->student_number) }}">
+                            <input id="student_number" name="student_number" type="text"
+                                value="{{ old('student_number', $student->student_number) }}">
                         </div>
 
                         <div class="student-edit-field">
                             <label for="last_name">{{ __('admin.labels.last_name') }}</label>
-                            <input id="last_name" name="last_name" type="text" value="{{ old('last_name', $student->last_name) }}">
+                            <input id="last_name" name="last_name" type="text"
+                                value="{{ old('last_name', $student->last_name) }}">
                         </div>
 
                         <div class="student-edit-field">
                             <label for="first_name">{{ __('admin.labels.first_name') }}</label>
-                            <input id="first_name" name="first_name" type="text" value="{{ old('first_name', $student->first_name) }}">
+                            <input id="first_name" name="first_name" type="text"
+                                value="{{ old('first_name', $student->first_name) }}">
                         </div>
 
                         <div class="student-edit-field">
                             <label for="middle_name">{{ __('admin.labels.middle_name') }}</label>
-                            <input id="middle_name" name="middle_name" type="text" value="{{ old('middle_name', $student->middle_name) }}">
+                            <input id="middle_name" name="middle_name" type="text"
+                                value="{{ old('middle_name', $student->middle_name) }}">
                         </div>
 
                         <div class="student-edit-field">
                             <label for="birth_date">{{ __('admin.labels.birth_date') }}</label>
-                            <input id="birth_date" name="birth_date" type="date" value="{{ old('birth_date', optional($student->birth_date)->format('Y-m-d')) }}">
+                            <input id="birth_date" name="birth_date" type="date"
+                                value="{{ old('birth_date', optional($student->birth_date)->format('Y-m-d')) }}">
                         </div>
 
                         <div class="student-edit-field">
@@ -256,13 +263,15 @@
                             <select id="gender" name="gender">
                                 <option value="">-</option>
                                 <option value="male" @selected(old('gender', $student->gender) === 'male')>{{ __('admin.labels.male') }}</option>
-                                <option value="female" @selected(old('gender', $student->gender) === 'female')>{{ __('admin.labels.female') }}</option>
+                                <option value="female" @selected(old('gender', $student->gender) === 'female')>{{ __('admin.labels.female') }}
+                                </option>
                             </select>
                         </div>
 
                         <div class="student-edit-field">
                             <label for="phone">{{ __('admin.labels.phone') }}</label>
-                            <input id="phone" name="phone" type="text" value="{{ old('phone', $student->phone) }}">
+                            <input id="phone" name="phone" type="text"
+                                value="{{ old('phone', $student->phone) }}">
                         </div>
 
                         <div class="student-edit-field">
@@ -309,15 +318,18 @@
 
                         <div class="student-edit-field">
                             <label for="school_year">{{ __('admin.labels.school_year') }}</label>
-                            <input id="school_year" name="school_year" type="text" value="{{ old('school_year', $student->school_year) }}">
+                            <input id="school_year" name="school_year" type="text"
+                                value="{{ old('school_year', $student->school_year) }}">
                         </div>
 
                         <div class="student-edit-field">
                             <label for="status">{{ __('admin.labels.status') }}</label>
                             <select id="status" name="status">
                                 <option value="">-</option>
-                                <option value="active" @selected(old('status', $student->status) === 'active')>{{ __('admin.status.active') }}</option>
-                                <option value="archived" @selected(old('status', $student->status) === 'archived')>{{ __('admin.labels.archived') }}</option>
+                                <option value="active" @selected(old('status', $student->status) === 'active')>{{ __('admin.status.active') }}
+                                </option>
+                                <option value="archived" @selected(old('status', $student->status) === 'archived')>{{ __('admin.labels.archived') }}
+                                </option>
                             </select>
                         </div>
 
@@ -340,12 +352,15 @@
             <div class="student-qr-body">
                 <div class="student-qr-meta">
                     <div>Сканируйте этот QR или DataMatrix-эквивалент на странице кухни.</div>
-                    <div>Полезная нагрузка кода строится по ID ученика и имеет формат <strong>student:{{ $student->id }}</strong>.</div>
+                    <div>Полезная нагрузка кода строится по ID ученика и имеет формат
+                        <strong>student:{{ $student->id }}</strong>.</div>
                     <div>
-                        <a class="btn secondary" href="{{ route('students.qr', $student) }}" target="_blank" rel="noopener noreferrer">Открыть QR</a>
+                        <a class="btn secondary" href="{{ route('students.qr', $student) }}" target="_blank"
+                            rel="noopener noreferrer">Открыть QR</a>
                     </div>
                 </div>
-                <img class="student-qr-image" src="{{ route('students.qr', $student) }}" alt="QR ученика {{ $student->full_name ?: $student->id }}">
+                <img class="student-qr-image" src="{{ route('students.qr', $student) }}"
+                    alt="QR ученика {{ $student->full_name ?: $student->id }}">
             </div>
         </div>
 
@@ -381,10 +396,13 @@
                                     <td>{{ $order->status ?: '-' }}</td>
                                     <td>
                                         @if ($order->transaction_status === null)
-                                            -
+                                            <span class="student-orders-status inactive">
+                                                {{ __('ui.orders.statuses.pending') }}
+                                            </span>
                                         @else
-                                            <span class="student-orders-status {{ $order->transaction_status ? '' : 'inactive' }}">
-                                                {{ $order->transaction_status ? __('ui.common.active') : __('ui.common.inactive') }}
+                                            <span
+                                                class="student-orders-status {{ $order->transaction_status ? '' : 'inactive' }}">
+                                                {{ $order->transaction_status ? __('ui.orders.transaction_result.success') : __('ui.orders.transaction_result.failed') }}
                                             </span>
                                         @endif
                                     </td>

@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/students', [StudentController::class, 'index'])->name('students.index');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
     Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
+    Route::post('/students/bulk-meal-benefit', [StudentController::class, 'bulkUpdateMealBenefit'])->name('students.bulk-meal-benefit');
     Route::get('/students/import-template', [StudentController::class, 'downloadImportTemplate'])->name('students.import.template');
     Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
     Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');

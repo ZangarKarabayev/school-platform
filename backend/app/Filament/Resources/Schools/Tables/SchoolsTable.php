@@ -36,6 +36,11 @@ class SchoolsTable
                 TextColumn::make('bin')
                     ->label(__('admin.labels.bin'))
                     ->searchable(),
+                TextColumn::make('terminals.device_id')
+                    ->label(__('admin.labels.terminals'))
+                    ->badge()
+                    ->separator(',')
+                    ->toggleable(),
                 IconColumn::make('is_active')
                     ->label(__('admin.labels.active'))
                     ->boolean(),
