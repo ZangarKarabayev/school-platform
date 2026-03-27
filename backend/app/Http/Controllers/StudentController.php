@@ -108,7 +108,7 @@ class StudentController extends Controller
 
         $students = Student::query()
             ->with(['classroom', 'school', 'latestMealBenefit'])
-            ->when($restrictClassroomFilter && $userSchoolId !== null, fn ($query) => $query->where('school_id', $userSchoolId))
+            ->when($restrictClassroomFilter && $userSchoolId !== null, fn($query) => $query->where('school_id', $userSchoolId))
             ->when($filters['search'] !== '', function ($query) use ($filters): void {
                 $search = $filters['search'];
 
@@ -121,14 +121,14 @@ class StudentController extends Controller
                         ->orWhere('middle_name', 'like', "%{$search}%");
                 });
             })
-            ->when($filters['classroom_id'] !== null, fn ($query) => $query->where('classroom_id', $filters['classroom_id']))
-            ->when($filters['school_id'] !== null, fn ($query) => $query->where('school_id', $filters['school_id']))
+            ->when($filters['classroom_id'] !== null, fn($query) => $query->where('classroom_id', $filters['classroom_id']))
+            ->when($filters['school_id'] !== null, fn($query) => $query->where('school_id', $filters['school_id']))
             ->when($filters['status'] !== '', function ($query) use ($filters): void {
                 $query->whereHas('latestMealBenefit', function ($mealBenefitQuery) use ($filters): void {
                     $mealBenefitQuery->where('type', $filters['status']);
                 });
             })
-            ->when($filters['photo'] === 'with', fn ($query) => $query->whereNotNull('photo')->where('photo', '!=', ''))
+            ->when($filters['photo'] === 'with', fn($query) => $query->whereNotNull('photo')->where('photo', '!=', ''))
             ->when($filters['photo'] === 'without', function ($query): void {
                 $query->where(function ($photoQuery): void {
                     $photoQuery
@@ -225,7 +225,7 @@ class StudentController extends Controller
                 'classroom',
                 'school',
                 'latestMealBenefit',
-                'orders' => fn ($query) => $query
+                'orders' => fn($query) => $query
                     ->with('dish')
                     ->orderByDesc('order_date')
                     ->orderByDesc('id'),
@@ -280,7 +280,7 @@ class StudentController extends Controller
         ]);
 
         if (! empty($data['photo_file'])) {
-            $path = $data['photo_file']->store('user/photo', 'public');
+            $path = $data['photo_file']->store('user/photos', 'public');
             $this->replaceStudentPhoto($student, $path);
 
             return back()->with('student_status', __('ui.messages.photo_updated'));
@@ -322,7 +322,7 @@ class StudentController extends Controller
         }
 
         $extension = $matches['type'] === 'jpeg' ? 'jpg' : $matches['type'];
-        $path = 'user/photo/student-' . $student->id . '-' . now()->format('YmdHis') . '.' . $extension;
+        $path = 'user/photos/student-' . $student->id . '-' . now()->format('YmdHis') . '.' . $extension;
 
         Storage::disk('public')->put($path, $binary);
 
@@ -338,7 +338,7 @@ class StudentController extends Controller
         }
 
         return $user?->scopes
-            ->first(fn ($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
+            ->first(fn($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
             ?->scope_id;
     }
 
