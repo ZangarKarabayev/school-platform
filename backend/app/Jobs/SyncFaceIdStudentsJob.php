@@ -8,6 +8,7 @@ use App\Modules\Organizations\Models\School;
 use App\Services\Mqtt\MqttService;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -16,18 +17,29 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
-class SyncFaceIdStudentsJob implements ShouldQueue
+class SyncFaceIdStudentsJob implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable;
     use InteractsWithQueue;
     use Queueable;
     use SerializesModels;
 
+    public int $uniqueFor = 3600;
+
     public function __construct(
         public int $schoolId,
         public ?string $forcedTerminalId = null,
         public int $delayMs = 500,
     ) {
+    }
+
+    public function uniqueId(): string
+    {
+        return implode(':', [
+            'faceid-sync',
+            $this->schoolId,
+            $this->forcedTerminalId ?: 'auto',
+        ]);
     }
 
     public function handle(MqttService $mqttService): void
