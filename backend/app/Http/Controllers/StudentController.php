@@ -280,7 +280,7 @@ class StudentController extends Controller
         ]);
 
         if (! empty($data['photo_file'])) {
-            $path = $data['photo_file']->store('students/photos', 'public');
+            $path = $data['photo_file']->store('user/photo', 'public');
             $this->replaceStudentPhoto($student, $path);
 
             return back()->with('student_status', __('ui.messages.photo_updated'));
@@ -322,7 +322,7 @@ class StudentController extends Controller
         }
 
         $extension = $matches['type'] === 'jpeg' ? 'jpg' : $matches['type'];
-        $path = 'students/photos/student-' . $student->id . '-' . now()->format('YmdHis') . '.' . $extension;
+        $path = 'user/photo/student-' . $student->id . '-' . now()->format('YmdHis') . '.' . $extension;
 
         Storage::disk('public')->put($path, $binary);
 
