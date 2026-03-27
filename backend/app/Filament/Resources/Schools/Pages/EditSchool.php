@@ -30,20 +30,33 @@ class EditSchool extends EditRecord
 
     protected function syncTerminals(): void
     {
-        $detachQuery = Terminal::query()->where('school_id', $this->record->id);
-
-        if ($this->terminalIds !== []) {
-            $detachQuery->whereNotIn('id', $this->terminalIds);
-        }
-
-        $detachQuery->update(['school_id' => null]);
+        Terminal::query()
+            ->where('school_id', $this->record->id)
+            ->whereNotIn('id', $this->terminalIds ?: [0])
+            ->update(['school_id' => null]);
 
         if ($this->terminalIds === []) {
             return;
         }
 
-        Terminal::query()
+        $selectedTerminals = Terminal::query()
             ->whereIn('id', $this->terminalIds)
+            ->get();
+
+        $selectedDeviceIds = $selectedTerminals
+            ->pluck('device_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($selectedDeviceIds->isNotEmpty()) {
+            Terminal::query()
+                ->whereIn('device_id', $selectedDeviceIds)
+                ->update(['school_id' => null]);
+        }
+
+        Terminal::query()
+            ->whereIn('id', $selectedTerminals->pluck('id'))
             ->update(['school_id' => $this->record->id]);
     }
 

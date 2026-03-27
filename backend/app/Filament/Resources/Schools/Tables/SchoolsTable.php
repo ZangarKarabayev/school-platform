@@ -39,11 +39,17 @@ class SchoolsTable
                 TextColumn::make('bin')
                     ->label(__('admin.labels.bin'))
                     ->searchable(),
-                TextColumn::make('terminals.device_id')
+                TextColumn::make('assigned_terminal')
                     ->label(__('admin.labels.terminals'))
                     ->badge()
-                    ->separator(',')
-                    ->toggleable(),
+                    ->state(fn ($record): string => $record->terminals()
+                        ->whereNotNull('device_id')
+                        ->orderBy('id')
+                        ->pluck('device_id')
+                        ->map(fn ($deviceId) => trim((string) $deviceId))
+                        ->filter()
+                        ->unique()
+                        ->implode(', ')),
                 IconColumn::make('is_active')
                     ->label(__('admin.labels.active'))
                     ->boolean(),

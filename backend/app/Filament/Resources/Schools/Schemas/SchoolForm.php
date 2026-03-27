@@ -51,19 +51,47 @@ class SchoolForm
                     ->multiple()
                     ->searchable()
                     ->preload()
-                    ->options(fn (): array => Terminal::query()
-                        ->orderByRaw('CASE WHEN device_id IS NULL THEN 1 ELSE 0 END')
-                        ->orderBy('device_id')
-                        ->orderBy('id')
-                        ->get()
-                        ->mapWithKeys(fn (Terminal $terminal): array => [
-                            $terminal->id => (string) ($terminal->device_id ?? $terminal->id),
-                        ])
-                        ->all())
+                    ->options(function ($record): array {
+                        $currentSchoolId = $record?->id;
+                        $occupiedDeviceIds = Terminal::query()
+                            ->whereNotNull('school_id')
+                            ->when($currentSchoolId !== null, fn ($query) => $query->where('school_id', '!=', $currentSchoolId))
+                            ->whereNotNull('device_id')
+                            ->pluck('device_id')
+                            ->map(fn ($deviceId) => (string) $deviceId)
+                            ->unique()
+                            ->all();
+
+                        return Terminal::query()
+                            ->orderByRaw('CASE WHEN device_id IS NULL THEN 1 ELSE 0 END')
+                            ->orderBy('device_id')
+                            ->orderBy('id')
+                            ->get()
+                            ->filter(function (Terminal $terminal) use ($currentSchoolId, $occupiedDeviceIds): bool {
+                                if ($currentSchoolId !== null && $terminal->school_id === $currentSchoolId) {
+                                    return true;
+                                }
+
+                                if ($terminal->school_id !== null) {
+                                    return false;
+                                }
+
+                                if ($terminal->device_id === null) {
+                                    return true;
+                                }
+
+                                return ! in_array((string) $terminal->device_id, $occupiedDeviceIds, true);
+                            })
+                            ->unique(fn (Terminal $terminal) => $terminal->device_id ?: 'terminal-' . $terminal->id)
+                            ->mapWithKeys(fn (Terminal $terminal): array => [
+                                $terminal->id => (string) ($terminal->device_id ?? $terminal->id),
+                            ])
+                            ->all();
+                    })
                     ->afterStateHydrated(function (Select $component, $record): void {
                         $component->state($record?->terminals()->pluck('id')->all() ?? []);
                     })
-                    ->helperText('Selected terminals will be assigned to this school. If a terminal is already linked to another school, the link will be moved.'),
+                    ->helperText('Можно выбрать несколько терминалов, но только свободные. Если device_id уже привязан к другой школе, он не показывается в списке.'),
                 TextInput::make('kitchen_access_token')
                     ->label('РўРѕРєРµРЅ РєСѓС…РЅРё')
                     ->required()
@@ -92,7 +120,7 @@ class SchoolForm
                         $url = route('kitchen.access', $record->kitchen_access_token);
 
                         return new HtmlString(
-                            '<div style="font-size:12px;line-height:1.5;word-break:break-all;color:#4e607d;">'.$url.'</div>'
+                            '<div style="font-size:12px;line-height:1.5;word-break:break-all;color:#4e607d;">' . $url . '</div>'
                         );
                     }),
                 Toggle::make('is_active')
