@@ -104,6 +104,7 @@ class StudentController extends Controller
             'school_id' => $request->integer('school_id') ?: null,
             'status' => trim((string) $request->string('status')),
             'photo' => trim((string) $request->string('photo')),
+            'photo_sync' => trim((string) $request->string('photo_sync')),
         ];
 
         $students = Student::query()
@@ -134,6 +135,14 @@ class StudentController extends Controller
                     $photoQuery
                         ->whereNull('photo')
                         ->orWhere('photo', '');
+                });
+            })
+            ->when($filters['photo_sync'] === 'synced', fn($query) => $query->whereNotNull('photo_synced_at'))
+            ->when($filters['photo_sync'] === 'not_synced', function ($query): void {
+                $query->where(function ($syncQuery): void {
+                    $syncQuery
+                        ->whereNull('photo_synced_at')
+                        ->orWhereColumn('photo_updated_at', '>', 'photo_synced_at');
                 });
             })
             ->orderBy('last_name')

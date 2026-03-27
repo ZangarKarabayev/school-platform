@@ -181,7 +181,7 @@
         .students-filters {
             padding: 0 24px 24px;
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+            grid-template-columns: repeat(6, minmax(0, 1fr)) auto;
             gap: 12px;
             align-items: end;
         }
@@ -867,6 +867,15 @@
                         <option value="">-</option>
                         <option value="with" @selected($filters['photo'] === 'with')>{{ __('ui.students.with_photo') }}</option>
                         <option value="without" @selected($filters['photo'] === 'without')>{{ __('ui.students.without_photo') }}</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="photo_sync_filter">{{ __('ui.students.photo_sync_status') }}</label>
+                    <select id="photo_sync_filter" name="photo_sync">
+                        <option value="">-</option>
+                        <option value="synced" @selected($filters['photo_sync'] === 'synced')>{{ __('ui.students.photo_synced') }}</option>
+                        <option value="not_synced" @selected($filters['photo_sync'] === 'not_synced')>{{ __('ui.students.photo_not_synced') }}</option>
                     </select>
                 </div>
 
