@@ -164,14 +164,19 @@ class FaceIDEventService
             return;
         }
 
+        $attributes = [
+            'ip' => self::nullableString($info['Ip'] ?? null),
+            'mac_addr' => self::nullableString($info['MacAddr'] ?? null),
+            'time' => $time,
+        ];
+
+        if ($schoolId !== null) {
+            $attributes['school_id'] = $schoolId;
+        }
+
         Terminal::query()->updateOrCreate(
             ['device_id' => $deviceId],
-            [
-                'school_id' => $schoolId,
-                'ip' => self::nullableString($info['Ip'] ?? null),
-                'mac_addr' => self::nullableString($info['MacAddr'] ?? null),
-                'time' => $time,
-            ],
+            $attributes,
         );
     }
 
