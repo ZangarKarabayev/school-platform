@@ -89,7 +89,7 @@ class KitchenAccessTest extends TestCase
             ->postJson(route('kitchen.scan'), ['student_code' => 'student:'.$student->id]);
 
         $response->assertStatus(422);
-        $this->assertSame('?????? ?? ??????? ?? ??? ???????????.', $response->json('message'));
+        $this->assertSame('Ученик не состоит на соц обеспечении.', $response->json('message'));
 
         $this->assertDatabaseCount('orders', 0);
     }

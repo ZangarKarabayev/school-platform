@@ -48,4 +48,11 @@ return [
         'verifier_url' => env('EDS_AUTH_VERIFIER_URL', 'http://127.0.0.1:5055'),
     ],
 
+    'social_wallet' => [
+        'base_url' => env('SOCIAL_WALLET_BASE_URL', 'https://api.dev.socialwallet.kz'),
+        'username' => env('SOCIAL_WALLET_USERNAME'),
+        'password' => env('SOCIAL_WALLET_PASSWORD'),
+        'timeout' => env('SOCIAL_WALLET_TIMEOUT', 15),
+    ],
+
 ];

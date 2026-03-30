@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendSocialWalletTransactionJob;
 use App\Models\Order;
 use App\Models\Student;
 use App\Models\Terminal;
@@ -118,15 +119,21 @@ class FaceIDEventService
             [
                 'order_time' => $createTime->format('H:i:s'),
                 'status' => 'created',
-                'transaction_status' => true,
+                'transaction_status' => null,
+                'transaction_error' => null,
             ],
         );
+
+        if ($order->wasRecentlyCreated) {
+            SendSocialWalletTransactionJob::dispatch($order->id);
+        }
 
         Log::info('FaceID order ensured', [
             'verify_event_id' => $verifyEvent->id,
             'student_id' => $student->id,
             'order_id' => $order->id,
             'order_date' => $order->order_date,
+            'transaction_status' => $order->transaction_status,
         ]);
     }
 

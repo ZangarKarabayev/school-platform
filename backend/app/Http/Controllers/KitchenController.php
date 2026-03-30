@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendSocialWalletTransactionJob;
 use App\Models\Order;
 use App\Models\Student;
 use App\Models\User;
@@ -92,9 +93,11 @@ class KitchenController extends Controller
                 'order_date' => $today,
                 'order_time' => now()->format('H:i:s'),
                 'status' => 'created',
-                'transaction_status' => true,
+                'transaction_status' => null,
+                'transaction_error' => null,
             ]);
 
+            SendSocialWalletTransactionJob::dispatch($order->id);
             $created = true;
         }
 
@@ -115,6 +118,8 @@ class KitchenController extends Controller
                 'date' => optional($order->order_date)->format('Y-m-d'),
                 'time' => $order->order_time ? substr($order->order_time, 0, 5) : null,
                 'status' => $order->status,
+                'transaction_status' => $order->transaction_status,
+                'transaction_error' => $order->transaction_error,
             ],
         ]);
     }
