@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Contracts\Student\VoucherServiceContract;
 use App\Modules\Identity\Application\Contracts\EdsSignatureVerifier;
 use App\Modules\Identity\Infrastructure\Security\KalkanExtensionEdsSignatureVerifier;
 use App\Modules\Identity\Infrastructure\Security\KalkanHttpEdsSignatureVerifier;
 use App\Modules\Identity\Models\ApiToken;
+use App\Services\Student\VoucherService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
@@ -18,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(VoucherServiceContract::class, VoucherService::class);
+
         $this->app->bind(EdsSignatureVerifier::class, function () {
             return match ($this->resolveEdsVerifierDriver()) {
                 'kalkan-extension' => new KalkanExtensionEdsSignatureVerifier(),

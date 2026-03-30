@@ -262,10 +262,19 @@ class StudentController extends Controller
             'language' => ['nullable', Rule::in(['ru', 'kk'])],
             'shift' => ['nullable', Rule::in([1, 2, '1', '2'])],
             'school_year' => ['nullable', 'string', 'max:9'],
-            'status' => ['nullable', Rule::in(['active', 'archived'])],
+            'meal_benefit_type' => ['nullable', Rule::in(MealBenefit::TYPES)],
         ]);
 
+        $mealBenefitType = $data['meal_benefit_type'] ?? null;
+        unset($data['meal_benefit_type']);
+
         $student->update($data);
+
+        if ($mealBenefitType !== null && $mealBenefitType !== '' && $student->latestMealBenefit?->type !== $mealBenefitType) {
+            $student->mealBenefits()->create([
+                'type' => $mealBenefitType,
+            ]);
+        }
 
         return redirect()->route('students.edit', $student);
     }

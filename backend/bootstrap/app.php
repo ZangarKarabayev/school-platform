@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureBasicAuth;
 use App\Http\Middleware\EnsureKitchenAccess;
 use App\Http\Middleware\EnsureKitchenAuthenticated;
 use App\Http\Middleware\SetLocale;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'basic.auth' => EnsureBasicAuth::class,
             'kitchen.auth' => EnsureKitchenAuthenticated::class,
             'kitchen.role' => EnsureKitchenAccess::class,
         ]);

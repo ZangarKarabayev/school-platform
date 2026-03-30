@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Students\Schemas;
 
+use App\Models\MealBenefit;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -29,9 +30,6 @@ class StudentForm
                     ->getOptionLabelFromRecordUsing(fn ($record): string => $record->display_name)
                     ->searchable()
                     ->preload(),
-                TextInput::make('phone')->label(__('admin.labels.phone'))->maxLength(20),
-                TextInput::make('address')->label(__('admin.labels.address'))->maxLength(65535),
-                TextInput::make('student_number')->label(__('admin.labels.student_number'))->maxLength(20),
                 Select::make('language')->label(__('admin.labels.language'))->options([
                     'ru' => 'RU',
                     'kk' => 'KK',
@@ -41,10 +39,22 @@ class StudentForm
                     2 => '2',
                 ]),
                 TextInput::make('school_year')->label(__('admin.labels.school_year'))->maxLength(9),
-                Select::make('status')->label(__('admin.labels.status'))->options([
-                    'active' => __('admin.status.active'),
-                    'archived' => __('admin.labels.archived'),
-                ]),
+                Select::make('meal_benefit_type')
+                    ->label(__('admin.labels.status'))
+                    ->options(collect(MealBenefit::TYPES)->mapWithKeys(function (string $type): array {
+                        $label = __('admin.meal_benefit_types.' . $type);
+
+                        return [
+                            $type => $label !== 'admin.meal_benefit_types.' . $type
+                                ? $label
+                                : str_replace('_', ' ', ucfirst($type)),
+                        ];
+                    })->all())
+                    ->afterStateHydrated(function (Select $component, $record): void {
+                        if ($record) {
+                            $component->state($record->latestMealBenefit?->type);
+                        }
+                    }),
             ]);
     }
 }

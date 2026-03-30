@@ -55,4 +55,9 @@ return [
         'timeout' => env('SOCIAL_WALLET_TIMEOUT', 15),
     ],
 
+    'voucher_api' => [
+        'username' => env('VOUCHER_API_USERNAME'),
+        'password' => env('VOUCHER_API_PASSWORD'),
+    ],
+
 ];

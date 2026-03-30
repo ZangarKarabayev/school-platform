@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Students\Tables;
 
+use App\Models\MealBenefit;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -25,7 +26,19 @@ class StudentsTable
                     ->label(__('ui.students.photo_synced_at'))
                     ->dateTime('Y-m-d H:i:s')
                     ->sortable(),
-                TextColumn::make('status')->label(__('admin.labels.status')),
+                TextColumn::make('latestMealBenefit.type')
+                    ->label(__('admin.labels.status'))
+                    ->formatStateUsing(function (?string $state): string {
+                        if (blank($state)) {
+                            return '-';
+                        }
+
+                        $label = __('admin.meal_benefit_types.' . $state);
+
+                        return $label !== 'admin.meal_benefit_types.' . $state
+                            ? $label
+                            : str_replace('_', ' ', ucfirst($state));
+                    }),
             ])
             ->filters([
                 SelectFilter::make('classroom')->relationship('classroom', 'full_name')->label(__('admin.labels.class_full_name')),

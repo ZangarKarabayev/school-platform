@@ -323,13 +323,17 @@
                         </div>
 
                         <div class="student-edit-field">
-                            <label for="status">{{ __('admin.labels.status') }}</label>
-                            <select id="status" name="status">
+                            <label for="meal_benefit_type">{{ __('admin.labels.status') }}</label>
+                            <select id="meal_benefit_type" name="meal_benefit_type">
                                 <option value="">-</option>
-                                <option value="active" @selected(old('status', $student->status) === 'active')>{{ __('admin.status.active') }}
-                                </option>
-                                <option value="archived" @selected(old('status', $student->status) === 'archived')>{{ __('admin.labels.archived') }}
-                                </option>
+                                @foreach (\App\Models\MealBenefit::TYPES as $mealBenefitType)
+                                    @php
+                                        $mealBenefitLabel = __('admin.meal_benefit_types.' . $mealBenefitType);
+                                    @endphp
+                                    <option value="{{ $mealBenefitType }}" @selected(old('meal_benefit_type', $student->latestMealBenefit?->type) === $mealBenefitType)>
+                                        {{ $mealBenefitLabel !== 'admin.meal_benefit_types.' . $mealBenefitType ? $mealBenefitLabel : str_replace('_', ' ', ucfirst($mealBenefitType)) }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
 
