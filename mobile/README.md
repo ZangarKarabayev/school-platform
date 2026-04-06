@@ -1,16 +1,27 @@
-# mobile
+# Mobile
 
-A new Flutter project.
+Flutter-клиент для `school-platform`.
 
-## Getting Started
+## Что уже есть
 
-This project is a starting point for a Flutter application.
+- экран входа по телефону;
+- подтверждение OTP;
+- загрузка `/api/v1/auth/me`;
+- локальное сохранение сессии и автологин;
+- базовый домашний экран с ролями, правами и scope пользователя;
+- конфиг API без хардкода через `API_BASE_URL`.
 
-A few resources to get you started if this is your first Flutter project:
+## Запуск
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter pub get
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Если backend запущен не локально, подставьте доступный URL целиком вместе с `/api/v1`.
+
+## Следующий слой разработки
+
+1. Навигация и feature-модули: питание, QR/пропуск, уведомления.
+2. Общий дизайн-сет: типографика, состояния загрузки, error handling.
+3. Выход на production-ready auth: refresh/revoke токенов, безопасное storage при необходимости.
