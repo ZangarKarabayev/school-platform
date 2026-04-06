@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\V1\FaceIdController;
+use App\Http\Controllers\Api\V1\DashboardSummaryController;
+use App\Http\Controllers\Api\V1\StudentListController;
 use App\Http\Controllers\Api\V1\VoucherController;
 use App\Modules\Identity\Http\Controllers\Api\V1\EdsAuthController;
 use App\Modules\Identity\Http\Controllers\Api\V1\PhoneAuthController;
@@ -16,11 +18,14 @@ Route::prefix('v1')->group(function (): void {
     Route::post('/faceid/events', [FaceIdController::class, 'storeEventFaceID']);
 
     Route::prefix('auth')->group(function (): void {
+        Route::post('/phone/login', [PhoneAuthController::class, 'login']);
         Route::post('/phone/request-otp', [PhoneAuthController::class, 'requestOtp']);
         Route::post('/phone/verify-otp', [PhoneAuthController::class, 'verifyOtp']);
         Route::post('/eds/challenge', [EdsAuthController::class, 'start']);
         Route::post('/eds/verify', [EdsAuthController::class, 'verify']);
         Route::middleware('auth:api')->get('/me', [PhoneAuthController::class, 'me']);
+        Route::middleware('auth:api')->get('/dashboard', DashboardSummaryController::class);
+        Route::middleware('auth:api')->get('/students', StudentListController::class);
     });
 });
 

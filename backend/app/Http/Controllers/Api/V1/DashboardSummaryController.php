@@ -1,16 +1,21 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Services\Dashboard\DashboardDataService;
-use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class DashboardController extends Controller
+class DashboardSummaryController extends Controller
 {
-    public function __invoke(Request $request, DashboardDataService $dashboardData): View
+    public function __invoke(Request $request, DashboardDataService $dashboardData): JsonResponse
     {
-        $data = $dashboardData->build($request->user(), [
+        /** @var User $user */
+        $user = $request->user();
+
+        $data = $dashboardData->build($user, [
             'date_from' => $request->string('date_from')->toString(),
             'date_to' => $request->string('date_to')->toString(),
             'scope_kind' => $request->string('scope_kind')->toString(),
@@ -19,12 +24,8 @@ class DashboardController extends Controller
             'region_id' => $request->integer('region_id') ?: null,
         ]);
 
-        return view('dashboard', [
-            'user' => $request->user(),
-            'filters' => $data['filters'],
-            'scopeConfig' => $data['scopeConfig'],
-            'stats' => $data['stats'],
-            'charts' => $data['charts'],
-        ]);
+        unset($data['scopeConfig']);
+
+        return response()->json($data);
     }
 }
