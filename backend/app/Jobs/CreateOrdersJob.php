@@ -36,7 +36,7 @@ class CreateOrdersJob implements ShouldQueue
             ->all();
 
         foreach ($eligibleStudentIds as $studentId) {
-            Order::query()->firstOrCreate(
+            $order = Order::query()->firstOrCreate(
                 [
                     'student_id' => $studentId,
                     'order_date' => $this->orderDate,
@@ -49,6 +49,10 @@ class CreateOrdersJob implements ShouldQueue
                     'transaction_error' => null,
                 ]
             );
+
+            if ($order->wasRecentlyCreated) {
+                SendSocialWalletTransactionJob::dispatch($order->id);
+            }
         }
     }
 }

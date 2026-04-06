@@ -11,6 +11,29 @@ class PhoneAuthTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_it_logs_in_via_phone_and_password(): void
+    {
+        User::factory()->create([
+            'phone' => '+77016667788',
+            'password' => 'secret123',
+            'first_name' => 'Dana',
+            'last_name' => 'Director',
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/phone/login', [
+            'phone' => '+7 (701) 666-77-88',
+            'password' => 'secret123',
+            'device_name' => 'android',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('token.token_type', 'Bearer')
+            ->assertJsonPath('user.phone', '+77016667788')
+            ->assertJsonPath('user.first_name', 'Dana')
+            ->assertJsonPath('user.last_name', 'Director');
+    }
+
     public function test_it_requests_phone_otp(): void
     {
         $response = $this->postJson('/api/v1/auth/phone/request-otp', [

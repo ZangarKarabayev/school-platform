@@ -5,17 +5,46 @@ namespace App\Modules\Identity\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Access\Application\Services\AccessMap;
+use App\Modules\Identity\Application\Actions\IssueApiTokenAction;
 use App\Modules\Identity\Application\Actions\StartPhoneLoginAction;
 use App\Modules\Identity\Application\Actions\VerifyPhoneOtpAction;
 use App\Modules\Identity\Application\DTO\PhoneLoginData;
 use App\Modules\Identity\Application\DTO\VerifyPhoneOtpData;
+use App\Modules\Identity\Http\Requests\LoginByPasswordRequest;
 use App\Modules\Identity\Http\Requests\RequestPhoneOtpRequest;
 use App\Modules\Identity\Http\Requests\VerifyPhoneOtpRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class PhoneAuthController extends Controller
 {
+    public function login(
+        LoginByPasswordRequest $request,
+        IssueApiTokenAction $issueApiToken,
+    ): JsonResponse {
+        $user = User::query()
+            ->with(['roles.permissions', 'scopes'])
+            ->where('phone', $request->string('phone')->toString())
+            ->first();
+
+        if (! $user || ! Hash::check($request->string('password')->toString(), (string) $user->password)) {
+            return response()->json([
+                'message' => 'Неверный номер телефона или пароль.',
+            ], 422);
+        }
+
+        $user->forceFill(['last_login_at' => now()])->save();
+
+        return response()->json([
+            'token' => $issueApiToken->execute(
+                $user,
+                $request->string('device_name')->toString() ?: 'mobile',
+            ),
+            'user' => $this->userPayload($user),
+        ]);
+    }
+
     public function requestOtp(
         RequestPhoneOtpRequest $request,
         StartPhoneLoginAction $action,
