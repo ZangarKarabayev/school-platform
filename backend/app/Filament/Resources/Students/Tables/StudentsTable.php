@@ -28,8 +28,12 @@ class StudentsTable
                 TextColumn::make('school.name_ru')
                     ->label(__('admin.labels.organization'))
                     ->sortable()
+                    ->limit(36)
                     ->tooltip(fn ($record): ?string => $record->school?->name_ru)
-                    ->width('50px'),
+                    ->grow(false)
+                    ->extraAttributes([
+                        'style' => 'width: 300px; min-width: 300px;',
+                    ]),
                 TextColumn::make('student_number')->label(__('admin.labels.student_number'))->searchable(),
                 TextColumn::make('photo_synced_at')
                     ->label(__('ui.students.photo_synced_at'))
@@ -53,7 +57,7 @@ class StudentsTable
                 SelectFilter::make('classroom')->relationship('classroom', 'full_name')->label(__('admin.labels.class_full_name')),
                 SelectFilter::make('school')
                     ->relationship('school', 'name')
-                    ->getOptionLabelFromRecordUsing(fn ($record): string => $record->display_name)
+                    ->getOptionLabelFromRecordUsing(fn ($record): string => $record->bin ?: $record->display_name)
                     ->label(__('admin.labels.organization')),
                 SelectFilter::make('photo')
                     ->label('Фото')

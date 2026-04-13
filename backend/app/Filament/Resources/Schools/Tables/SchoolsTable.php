@@ -22,12 +22,22 @@ class SchoolsTable
                 TextColumn::make('name_ru')
                     ->label(__('admin.labels.name_ru'))
                     ->searchable()
+                    ->limit(36)
                     ->tooltip(fn ($record): ?string => $record->name_ru)
+                    ->grow(false)
+                    ->extraAttributes([
+                        'style' => 'width: 300px; min-width: 300px;',
+                    ])
                     ->sortable(),
                 TextColumn::make('name_kk')
                     ->label(__('admin.labels.name_kk'))
                     ->searchable()
+                    ->limit(36)
                     ->tooltip(fn ($record): ?string => $record->name_kk)
+                    ->grow(false)
+                    ->extraAttributes([
+                        'style' => 'width: 300px; min-width: 300px;',
+                    ])
                     ->sortable(),
                 TextColumn::make('code')
                     ->label(__('admin.labels.code'))
