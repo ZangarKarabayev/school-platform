@@ -22,10 +22,12 @@ class SchoolsTable
                 TextColumn::make('name_ru')
                     ->label(__('admin.labels.name_ru'))
                     ->searchable()
+                    ->tooltip(fn ($record): ?string => $record->name_ru)
                     ->sortable(),
                 TextColumn::make('name_kk')
                     ->label(__('admin.labels.name_kk'))
                     ->searchable()
+                    ->tooltip(fn ($record): ?string => $record->name_kk)
                     ->sortable(),
                 TextColumn::make('code')
                     ->label(__('admin.labels.code'))

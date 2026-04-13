@@ -25,7 +25,11 @@ class StudentsTable
                 TextColumn::make('full_name')->label(__('admin.labels.full_name'))->searchable(['last_name', 'first_name', 'middle_name']),
                 TextColumn::make('iin')->label(__('admin.labels.iin'))->searchable(),
                 TextColumn::make('classroom.full_name')->label(__('admin.labels.class_full_name'))->sortable(),
-                TextColumn::make('school.name_ru')->label(__('admin.labels.organization'))->sortable(),
+                TextColumn::make('school.name_ru')
+                    ->label(__('admin.labels.organization'))
+                    ->sortable()
+                    ->tooltip(fn ($record): ?string => $record->school?->name_ru)
+                    ->width('50px'),
                 TextColumn::make('student_number')->label(__('admin.labels.student_number'))->searchable(),
                 TextColumn::make('photo_synced_at')
                     ->label(__('ui.students.photo_synced_at'))
