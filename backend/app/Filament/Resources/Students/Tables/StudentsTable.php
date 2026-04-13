@@ -51,11 +51,28 @@ class StudentsTable
                     ->relationship('school', 'name')
                     ->getOptionLabelFromRecordUsing(fn ($record): string => $record->display_name)
                     ->label(__('admin.labels.organization')),
-                SelectFilter::make('photo_sync')
-                    ->label(__('ui.students.photo_sync_status'))
+                SelectFilter::make('photo')
+                    ->label('Фото')
                     ->options([
-                        'synced' => __('ui.students.photo_synced'),
-                        'not_synced' => __('ui.students.photo_not_synced'),
+                        'with' => 'Есть',
+                        'without' => 'Нет',
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return match ($data['value'] ?? null) {
+                            'with' => $query->whereNotNull('photo')->where('photo', '!=', ''),
+                            'without' => $query->where(function (Builder $photoQuery): void {
+                                $photoQuery
+                                    ->whereNull('photo')
+                                    ->orWhere('photo', '');
+                            }),
+                            default => $query,
+                        };
+                    }),
+                SelectFilter::make('photo_sync')
+                    ->label('Синхронизация фото')
+                    ->options([
+                        'synced' => 'Синхронизирована',
+                        'not_synced' => 'Несинхронизировано',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return match ($data['value'] ?? null) {
