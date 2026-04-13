@@ -34,7 +34,11 @@ class StudentsTable
                     ->extraAttributes([
                         'style' => 'width: 300px; min-width: 300px;',
                     ]),
-                TextColumn::make('student_number')->label(__('admin.labels.student_number'))->searchable(),
+                TextColumn::make('student_qr')
+                    ->label('QR')
+                    ->state('QR')
+                    ->url(fn ($record): string => route('students.qr', ['student' => $record, 'download' => 1]))
+                    ->openUrlInNewTab(),
                 TextColumn::make('photo_synced_at')
                     ->label(__('ui.students.photo_synced_at'))
                     ->dateTime('Y-m-d H:i:s')
