@@ -7,6 +7,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -17,6 +18,10 @@ class StudentsTable
     {
         return $table
             ->columns([
+                ImageColumn::make('photo')
+                    ->label('Фото')
+                    ->disk('public')
+                    ->circular(),
                 TextColumn::make('full_name')->label(__('admin.labels.full_name'))->searchable(['last_name', 'first_name', 'middle_name']),
                 TextColumn::make('iin')->label(__('admin.labels.iin'))->searchable(),
                 TextColumn::make('classroom.full_name')->label(__('admin.labels.class_full_name'))->sortable(),

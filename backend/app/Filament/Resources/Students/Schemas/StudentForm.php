@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Students\Schemas;
 
 use App\Models\MealBenefit;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -18,6 +19,16 @@ class StudentForm
                 TextInput::make('last_name')->label(__('admin.labels.last_name'))->maxLength(100),
                 TextInput::make('first_name')->label(__('admin.labels.first_name'))->maxLength(100),
                 TextInput::make('middle_name')->label(__('admin.labels.middle_name'))->maxLength(100),
+                FileUpload::make('photo')
+                    ->label('Фото')
+                    ->image()
+                    ->imageEditor()
+                    ->disk('public')
+                    ->directory('user/photos')
+                    ->visibility('public')
+                    ->avatar()
+                    ->openable()
+                    ->downloadable(),
                 DatePicker::make('birth_date')->label(__('admin.labels.birth_date')),
                 Select::make('gender')->label(__('admin.labels.gender'))->options([
                     'male' => __('admin.labels.male'),

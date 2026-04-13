@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class Student extends Model
 {
@@ -41,6 +42,36 @@ class Student extends Model
             'photo_updated_at' => 'datetime',
             'photo_synced_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $student): void {
+            if (! $student->isDirty('photo')) {
+                return;
+            }
+
+            $student->photo_updated_at = $student->photo ? now() : null;
+            $student->photo_synced_at = null;
+        });
+
+        static::updated(function (self $student): void {
+            if (! $student->wasChanged('photo')) {
+                return;
+            }
+
+            $originalPhoto = $student->getOriginal('photo');
+
+            if (filled($originalPhoto) && $originalPhoto !== $student->photo) {
+                Storage::disk('public')->delete($originalPhoto);
+            }
+        });
+
+        static::deleted(function (self $student): void {
+            if (filled($student->photo)) {
+                Storage::disk('public')->delete($student->photo);
+            }
+        });
     }
 
     public function classroom(): BelongsTo
