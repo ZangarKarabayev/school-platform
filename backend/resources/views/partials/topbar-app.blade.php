@@ -4,7 +4,7 @@
         @include('partials.lang-switcher')
     </div>
     <div class="topbar-right">
-        <a class="btn secondary icon-btn" href="{{ route('dashboard') }}" aria-label="{{ __('ui.common.profile') }}" title="{{ __('ui.common.profile') }}">
+        <a class="btn secondary icon-btn" href="{{ route('profile.edit') }}" aria-label="{{ __('ui.common.profile') }}" title="{{ __('ui.common.profile') }}">
             <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 1.79-8 4v1h16v-1c0-2.21-3.58-4-8-4Z" fill="currentColor"/>
             </svg>

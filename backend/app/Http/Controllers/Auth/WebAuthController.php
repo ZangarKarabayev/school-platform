@@ -17,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
@@ -272,6 +273,65 @@ class WebAuthController extends Controller
         return view('dashboard', [
             'user' => $request->user()->loadMissing('roles', 'scopes'),
         ]);
+    }
+
+    public function editProfile(Request $request): View
+    {
+        return view('profile.edit', [
+            'user' => $request->user()->loadMissing('roles', 'scopes'),
+        ]);
+    }
+
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        $this->normalizePhoneInput($request);
+
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'middle_name' => ['nullable', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'regex:/^\+?[0-9]{11,15}$/', Rule::unique('users', 'phone')->ignore($request->user()?->id)],
+            'preferred_locale' => ['required', 'string', Rule::in(['ru', 'kk'])],
+        ]);
+
+        $request->user()?->forceFill([
+            'first_name' => $data['first_name'],
+            'last_name' => $data['last_name'],
+            'middle_name' => $data['middle_name'] ?: null,
+            'phone' => $data['phone'],
+            'preferred_locale' => $data['preferred_locale'],
+        ])->save();
+
+        return redirect()
+            ->route('profile.edit')
+            ->with('profile_status', __('ui.profile_page.profile_saved'));
+    }
+
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user || ! Hash::check($data['current_password'], (string) $user->password)) {
+            return back()
+                ->withErrors([
+                    'current_password' => __('ui.profile_page.current_password_invalid'),
+                ])
+                ->withInput()
+                ->withFragment('password');
+        }
+
+        $user->forceFill([
+            'password' => $data['password'],
+        ])->save();
+
+        return redirect()
+            ->to(route('profile.edit').'#password')
+            ->with('password_status', __('ui.profile_page.password_saved'));
     }
 
     public function logout(Request $request): RedirectResponse

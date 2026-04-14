@@ -35,6 +35,9 @@ Route::get('/kitchen/{token}', [KitchenController::class, 'access'])->name('kitc
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/profile', [WebAuthController::class, 'editProfile'])->name('profile.edit');
+    Route::put('/profile', [WebAuthController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/profile/password', [WebAuthController::class, 'updatePassword'])->name('profile.password.update');
     Route::get('/students', [StudentController::class, 'index'])->name('students.index');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
     Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
