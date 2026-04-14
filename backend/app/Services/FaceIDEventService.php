@@ -210,7 +210,7 @@ class FaceIDEventService
 
     protected static function parseTimestamp(mixed $value): Carbon
     {
-        return $value ? Carbon::parse($value) : now();
+        return $value ? Carbon::parse($value, config('app.timezone')) : now();
     }
 
     protected static function nullableInt(mixed $value): ?int

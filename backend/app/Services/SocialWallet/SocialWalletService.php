@@ -208,7 +208,6 @@ class SocialWalletService
         $time = trim((string) $order->order_time) !== '' ? (string) $order->order_time : '00:00:00';
 
         return Carbon::parse($date.' '.$time, config('app.timezone'))
-            ->utc()
             ->format('Y-m-d H:i:s');
     }
 
