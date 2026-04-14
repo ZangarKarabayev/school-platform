@@ -74,7 +74,7 @@
                 'icon' =>
                     '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18H5z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
                 'active' => request()->routeIs('reports.*'),
-                'allowed_roles' => ['director', 'district_operator', 'region_operator', 'super_admin'],
+                'allowed_roles' => ['teacher', 'director', 'district_operator', 'region_operator', 'super_admin'],
             ],
             [
                 'key' => 'devices',
