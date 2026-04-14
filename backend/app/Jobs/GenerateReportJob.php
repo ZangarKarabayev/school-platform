@@ -83,13 +83,14 @@ class GenerateReportJob implements ShouldQueue
             $this->writeCsvRow($handle, ['Всего заказов', (string) $orders->count()]);
             $this->writeCsvRow($handle, ['Уникальных учеников', (string) $orders->pluck('student_id')->unique()->count()]);
             $this->writeCsvRow($handle, []);
-            $this->writeCsvRow($handle, ['Дата', 'Класс', 'Ученик', 'ИИН', 'Льгота', 'Статус заказа', 'Статус транзакции']);
+            $this->writeCsvRow($handle, ['Дата', 'Время', 'Класс', 'Ученик', 'ИИН', 'Льгота', 'Статус заказа', 'Статус транзакции']);
 
             foreach ($orders as $order) {
                 $student = $order->student;
 
                 $this->writeCsvRow($handle, [
-                    optional($order->order_date)->format('Y-m-d'),
+                    optional($order->order_date)->format('d.m.Y'),
+                    $this->formatOrderTimeForCsv($order->order_time),
                     $student?->classroom?->full_name,
                     $student?->full_name,
                     $this->formatIinForCsv($student?->iin),
@@ -136,7 +137,7 @@ class GenerateReportJob implements ShouldQueue
         }
 
         // Prefix with tab so Excel imports the value as text in CSV files.
-        return preg_match('/^\d{12}$/', $iin) ? "\t".$iin : $iin;
+        return preg_match('/^\d{12}$/', $iin) ? "\t" . $iin : $iin;
     }
 
     private function localizeOrderStatus(?string $status): string
@@ -145,9 +146,9 @@ class GenerateReportJob implements ShouldQueue
             return '';
         }
 
-        $label = __('ui.orders.statuses.'.$status);
+        $label = __('ui.orders.statuses.' . $status);
 
-        return $label !== 'ui.orders.statuses.'.$status ? $label : $status;
+        return $label !== 'ui.orders.statuses.' . $status ? $label : $status;
     }
 
     private function localizeTransactionStatus(?bool $status): string
@@ -159,5 +160,14 @@ class GenerateReportJob implements ShouldQueue
         return $status
             ? __('ui.orders.transaction_result.success')
             : __('ui.orders.transaction_result.failed');
+    }
+
+    private function formatOrderTimeForCsv(?string $time): string
+    {
+        if ($time === null || $time === '') {
+            return '';
+        }
+
+        return substr($time, 0, 5);
     }
 }
