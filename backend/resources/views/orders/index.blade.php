@@ -760,6 +760,7 @@
                         <thead>
                             <tr>
                                 <th>{{ __('admin.labels.student') }}</th>
+                                <th>{{ __('admin.labels.academic_class') }}</th>
                                 <th>{{ __('admin.labels.dish') }}</th>
                                 <th>{{ __('ui.orders.date') }}</th>
                                 <th>{{ __('admin.labels.status') }}</th>
@@ -775,6 +776,7 @@
                                         <div>{{ $order->student?->full_name ?: '-' }}</div>
                                         <div class="muted">{{ $order->student?->iin ?: '-' }}</div>
                                     </td>
+                                    <td>{{ $order->student?->classroom?->full_name ?: '-' }}</td>
                                     <td>{{ $order->dish?->name ?: '-' }}</td>
                                     <td>
                                         <div>{{ optional($order->order_date)->format('Y-m-d') ?: '-' }}</div>
@@ -859,6 +861,10 @@
                             </div>
 
                             <div class="orders-mobile-grid">
+                                <div class="orders-mobile-item">
+                                    <div class="orders-mobile-label">{{ __('admin.labels.academic_class') }}</div>
+                                    <div class="orders-mobile-value">{{ $order->student?->classroom?->full_name ?: '-' }}</div>
+                                </div>
                                 <div class="orders-mobile-item">
                                     <div class="orders-mobile-label">{{ __('admin.labels.dish') }}</div>
                                     <div class="orders-mobile-value">{{ $order->dish?->name ?: '-' }}</div>

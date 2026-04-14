@@ -29,7 +29,7 @@ class OrderController extends Controller
         ];
 
         $orders = Order::query()
-            ->with(['student', 'dish'])
+            ->with(['student.classroom', 'dish'])
             ->when($restrictBySchool && $userSchoolId !== null, function ($query) use ($userSchoolId): void {
                 $query->whereHas('student', fn ($studentQuery) => $studentQuery->where('school_id', $userSchoolId));
             })
