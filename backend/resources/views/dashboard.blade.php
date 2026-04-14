@@ -341,7 +341,7 @@
 
         <section class="dashboard-stats">
             <div class="dashboard-card dashboard-stat">
-                <div class="dashboard-stat-label">{{ __('ui.dashboard_page.transaction_error') }}</div>
+                <div class="dashboard-stat-label">{{ __('ui.dashboard_page.orders_total') }}</div>
                 <div class="dashboard-stat-value">{{ $stats['orders_count'] }}</div>
             </div>
 
