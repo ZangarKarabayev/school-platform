@@ -2,6 +2,30 @@
     @php
         $roleCodes = $user->roles->pluck('code')->values()->all();
         $canManageMenu = in_array('super_admin', $roleCodes, true) || in_array('support_admin', $roleCodes, true);
+        $roleLabels = [
+            'super_admin' => 'Супер администратор',
+            'support_admin' => 'Техподдержка',
+            'region_operator' => 'Ответственный по области',
+            'district_operator' => 'Ответственный по району',
+            'director' => 'Директор',
+            'teacher' => 'Учитель',
+            'library' => 'Библиотека',
+            'kitchen' => 'Столовая',
+        ];
+        $rolePriority = [
+            'super_admin',
+            'support_admin',
+            'region_operator',
+            'district_operator',
+            'director',
+            'teacher',
+            'library',
+            'kitchen',
+        ];
+        $primaryRoleCode = collect($rolePriority)->first(fn (string $code): bool => in_array($code, $roleCodes, true));
+        $profileSubtitle = $primaryRoleCode !== null
+            ? ($roleLabels[$primaryRoleCode] ?? __('ui.common.web_cabinet'))
+            : __('ui.common.web_cabinet');
         $enabledMenuItems = \App\Models\MenuItem::query()->pluck('enabled', 'key')->all();
         $menuItems = [
             [
@@ -124,7 +148,7 @@
 
     <div class="profile">
         <div class="profile-name">{{ $user->full_name ?: __('ui.dashboard.user_fallback') }}</div>
-        <div class="muted profile-subtitle">{{ __('ui.common.web_cabinet') }}</div>
+        <div class="muted profile-subtitle">{{ $profileSubtitle }}</div>
     </div>
 
     <nav class="nav nav-menu">

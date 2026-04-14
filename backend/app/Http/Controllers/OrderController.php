@@ -20,7 +20,7 @@ class OrderController extends Controller
         $user = $request->user()?->loadMissing('roles', 'scopes');
         $roleCodes = $user?->roles?->pluck('code')->all() ?? [];
         $restrictBySchool = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
-        $userSchoolId = $user?->school_id;
+        $userSchoolId = $this->resolveSchoolId($user);
         $filters = [
             'search' => trim((string) $request->string('search')),
             'order_date' => (string) $request->string('order_date'),
@@ -126,7 +126,8 @@ class OrderController extends Controller
         $user = $request->user()?->loadMissing('roles');
         $roleCodes = $user?->roles?->pluck('code')->all() ?? [];
         $restrictBySchool = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
-        $userSchoolId = $user?->school_id;
+        $user->loadMissing('scopes');
+        $userSchoolId = $this->resolveSchoolId($user);
 
         if (
             $restrictBySchool
@@ -143,10 +144,10 @@ class OrderController extends Controller
 
     private function resolveTargetStudentIds(Request $request, array $data): Collection
     {
-        $user = $request->user()?->loadMissing('roles');
+        $user = $request->user()?->loadMissing('roles', 'scopes');
         $roleCodes = $user?->roles?->pluck('code')->all() ?? [];
         $restrictBySchool = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
-        $userSchoolId = $user?->school_id;
+        $userSchoolId = $this->resolveSchoolId($user);
 
         $query = Student::query()
             ->eligibleForOrder()
@@ -162,5 +163,20 @@ class OrderController extends Controller
                 ->pluck('id'),
             default => collect(),
         };
+    }
+
+    private function resolveSchoolId($user): ?int
+    {
+        if (! $user) {
+            return null;
+        }
+
+        if ($user->school_id) {
+            return (int) $user->school_id;
+        }
+
+        return $user->scopes
+            ?->first(fn ($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
+            ?->scope_id;
     }
 }
