@@ -871,11 +871,11 @@
                 </div>
 
                 <div class="field">
-                    <label for="photo_sync_filter">{{ __('ui.students.photo_sync_status') }}</label>
+                    <label for="photo_sync_filter">Статус синхронизации</label>
                     <select id="photo_sync_filter" name="photo_sync">
                         <option value="">-</option>
-                        <option value="synced" @selected($filters['photo_sync'] === 'synced')>{{ __('ui.students.photo_synced') }}</option>
-                        <option value="not_synced" @selected($filters['photo_sync'] === 'not_synced')>{{ __('ui.students.photo_not_synced') }}</option>
+                        <option value="synced" @selected($filters['photo_sync'] === 'synced')>Синхронизировано</option>
+                        <option value="not_synced" @selected($filters['photo_sync'] === 'not_synced')>Не синхронизировано</option>
                     </select>
                 </div>
 
