@@ -13,6 +13,7 @@
     $otherStudents = max($totalStudents - $voucherStudents - $susnStudents, 0);
 
     $transactionsTotal = max(collect($transactions)->sum('value'), 1);
+    $processedTransactionsTotal = (int) collect($transactions)->sum('value');
     $transactionOffset = 0;
     $transactionGradient = collect($transactions)
         ->map(function ($item) use (&$transactionOffset, $transactionsTotal) {
@@ -366,21 +367,22 @@
                 <h2 class="dashboard-chart-title">{{ __('ui.dashboard_page.transactions') }}</h2>
                 <div class="dashboard-donut-wrap">
                     <div class="dashboard-donut"
-                        style="background: conic-gradient({{ $studentBenefitGradient ?: '#eef3fb 0deg 360deg' }});"></div>
+                        style="background: conic-gradient({{ $transactionGradient ?: '#eef3fb 0deg 360deg' }});"></div>
                     <div class="dashboard-legend">
                         <div class="dashboard-legend-item">
                             <div class="dashboard-legend-left">
-                                <span>{{ __('ui.dashboard_page.orders_total') }}</span>
+                                <span>{{ __('ui.dashboard_page.transactions') }}</span>
                             </div>
-                            <strong>{{ $totalStudents }}</strong>
+                            <strong>{{ $processedTransactionsTotal }}</strong>
                         </div>
-                        @foreach ($studentBenefitItems as $item)
+                        @foreach ($transactions as $transaction)
                             <div class="dashboard-legend-item">
                                 <div class="dashboard-legend-left">
-                                    <span class="dashboard-legend-dot" style="background: {{ $item['color'] }};"></span>
-                                    <span>{{ $item['label'] }}</span>
+                                    <span class="dashboard-legend-dot"
+                                        style="background: {{ $transaction['color'] }};"></span>
+                                    <span>{{ $transaction['label'] }}</span>
                                 </div>
-                                <strong>{{ $item['value'] }}</strong>
+                                <strong>{{ $transaction['value'] }}</strong>
                             </div>
                         @endforeach
                     </div>
@@ -413,19 +415,24 @@
             </div>
 
             <div class="dashboard-card dashboard-chart-card">
-                <h2 class="dashboard-chart-title">{{ __('ui.dashboard_page.transactions') }}</h2>
+                <h2 class="dashboard-chart-title">{{ __('ui.dashboard_page.students') }}</h2>
                 <div class="dashboard-donut-wrap">
                     <div class="dashboard-donut"
-                        style="background: conic-gradient({{ $transactionGradient ?: '#eef3fb 0deg 360deg' }});"></div>
+                        style="background: conic-gradient({{ $studentBenefitGradient ?: '#eef3fb 0deg 360deg' }});"></div>
                     <div class="dashboard-legend">
-                        @foreach ($transactions as $transaction)
+                        <div class="dashboard-legend-item">
+                            <div class="dashboard-legend-left">
+                                <span>{{ __('ui.dashboard_page.students_total') }}</span>
+                            </div>
+                            <strong>{{ $totalStudents }}</strong>
+                        </div>
+                        @foreach ($studentBenefitItems as $item)
                             <div class="dashboard-legend-item">
                                 <div class="dashboard-legend-left">
-                                    <span class="dashboard-legend-dot"
-                                        style="background: {{ $transaction['color'] }};"></span>
-                                    <span>{{ $transaction['label'] }}</span>
+                                    <span class="dashboard-legend-dot" style="background: {{ $item['color'] }};"></span>
+                                    <span>{{ $item['label'] }}</span>
                                 </div>
-                                <strong>{{ $transaction['value'] }}</strong>
+                                <strong>{{ $item['value'] }}</strong>
                             </div>
                         @endforeach
                     </div>
