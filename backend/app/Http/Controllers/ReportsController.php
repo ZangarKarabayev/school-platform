@@ -5,12 +5,11 @@ namespace App\Http\Controllers;
 use App\Jobs\GenerateReportJob;
 use App\Models\GeneratedReport;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class ReportsController extends Controller
 {
@@ -56,7 +55,7 @@ class ReportsController extends Controller
             ->with('report_status', 'Отчет поставлен в очередь на формирование.');
     }
 
-    public function download(Request $request, GeneratedReport $report): BinaryFileResponse
+    public function download(Request $request, GeneratedReport $report): Response
     {
         abort_unless((int) $report->user_id === (int) $request->user()?->id, 403);
         abort_unless($report->status === GeneratedReport::STATUS_COMPLETED && $report->file_path, 404);

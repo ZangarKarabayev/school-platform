@@ -92,10 +92,10 @@ class GenerateReportJob implements ShouldQueue
                     optional($order->order_date)->format('Y-m-d'),
                     $student?->classroom?->full_name,
                     $student?->full_name,
-                    $student?->iin,
+                    $this->formatIinForCsv($student?->iin),
                     $student?->latestMealBenefit?->type,
-                    $order->status,
-                    $order->transaction_status === null ? '' : ($order->transaction_status ? 'success' : 'failed'),
+                    $this->localizeOrderStatus($order->status),
+                    $this->localizeTransactionStatus($order->transaction_status),
                 ]);
             }
 
@@ -127,5 +127,37 @@ class GenerateReportJob implements ShouldQueue
     private function writeCsvRow($handle, array $row): void
     {
         fputcsv($handle, $row, ';');
+    }
+
+    private function formatIinForCsv(?string $iin): ?string
+    {
+        if ($iin === null || $iin === '') {
+            return $iin;
+        }
+
+        // Prefix with tab so Excel imports the value as text in CSV files.
+        return preg_match('/^\d{12}$/', $iin) ? "\t".$iin : $iin;
+    }
+
+    private function localizeOrderStatus(?string $status): string
+    {
+        if ($status === null || $status === '') {
+            return '';
+        }
+
+        $label = __('ui.orders.statuses.'.$status);
+
+        return $label !== 'ui.orders.statuses.'.$status ? $label : $status;
+    }
+
+    private function localizeTransactionStatus(?bool $status): string
+    {
+        if ($status === null) {
+            return '';
+        }
+
+        return $status
+            ? __('ui.orders.transaction_result.success')
+            : __('ui.orders.transaction_result.failed');
     }
 }
