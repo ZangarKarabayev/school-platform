@@ -33,4 +33,13 @@ class Role extends Model
         return $this->belongsToMany(Permission::class)
             ->withTimestamps();
     }
+
+    public function getDisplayNameAttribute(): string
+    {
+        $translated = __('admin.roles.'.$this->code);
+
+        return $translated !== 'admin.roles.'.$this->code
+            ? $translated
+            : (string) $this->name;
+    }
 }

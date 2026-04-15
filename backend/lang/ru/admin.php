@@ -78,8 +78,18 @@ return [
     ],
     'status' => [
         'active' => 'Активен',
+        'inactive' => 'Неактивен',
         'blocked' => 'Заблокирован',
-        'pending' => 'Ожидает',
+    ],
+    'roles' => [
+        'teacher' => 'Учитель',
+        'director' => 'Директор',
+        'district_operator' => 'Ответственный по району',
+        'region_operator' => 'Ответственный по области',
+        'support_admin' => 'Техподдержка',
+        'super_admin' => 'Суперадминистратор',
+        'kitchen' => 'Столовая',
+        'library' => 'Библиотека',
     ],
     'language' => [
         'ru' => 'Русский',

@@ -15,7 +15,7 @@
 
                 @if ($errors->any())
                     <div class="error">
-                        {{ $errors->first('phone') ?? ($errors->first('last_name') ?? ($errors->first('first_name') ?? ($errors->first('password') ?? ($errors->first('signature') ?? $errors->first())))) }}
+                        {{ $errors->first('role') ?? $errors->first('school_id') ?? $errors->first('district_id') ?? $errors->first('region_id') ?? $errors->first('phone') ?? ($errors->first('last_name') ?? ($errors->first('first_name') ?? ($errors->first('password') ?? ($errors->first('signature') ?? $errors->first())))) }}
                     </div>
                 @endif
 
@@ -52,6 +52,9 @@
                                 placeholder="{{ __('ui.auth.phone_placeholder') }}" inputmode="tel" autocomplete="tel"
                                 data-phone-input required>
                         </div>
+
+                        @include('auth.partials.registration-role-fields', ['prefix' => 'eds_'])
+
                         <div class="field">
                             <label for="eds_password">{{ __('ui.common.password') }} *</label>
                             <div class="password-field" data-password-field data-visible="false">
@@ -120,15 +123,123 @@
                 return;
             }
 
+            const scopeBlocks = {
+                school: document.querySelector('#eds-register-fields [data-registration-scope="school"]'),
+                districtRegion: document.querySelector('#eds-register-fields [data-registration-scope="district-region"]'),
+                district: document.querySelector('#eds-register-fields [data-registration-scope="district"]'),
+                region: document.querySelector('#eds-register-fields [data-registration-scope="region"]'),
+            };
+            const scopeInputs = {
+                school: document.querySelector('#eds-register-fields [data-registration-input="school"]'),
+                districtRegion: document.querySelector('#eds-register-fields [data-registration-input="district-region"]'),
+                district: document.querySelector('#eds-register-fields [data-registration-input="district"]'),
+                region: document.querySelector('#eds-register-fields [data-registration-input="region"]'),
+            };
             const requiredFields = [
                 document.getElementById('eds_last_name'),
                 document.getElementById('eds_first_name'),
                 document.getElementById('eds_phone'),
+                document.getElementById('eds_role'),
                 document.getElementById('eds_password'),
                 document.getElementById('eds_password_confirmation'),
             ].filter(Boolean);
 
-            submit.disabled = !requiredFields.every((field) => field.value.trim() !== '');
+            const baseValid = requiredFields.every((field) => field.value.trim() !== '');
+            const visibleScopeValid = Object.entries(scopeBlocks).every(([key, block]) => {
+                if (!block || block.style.display === 'none') {
+                    return true;
+                }
+
+                const input = scopeInputs[key];
+
+                return !input || input.value.trim() !== '';
+            });
+
+            submit.disabled = !(baseValid && visibleScopeValid);
+        }
+
+        function syncRegistrationRoleScopeState() {
+            const roleSelect = document.querySelector('#eds-register-fields [data-registration-role]');
+
+            if (!roleSelect) {
+                syncEdsSubmitState();
+                return;
+            }
+
+            const scopeBlocks = {
+                school: document.querySelector('#eds-register-fields [data-registration-scope="school"]'),
+                districtRegion: document.querySelector('#eds-register-fields [data-registration-scope="district-region"]'),
+                district: document.querySelector('#eds-register-fields [data-registration-scope="district"]'),
+                region: document.querySelector('#eds-register-fields [data-registration-scope="region"]'),
+            };
+            const scopeInputs = {
+                school: document.querySelector('#eds-register-fields [data-registration-input="school"]'),
+                districtRegion: document.querySelector('#eds-register-fields [data-registration-input="district-region"]'),
+                district: document.querySelector('#eds-register-fields [data-registration-input="district"]'),
+                region: document.querySelector('#eds-register-fields [data-registration-input="region"]'),
+            };
+            const districtOptions = Array.from(scopeInputs.district?.options ?? []).map((option) => ({
+                value: option.value,
+                label: option.textContent,
+                selected: option.selected,
+                regionId: option.dataset.regionId ?? '',
+            }));
+            const role = roleSelect.value;
+            const schoolRoles = JSON.parse(roleSelect.dataset.roleSchool ?? '[]');
+            const districtRole = roleSelect.dataset.roleDistrict ?? '';
+            const regionRole = roleSelect.dataset.roleRegion ?? '';
+            const visibility = {
+                school: schoolRoles.includes(role),
+                districtRegion: role === districtRole,
+                district: role === districtRole,
+                region: role === regionRole,
+            };
+
+            const syncDistrictOptions = () => {
+                const districtInput = scopeInputs.district;
+                const districtRegionInput = scopeInputs.districtRegion;
+
+                if (!districtInput || !districtRegionInput) {
+                    return;
+                }
+
+                const selectedRegionId = districtRegionInput.value;
+                const previousValue = districtInput.value;
+                const availableOptions = districtOptions.filter((option) => option.value === '' || option.regionId === selectedRegionId);
+
+                districtInput.innerHTML = availableOptions
+                    .map((option) => {
+                        const regionAttr = option.regionId ? ` data-region-id="${option.regionId}"` : '';
+
+                        return `<option value="${option.value}"${regionAttr}>${option.label}</option>`;
+                    })
+                    .join('');
+
+                const nextValue = availableOptions.some((option) => option.value === previousValue) ? previousValue : '';
+                districtInput.value = nextValue;
+            };
+
+            Object.entries(scopeBlocks).forEach(([key, block]) => {
+                if (!block) {
+                    return;
+                }
+
+                const input = scopeInputs[key];
+                const isVisible = visibility[key];
+
+                block.style.display = isVisible ? '' : 'none';
+
+                if (input) {
+                    input.required = key !== 'districtRegion' && isVisible;
+
+                    if (!isVisible) {
+                        input.value = '';
+                    }
+                }
+            });
+
+            syncDistrictOptions();
+            syncEdsSubmitState();
         }
 
         document.getElementById('fill-eds-data')?.addEventListener('click', async function() {
@@ -180,6 +291,7 @@
 
         [
             document.getElementById('eds_phone'),
+            document.getElementById('eds_role'),
             document.getElementById('eds_password'),
             document.getElementById('eds_password_confirmation'),
         ].filter(Boolean).forEach((field) => {
@@ -187,6 +299,17 @@
             field.addEventListener('change', syncEdsSubmitState);
         });
 
-        syncEdsSubmitState();
+        [
+            document.querySelector('#eds-register-fields [data-registration-role]'),
+            document.querySelector('#eds-register-fields [data-registration-input="district-region"]'),
+            document.querySelector('#eds-register-fields [data-registration-input="school"]'),
+            document.querySelector('#eds-register-fields [data-registration-input="district"]'),
+            document.querySelector('#eds-register-fields [data-registration-input="region"]'),
+        ].filter(Boolean).forEach((field) => {
+            field.addEventListener('input', syncRegistrationRoleScopeState);
+            field.addEventListener('change', syncRegistrationRoleScopeState);
+        });
+
+        syncRegistrationRoleScopeState();
     </script>
 @endsection

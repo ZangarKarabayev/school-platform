@@ -15,7 +15,7 @@
 
                 @if ($errors->any())
                     <div class="error">
-                        {{ $errors->first('phone') ?? $errors->first('first_name') ?? $errors->first('last_name') ?? $errors->first('password') ?? $errors->first() }}
+                        {{ $errors->first('role') ?? $errors->first('school_id') ?? $errors->first('district_id') ?? $errors->first('region_id') ?? $errors->first('phone') ?? $errors->first('first_name') ?? $errors->first('last_name') ?? $errors->first('password') ?? $errors->first() }}
                     </div>
                 @endif
 
@@ -38,6 +38,9 @@
                         <input id="register_phone" name="phone" value="{{ old('phone') }}"
                             placeholder="{{ __('ui.auth.phone_placeholder') }}" inputmode="tel" autocomplete="tel" data-phone-input required>
                     </div>
+
+                    @include('auth.partials.registration-role-fields', ['prefix' => 'register_'])
+
                     <div class="field">
                         <label for="register_password">{{ __('ui.common.password') }} *</label>
                         <div class="password-field" data-password-field data-visible="false">
@@ -85,12 +88,113 @@
                 document.getElementById('register_last_name'),
                 document.getElementById('register_first_name'),
                 document.getElementById('register_phone'),
+                document.getElementById('register_role'),
                 document.getElementById('register_password'),
                 document.getElementById('register_password_confirmation'),
             ].filter(Boolean);
 
+            const roleSelect = document.querySelector('[data-registration-role]');
+            const scopeBlocks = {
+                school: document.querySelector('[data-registration-scope="school"]'),
+                districtRegion: document.querySelector('[data-registration-scope="district-region"]'),
+                district: document.querySelector('[data-registration-scope="district"]'),
+                region: document.querySelector('[data-registration-scope="region"]'),
+            };
+            const scopeInputs = {
+                school: document.querySelector('[data-registration-input="school"]'),
+                districtRegion: document.querySelector('[data-registration-input="district-region"]'),
+                district: document.querySelector('[data-registration-input="district"]'),
+                region: document.querySelector('[data-registration-input="region"]'),
+            };
+            const districtOptions = Array.from(scopeInputs.district?.options ?? []).map((option) => ({
+                value: option.value,
+                label: option.textContent,
+                selected: option.selected,
+                regionId: option.dataset.regionId ?? '',
+            }));
+
+            const syncDistrictOptions = () => {
+                const districtInput = scopeInputs.district;
+                const districtRegionInput = scopeInputs.districtRegion;
+
+                if (!districtInput || !districtRegionInput) {
+                    return;
+                }
+
+                const selectedRegionId = districtRegionInput.value;
+                const previousValue = districtInput.value;
+                const availableOptions = districtOptions.filter((option) => option.value === '' || option.regionId === selectedRegionId);
+
+                districtInput.innerHTML = availableOptions
+                    .map((option) => {
+                        const regionAttr = option.regionId ? ` data-region-id="${option.regionId}"` : '';
+
+                        return `<option value="${option.value}"${regionAttr}>${option.label}</option>`;
+                    })
+                    .join('');
+
+                const nextValue = availableOptions.some((option) => option.value === previousValue) ? previousValue : '';
+                districtInput.value = nextValue;
+            };
+
             const syncState = () => {
-                submit.disabled = !requiredFields.every((field) => field.value.trim() !== '');
+                const baseValid = requiredFields.every((field) => field.value.trim() !== '');
+                const visibleScopeValid = Object.entries(scopeBlocks).every(([key, block]) => {
+                    if (!block || block.style.display === 'none') {
+                        return true;
+                    }
+
+                    const input = scopeInputs[key];
+
+                    return !input || input.value.trim() !== '';
+                });
+
+                submit.disabled = !(baseValid && visibleScopeValid);
+            };
+
+            const syncRoleScopeState = () => {
+                if (!roleSelect) {
+                    syncState();
+                    return;
+                }
+
+                const role = roleSelect.value;
+                const schoolRoles = JSON.parse(roleSelect.dataset.roleSchool ?? '[]');
+                const districtRole = roleSelect.dataset.roleDistrict ?? '';
+                const regionRole = roleSelect.dataset.roleRegion ?? '';
+                const visibility = {
+                    school: schoolRoles.includes(role),
+                    districtRegion: role === districtRole,
+                    district: role === districtRole,
+                    region: role === regionRole,
+                };
+
+                Object.entries(scopeBlocks).forEach(([key, block]) => {
+                    if (!block) {
+                        return;
+                    }
+
+                    const input = scopeInputs[key];
+                    const isVisible = visibility[key];
+
+                    block.style.display = isVisible ? '' : 'none';
+
+                    if (input) {
+                        input.required = key !== 'districtRegion' && isVisible;
+
+                        if (!isVisible) {
+                            input.value = '';
+                        }
+                    }
+                });
+
+                if (visibility.district) {
+                    syncDistrictOptions();
+                } else if (scopeInputs.district) {
+                    syncDistrictOptions();
+                }
+
+                syncState();
             };
 
             requiredFields.forEach((field) => {
@@ -98,7 +202,22 @@
                 field.addEventListener('change', syncState);
             });
 
-            syncState();
+            roleSelect?.addEventListener('input', syncRoleScopeState);
+            roleSelect?.addEventListener('change', syncRoleScopeState);
+            Object.values(scopeInputs).filter(Boolean).forEach((field) => {
+                field.addEventListener('input', syncState);
+                field.addEventListener('change', syncState);
+            });
+            scopeInputs.districtRegion?.addEventListener('input', () => {
+                syncDistrictOptions();
+                syncState();
+            });
+            scopeInputs.districtRegion?.addEventListener('change', () => {
+                syncDistrictOptions();
+                syncState();
+            });
+
+            syncRoleScopeState();
         })();
     </script>
 @endsection

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users\Pages;
 
 use App\Filament\Resources\Users\UserResource;
+use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Modules\Access\Enums\RoleCode;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -15,6 +16,15 @@ use Illuminate\Support\Facades\Auth;
 class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return UserForm::normalizeScopeAssignments($data);
+    }
 
     protected function getHeaderActions(): array
     {

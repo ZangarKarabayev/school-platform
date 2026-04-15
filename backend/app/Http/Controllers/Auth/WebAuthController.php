@@ -5,6 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\Access\Enums\RoleCode;
+use App\Modules\Access\Models\Role;
+use App\Modules\Organizations\Models\District;
+use App\Modules\Organizations\Models\Region;
+use App\Modules\Organizations\Models\School;
 use App\Modules\Identity\Application\Actions\StartEdsLoginAction;
 use App\Modules\Identity\Application\Actions\ValidateEdsChallengeAction;
 use App\Modules\Identity\Application\DTO\EdsChallengeData;
@@ -41,15 +45,21 @@ class WebAuthController extends Controller
         return view('auth.register');
     }
 
+    public function showPendingActivation(): View
+    {
+        return view('auth.pending-activation');
+    }
+
     public function showPhoneRegister(): View
     {
-        return view('auth.register-phone');
+        return view('auth.register-phone', $this->registrationFormData());
     }
 
     public function showEdsRegister(Request $request, StartEdsLoginAction $action): View
     {
         return view('auth.register-eds', [
             'edsChallenge' => $this->resolveEdsChallenge($request, $action),
+            ...$this->registrationFormData(),
         ]);
     }
 
@@ -62,8 +72,14 @@ class WebAuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        $user = User::query()->where('phone', $data['phone'])->first();
+
+        if ($user && Hash::check($data['password'], (string) $user->password) && $user->status !== 'active') {
+            return redirect()->route('auth.pending');
+        }
+
         if (! Auth::attempt(
-            ['phone' => $data['phone'], 'password' => $data['password']],
+            ['phone' => $data['phone'], 'password' => $data['password'], 'status' => 'active'],
             (bool) $request->boolean('remember'),
         )) {
             return back()
@@ -89,18 +105,49 @@ class WebAuthController extends Controller
             'middle_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['required', 'string', 'regex:/^\+?[0-9]{11,15}$/', Rule::unique('users', 'phone')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role' => ['required', 'string', Rule::in($this->allowedRegistrationRoleCodes())],
+            'school_id' => [
+                Rule::requiredIf(fn () => in_array($request->input('role'), [
+                    RoleCode::Teacher->value,
+                    RoleCode::Director->value,
+                ], true)),
+                'nullable',
+                'integer',
+                'exists:schools,id',
+            ],
+            'district_id' => [
+                Rule::requiredIf(fn () => $request->input('role') === RoleCode::DistrictOperator->value),
+                'nullable',
+                'integer',
+                'exists:districts,id',
+            ],
+            'region_id' => [
+                Rule::requiredIf(fn () => $request->input('role') === RoleCode::RegionOperator->value),
+                'nullable',
+                'integer',
+                'exists:regions,id',
+            ],
         ]);
 
         $user = DB::transaction(function () use ($data): User {
+            $role = Role::query()
+                ->where('code', $data['role'])
+                ->firstOrFail();
+
             $user = User::query()->create([
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'middle_name' => $data['middle_name'] ?: null,
                 'phone' => $data['phone'],
                 'password' => $data['password'],
-                'status' => 'active',
+                'status' => 'inactive',
+                'school_id' => $this->resolveRegistrationSchoolId($data),
+                'district_id' => $this->resolveRegistrationDistrictId($data),
+                'region_id' => $this->resolveRegistrationRegionId($data),
                 'preferred_locale' => $this->preferredLocale(),
             ]);
+
+            $user->roles()->sync([$role->id]);
 
             AuthIdentity::query()->create([
                 'user_id' => $user->id,
@@ -112,11 +159,8 @@ class WebAuthController extends Controller
             return $user;
         });
 
-        Auth::login($user);
-        $request->session()->regenerate();
-        $this->syncKitchenGuard($user);
-
-        return redirect()->intended(route('dashboard'));
+        return redirect()
+            ->route('auth.pending');
     }
 
     public function createLoginEdsChallenge(StartEdsLoginAction $action): RedirectResponse
@@ -141,6 +185,11 @@ class WebAuthController extends Controller
             return redirect()->route('register')->withErrors([
                 'eds_register' => __('ui.auth.eds_user_not_found'),
             ]);
+        }
+
+        if ($user->status !== 'active') {
+            return redirect()
+                ->route('auth.pending');
         }
 
         DB::transaction(function () use ($challenge, $verified, $user): void {
@@ -218,6 +267,28 @@ class WebAuthController extends Controller
                 Rule::unique('users', 'phone'),
             ],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role' => ['required', 'string', Rule::in($this->allowedRegistrationRoleCodes())],
+            'school_id' => [
+                Rule::requiredIf(fn () => in_array($request->input('role'), [
+                    RoleCode::Teacher->value,
+                    RoleCode::Director->value,
+                ], true)),
+                'nullable',
+                'integer',
+                'exists:schools,id',
+            ],
+            'district_id' => [
+                Rule::requiredIf(fn () => $request->input('role') === RoleCode::DistrictOperator->value),
+                'nullable',
+                'integer',
+                'exists:districts,id',
+            ],
+            'region_id' => [
+                Rule::requiredIf(fn () => $request->input('role') === RoleCode::RegionOperator->value),
+                'nullable',
+                'integer',
+                'exists:regions,id',
+            ],
         ]);
 
         if ($this->findEdsIdentity($verified->certificateThumbprint, $verified->certificateSerial) !== null) {
@@ -227,15 +298,24 @@ class WebAuthController extends Controller
         }
 
         $user = DB::transaction(function () use ($challenge, $verified, $data): User {
+            $role = Role::query()
+                ->where('code', $data['role'])
+                ->firstOrFail();
+
             $user = User::query()->create([
                 'first_name' => $verified->firstName,
                 'last_name' => $verified->lastName,
                 'middle_name' => $verified->middleName,
                 'phone' => $data['phone'],
                 'password' => $data['password'],
-                'status' => 'active',
+                'status' => 'inactive',
+                'school_id' => $this->resolveRegistrationSchoolId($data),
+                'district_id' => $this->resolveRegistrationDistrictId($data),
+                'region_id' => $this->resolveRegistrationRegionId($data),
                 'preferred_locale' => $this->preferredLocale(),
             ]);
+
+            $user->roles()->sync([$role->id]);
 
             AuthIdentity::query()->updateOrCreate(
                 [
@@ -261,11 +341,8 @@ class WebAuthController extends Controller
             return $user;
         });
 
-        Auth::login($user);
-        $request->session()->regenerate();
-        $this->syncKitchenGuard($user);
-
-        return redirect()->intended(route('dashboard'));
+        return redirect()
+            ->route('auth.pending');
     }
 
     public function dashboard(Request $request): View
@@ -425,6 +502,72 @@ class WebAuthController extends Controller
         $locale = app()->getLocale();
 
         return in_array($locale, ['ru', 'kk'], true) ? $locale : 'ru';
+    }
+
+    /**
+     * @return array{roles:\Illuminate\Support\Collection<int, Role>,schools:\Illuminate\Support\Collection<int, School>,districts:\Illuminate\Support\Collection<int, District>,regions:\Illuminate\Support\Collection<int, Region>}
+     */
+    private function registrationFormData(): array
+    {
+        return [
+            'roles' => Role::query()
+                ->whereIn('code', $this->allowedRegistrationRoleCodes())
+                ->orderBy('name')
+                ->get(['id', 'code', 'name']),
+            'schools' => School::query()
+                ->orderBy('name_ru')
+                ->orderBy('name_kk')
+                ->get(['id', 'district_id', 'name', 'name_ru', 'name_kk']),
+            'districts' => District::query()
+                ->orderBy('name_ru')
+                ->orderBy('name_kk')
+                ->get(['id', 'region_id', 'name', 'name_ru', 'name_kk']),
+            'regions' => Region::query()
+                ->orderBy('name_ru')
+                ->orderBy('name_kk')
+                ->get(['id', 'name', 'name_ru', 'name_kk']),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allowedRegistrationRoleCodes(): array
+    {
+        return array_values(array_filter(
+            array_column(RoleCode::cases(), 'value'),
+            fn (string $code): bool => $code !== RoleCode::SuperAdmin->value,
+        ));
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function resolveRegistrationSchoolId(array $data): ?int
+    {
+        return in_array($data['role'] ?? null, [RoleCode::Teacher->value, RoleCode::Director->value], true)
+            ? (int) ($data['school_id'] ?? 0) ?: null
+            : null;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function resolveRegistrationDistrictId(array $data): ?int
+    {
+        return ($data['role'] ?? null) === RoleCode::DistrictOperator->value
+            ? (int) ($data['district_id'] ?? 0) ?: null
+            : null;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function resolveRegistrationRegionId(array $data): ?int
+    {
+        return ($data['role'] ?? null) === RoleCode::RegionOperator->value
+            ? (int) ($data['region_id'] ?? 0) ?: null
+            : null;
     }
 
     private function syncKitchenGuard(?User $user, bool $remember = false): void

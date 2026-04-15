@@ -47,7 +47,43 @@
         .panel p { margin: 0 0 16px; color: #4f617d; line-height: 1.55; }
         .field { margin-bottom: 14px; }
         .field label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 700; }
-        .field input { width: 100%; height: 44px; padding: 0 14px; border: 1px solid #c7d4e6; border-radius: 14px; background: #fff; font-size: 15px; color: var(--text); }
+        .field input,
+        .field select {
+            width: 100%;
+            height: 44px;
+            padding: 0 14px;
+            border: 1px solid #c7d4e6;
+            border-radius: 14px;
+            background: #fff;
+            font-size: 15px;
+            color: var(--text);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+        .field select {
+            padding-right: 42px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            cursor: pointer;
+            background-image:
+                linear-gradient(45deg, transparent 50%, #6e7f97 50%),
+                linear-gradient(135deg, #6e7f97 50%, transparent 50%);
+            background-position:
+                calc(100% - 18px) calc(50% - 2px),
+                calc(100% - 12px) calc(50% - 2px);
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+        }
+        .field input:hover,
+        .field select:hover {
+            border-color: #afc3df;
+        }
+        .field input:focus,
+        .field select:focus {
+            outline: none;
+            border-color: #7aa9e8;
+            box-shadow: 0 0 0 4px rgba(40, 118, 221, 0.12);
+        }
         .password-field { position: relative; }
         .password-field input { position: relative; z-index: 1; padding-right: 52px; }
         .password-toggle { position: absolute; top: 50%; right: 8px; z-index: 2; width: 36px; height: 36px; padding: 0; margin: 0; transform: translateY(-50%); border: 0; border-radius: 10px; background: rgba(255, 255, 255, 0.96); color: #5d6f88; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; appearance: none; -webkit-appearance: none; }
@@ -55,7 +91,12 @@
         .password-toggle svg { width: 18px; height: 18px; display: block; }
         .password-field[data-visible="true"] .icon-eye { display: none; }
         .password-field[data-visible="false"] .icon-eye-off { display: none; }
-        .field input[readonly] { background: #f5f8fd; color: #5d6f88; }
+        .field input[readonly],
+        .field select:disabled {
+            background: #f5f8fd;
+            color: #5d6f88;
+            cursor: default;
+        }
         .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
         .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 18px; border: 0; border-radius: 12px; background: var(--primary); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 22px rgba(40, 118, 221, 0.24); }
         .btn.secondary { background: #dde7f4; color: #234067; box-shadow: none; }

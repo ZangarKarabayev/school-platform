@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\Users\Tables;
 
+use App\Models\User;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
@@ -28,7 +30,17 @@ class UsersTable
                 TextColumn::make('status')
                     ->label(__('admin.labels.status'))
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => __('admin.status.'.$state)),
+                    ->formatStateUsing(fn (string $state): string => $state === 'active'
+                        ? __('admin.status.active')
+                        : __('admin.status.inactive')),
+                ToggleColumn::make('is_active')
+                    ->label(__('admin.labels.active'))
+                    ->getStateUsing(fn (User $record): bool => $record->status === 'active')
+                    ->updateStateUsing(function (User $record, bool $state): void {
+                        $record->forceFill([
+                            'status' => $state ? 'active' : 'inactive',
+                        ])->save();
+                    }),
                 TextColumn::make('last_login_at')
                     ->label(__('admin.labels.last_login'))
                     ->dateTime('Y-m-d H:i'),
@@ -37,9 +49,17 @@ class UsersTable
                 SelectFilter::make('status')
                     ->options([
                         'active' => __('admin.status.active'),
-                        'blocked' => __('admin.status.blocked'),
-                        'pending' => __('admin.status.pending'),
-                    ]),
+                        'inactive' => __('admin.status.inactive'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        $value = $data['value'] ?? null;
+
+                        return match ($value) {
+                            'active' => $query->where('status', 'active'),
+                            'inactive' => $query->where('status', '!=', 'active'),
+                            default => $query,
+                        };
+                    }),
             ])
             ->recordActions([
                 EditAction::make(),

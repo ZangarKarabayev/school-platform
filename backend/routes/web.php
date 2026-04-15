@@ -15,6 +15,7 @@ Route::middleware('guest')->group(function (): void {
     Route::get('/', fn() => redirect()->route('login'));
     Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
     Route::get('/login/eds', [WebAuthController::class, 'showEdsLogin'])->name('login.eds');
+    Route::get('/account-pending', [WebAuthController::class, 'showPendingActivation'])->name('auth.pending');
     Route::get('/register', [WebAuthController::class, 'showRegister'])->name('register');
     Route::get('/register/phone', [WebAuthController::class, 'showPhoneRegister'])->name('register.phone');
     Route::get('/register/eds', [WebAuthController::class, 'showEdsRegister'])->name('register.eds');

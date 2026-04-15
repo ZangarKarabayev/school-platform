@@ -78,8 +78,18 @@ return [
     ],
     'status' => [
         'active' => 'Белсенді',
+        'inactive' => 'Белсенді емес',
         'blocked' => 'Бұғатталған',
-        'pending' => 'Күтуде',
+    ],
+    'roles' => [
+        'teacher' => 'Мұғалім',
+        'director' => 'Директор',
+        'district_operator' => 'Аудан бойынша жауапты',
+        'region_operator' => 'Облыс бойынша жауапты',
+        'support_admin' => 'Техқолдау',
+        'super_admin' => 'Суперадмин',
+        'kitchen' => 'Асхана',
+        'library' => 'Кітапхана',
     ],
     'language' => [
         'ru' => 'Орысша',
