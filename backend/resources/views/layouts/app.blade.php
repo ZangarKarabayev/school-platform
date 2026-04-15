@@ -313,6 +313,35 @@
             color: #71829a;
         }
 
+        .topbar-menu-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            z-index: 49;
+        }
+
+        .mobile-overlay.open {
+            display: block;
+        }
+
         @media (max-width: 820px) {
             .app-shell {
                 grid-template-rows: auto minmax(0, 1fr);
@@ -322,14 +351,24 @@
                 height: auto;
                 min-height: var(--topbar-height);
                 padding: 14px;
-                align-items: flex-start;
-                flex-direction: column;
+                align-items: center;
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 10px;
             }
 
-            .topbar-left,
+            .topbar-left {
+                flex: 1 1 auto;
+                justify-content: flex-start;
+            }
+
             .topbar-right {
-                width: 100%;
-                justify-content: space-between;
+                flex: 0 0 auto;
+                justify-content: flex-end;
+            }
+
+            .topbar-menu-btn {
+                display: inline-flex;
             }
 
             .workspace {
@@ -338,9 +377,19 @@
 
             .sidebar,
             .sidebar[data-collapsed="true"] {
-                grid-column: 1;
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 50;
+                width: min(296px, 85vw);
                 max-width: none;
-                width: 100%;
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+            }
+
+            .sidebar[data-mobile-open="true"] {
+                transform: translateX(0);
             }
 
             .content {
@@ -379,6 +428,8 @@
     <div class="app-shell">
         @include('partials.topbar-app')
 
+        <div class="mobile-overlay" id="mobile-overlay"></div>
+
         <div class="workspace" id="app-workspace">
             @include('partials.sidebar-app', ['user' => $user])
 
@@ -392,32 +443,61 @@
         (function () {
             const storageKey = 'app.sidebar.collapsed';
             const toggle = document.getElementById('sidebar-toggle');
+            const menuBtn = document.getElementById('mobile-menu-btn');
             const sidebar = document.getElementById('app-sidebar');
             const workspace = document.getElementById('app-workspace');
+            const overlay = document.getElementById('mobile-overlay');
 
-            if (!toggle || !sidebar || !workspace) {
-                return;
-            }
+            if (!sidebar) return;
 
             const isMobile = () => window.matchMedia('(max-width: 820px)').matches;
 
+            // Desktop collapse
             const sync = (collapsed) => {
-                const resolved = isMobile() ? false : collapsed;
-                sidebar.dataset.collapsed = resolved ? 'true' : 'false';
-                workspace.dataset.collapsed = resolved ? 'true' : 'false';
-                toggle.setAttribute('aria-expanded', resolved ? 'false' : 'true');
+                if (isMobile()) return;
+                sidebar.dataset.collapsed = collapsed ? 'true' : 'false';
+                if (workspace) workspace.dataset.collapsed = collapsed ? 'true' : 'false';
+                if (toggle) toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
             };
 
-            sync(window.localStorage.getItem(storageKey) === '1');
+            if (toggle) {
+                sync(window.localStorage.getItem(storageKey) === '1');
 
-            toggle.addEventListener('click', () => {
-                const collapsed = sidebar.dataset.collapsed !== 'true';
-                window.localStorage.setItem(storageKey, collapsed ? '1' : '0');
-                sync(collapsed);
-            });
+                toggle.addEventListener('click', () => {
+                    if (isMobile()) {
+                        closeMobileSidebar();
+                    } else {
+                        const collapsed = sidebar.dataset.collapsed !== 'true';
+                        window.localStorage.setItem(storageKey, collapsed ? '1' : '0');
+                        sync(collapsed);
+                    }
+                });
+            }
+
+            // Mobile drawer
+            const openMobileSidebar = () => {
+                sidebar.dataset.mobileOpen = 'true';
+                if (overlay) overlay.classList.add('open');
+            };
+
+            const closeMobileSidebar = () => {
+                sidebar.dataset.mobileOpen = 'false';
+                if (overlay) overlay.classList.remove('open');
+            };
+
+            if (menuBtn) {
+                menuBtn.addEventListener('click', openMobileSidebar);
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', closeMobileSidebar);
+            }
 
             window.addEventListener('resize', () => {
-                sync(window.localStorage.getItem(storageKey) === '1');
+                if (!isMobile()) {
+                    closeMobileSidebar();
+                    sync(window.localStorage.getItem(storageKey) === '1');
+                }
             });
         })();
     </script>

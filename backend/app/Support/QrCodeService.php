@@ -36,10 +36,10 @@ class QrCodeService
 
     public static function dataUri(string $payload, int $scale = 6): string
     {
-        return 'data:image/svg+xml;base64,'.base64_encode(self::svg($payload, $scale));
+        return 'data:image/svg+xml;base64,' . base64_encode(self::svg($payload, $scale));
     }
 
-    public static function studentCardPng(string $payload, string $fullName, string $classroom, int $scale = 8): string
+    public static function studentCardPng(string $payload, string $fullName, string $classroom, int $scale = 32): string
     {
         $qrPng = self::png($payload, $scale);
         $qrImage = imagecreatefromstring($qrPng);
@@ -48,10 +48,35 @@ class QrCodeService
             return $qrPng;
         }
 
+        $scaled = imagescale($qrImage, 500, 500, IMG_NEAREST_NEIGHBOUR);
+        if ($scaled !== false) {
+            imagedestroy($qrImage);
+            $qrImage = $scaled;
+        }
         $qrWidth = imagesx($qrImage);
         $qrHeight = imagesy($qrImage);
+
+        $fontRegular = self::resolveFontPath(false);
+        $fontBold = self::resolveFontPath(true) ?? $fontRegular;
+        $name = trim($fullName) !== '' ? trim($fullName) : 'Uchenik';
+        $class = trim($classroom) !== '' ? trim($classroom) : null;
+        $nameFontSize = 28;
+        $classFontSize = 22;
+        $lineGap = 42;
+        $padding = 40;
+
         $canvasWidth = max(560, $qrWidth + 80);
-        $canvasHeight = $qrHeight + 150;
+        $maxTextWidth = $canvasWidth - $padding * 2;
+
+        $nameLines = ($fontBold !== null)
+            ? self::wrapText($name, $fontBold, $nameFontSize, $maxTextWidth)
+            : [$name];
+        $classLines = ($class !== null && $fontRegular !== null)
+            ? self::wrapText($class, $fontRegular, $classFontSize, $maxTextWidth)
+            : ($class !== null ? [$class] : []);
+
+        $totalLines = count($nameLines) + count($classLines);
+        $canvasHeight = $qrHeight + 30 + $totalLines * $lineGap + 20;
         $canvas = imagecreatetruecolor($canvasWidth, $canvasHeight);
 
         if ($canvas === false) {
@@ -69,19 +94,22 @@ class QrCodeService
         $qrOffsetX = (int) floor(($canvasWidth - $qrWidth) / 2);
         imagecopy($canvas, $qrImage, $qrOffsetX, 8, 0, 0, $qrWidth, $qrHeight);
 
-        $fontRegular = self::resolveFontPath(false);
-        $fontBold = self::resolveFontPath(true) ?? $fontRegular;
-        $name = trim($fullName) !== '' ? trim($fullName) : 'Uchenik';
-        $class = trim($classroom) !== '' ? trim($classroom) : '-';
-        $nameY = $qrHeight + 56;
-        $classY = $qrHeight + 92;
+        $y = $qrHeight + 30 + $nameFontSize;
 
         if ($fontRegular !== null) {
-            self::drawCenteredText($canvas, $name, $fontBold ?? $fontRegular, 22, $nameY, $dark, $canvasWidth);
-            self::drawCenteredText($canvas, $class, $fontRegular, 18, $classY, $muted, $canvasWidth);
+            foreach ($nameLines as $line) {
+                self::drawCenteredText($canvas, $line, $fontBold ?? $fontRegular, $nameFontSize, $y, $dark, $canvasWidth);
+                $y += $lineGap;
+            }
+            foreach ($classLines as $line) {
+                self::drawCenteredText($canvas, $line, $fontRegular, $classFontSize, $y, $muted, $canvasWidth);
+                $y += $lineGap;
+            }
         } else {
-            imagestring($canvas, 5, max(12, (int) (($canvasWidth - imagefontwidth(5) * strlen($name)) / 2)), $nameY - 20, $name, $dark);
-            imagestring($canvas, 4, max(12, (int) (($canvasWidth - imagefontwidth(4) * strlen($class)) / 2)), $classY - 16, $class, $muted);
+            imagestring($canvas, 5, max(12, (int) (($canvasWidth - imagefontwidth(5) * strlen($name)) / 2)), $y - 20, $name, $dark);
+            if ($class !== null) {
+                imagestring($canvas, 4, max(12, (int) (($canvasWidth - imagefontwidth(4) * strlen($class)) / 2)), $y + $lineGap - 16, $class, $muted);
+            }
         }
 
         ob_start();
@@ -96,7 +124,6 @@ class QrCodeService
 
     private static function drawCenteredText($image, string $text, string $fontPath, int $fontSize, int $baselineY, int $color, int $canvasWidth): void
     {
-        $text = self::truncate($text, $fontSize === 22 ? 42 : 26);
         $box = imagettfbbox($fontSize, 0, $fontPath, $text);
 
         if ($box === false) {
@@ -104,15 +131,37 @@ class QrCodeService
         }
 
         $textWidth = (int) abs($box[2] - $box[0]);
-        $x = (int) floor(($canvasWidth - $textWidth) / 2);
+        $x = max(20, (int) floor(($canvasWidth - $textWidth) / 2));
         imagettftext($image, $fontSize, 0, $x, $baselineY, $color, $fontPath, $text);
     }
 
-    private static function truncate(string $value, int $limit): string
+    /**
+     * @return string[]
+     */
+    private static function wrapText(string $text, string $fontPath, int $fontSize, int $maxWidth): array
     {
-        return mb_strlen($value) > $limit
-            ? rtrim(mb_substr($value, 0, $limit - 1)).'…'
-            : $value;
+        $words = explode(' ', $text);
+        $lines = [];
+        $current = '';
+
+        foreach ($words as $word) {
+            $test = $current === '' ? $word : $current . ' ' . $word;
+            $box = imagettfbbox($fontSize, 0, $fontPath, $test);
+            $width = $box !== false ? (int) abs($box[2] - $box[0]) : 0;
+
+            if ($width > $maxWidth && $current !== '') {
+                $lines[] = $current;
+                $current = $word;
+            } else {
+                $current = $test;
+            }
+        }
+
+        if ($current !== '') {
+            $lines[] = $current;
+        }
+
+        return $lines ?: [$text];
     }
 
     private static function resolveFontPath(bool $bold = false): ?string

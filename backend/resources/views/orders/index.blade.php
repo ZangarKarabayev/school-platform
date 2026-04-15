@@ -665,9 +665,7 @@
             }
 
             .orders-count {
-                min-width: 0;
-                width: 100%;
-                border-radius: 12px;
+                flex-shrink: 0;
             }
 
             .orders-form-grid {
