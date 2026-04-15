@@ -12,6 +12,11 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use OpenSpout\Common\Entity\Cell;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Entity\Style\CellAlignment;
+use OpenSpout\Common\Entity\Style\Style;
+use OpenSpout\Writer\XLSX\Writer;
 use Throwable;
 
 class GenerateReportJob implements ShouldQueue
@@ -62,8 +67,12 @@ class GenerateReportJob implements ShouldQueue
                 ->get();
 
             $directory = 'reports';
-            $extension = $report->report_type === GeneratedReport::TYPE_SCHOOL ? 'xls' : 'csv';
-            $filename = 'report-' . $report->id . '-' . now()->format('YmdHis') . '.' . $extension;
+            $safeName = preg_replace('/[^\pL\pN\s\-\.]/u', '', $report->type_label);
+            $safeName = trim(preg_replace('/\s+/', '_', $safeName));
+            $filename = $safeName
+                . '_' . $report->date_from->format('d.m.Y')
+                . '-' . $report->date_to->format('d.m.Y')
+                . '.xlsx';
             $filePath = $directory . '/' . $filename;
             $path = Storage::disk('local')->path($filePath);
 
@@ -71,11 +80,7 @@ class GenerateReportJob implements ShouldQueue
                 mkdir(dirname($path), 0777, true);
             }
 
-            if ($report->report_type === GeneratedReport::TYPE_SCHOOL) {
-                file_put_contents($path, $this->buildSchoolReportHtml($report, $orders));
-            } else {
-                $this->writeDetailedCsv($path, $report, $orders);
-            }
+            $this->buildSchoolReportXlsx($path, $report, $orders);
 
             $report->update([
                 'status' => GeneratedReport::STATUS_COMPLETED,
@@ -130,135 +135,220 @@ class GenerateReportJob implements ShouldQueue
         fclose($handle);
     }
 
-    private function buildSchoolReportHtml(GeneratedReport $report, Collection $orders): string
+    private function buildSchoolReportXlsx(string $path, GeneratedReport $report, Collection $orders): void
     {
         $days = collect(CarbonPeriod::create($report->date_from, $report->date_to))
             ->map(fn ($date) => $date->copy())
             ->values();
 
-        $students = $orders
-            ->groupBy('student_id')
-            ->map(function (Collection $studentOrders): array {
-                /** @var \App\Models\Order $firstOrder */
-                $firstOrder = $studentOrders->first();
-                $student = $firstOrder->student;
+        $periodLabel = $report->date_from->format('d.m.Y') . ' по ' . $report->date_to->format('d.m.Y');
+        $schoolName = $report->school?->display_name ?: 'Все школы';
+        $typeLabel = $report->type_label;
 
-                $dailyCounts = $studentOrders
-                    ->groupBy(fn ($order) => optional($order->order_date)->format('Y-m-d'))
-                    ->map(fn (Collection $group): int => $group->count());
+        // ── Styles ──────────────────────────────────────────────────────────
+        $styleBold = (new Style())->setFontBold();
 
-                return [
-                    'student' => $student,
-                    'class_name' => $student?->classroom?->full_name ?: '-',
-                    'full_name' => $student?->full_name ?: '-',
-                    'daily_counts' => $dailyCounts,
-                    'total' => $dailyCounts->sum(),
-                ];
-            })
-            ->sortBy(function (array $row): string {
-                $student = $row['student'];
-                $grade = str_pad((string) ($student?->classroom?->grade ?? 999), 3, '0', STR_PAD_LEFT);
-                $letter = mb_strtoupper((string) ($student?->classroom?->letter ?? 'ZZZ'));
-                $name = mb_strtoupper((string) $row['full_name']);
+        $styleCenter = (new Style())->setCellAlignment(CellAlignment::CENTER);
 
-                return implode('|', [$grade, $letter, $name]);
-            })
-            ->values();
+        $styleHeader = (new Style())
+            ->setFontBold()
+            ->setBackgroundColor('D9E1F2')
+            ->setCellAlignment(CellAlignment::CENTER);
 
-        $dayTotals = $days->mapWithKeys(function ($date) use ($students): array {
-            $key = $date->format('Y-m-d');
+        $styleTotalRow = (new Style())
+            ->setFontBold()
+            ->setBackgroundColor('F2F2F2')
+            ->setCellAlignment(CellAlignment::CENTER);
 
-            return [
-                $key => $students->sum(fn (array $row): int => (int) ($row['daily_counts'][$key] ?? 0)),
-            ];
+
+        // ── Build class → students data ──────────────────────────────────────
+        $byClass = $orders
+            ->groupBy(fn ($order) => $order->student?->classroom?->full_name ?? '-')
+            ->sortKeys(SORT_NATURAL)
+            ->map(function (Collection $classOrders): Collection {
+                return $classOrders
+                    ->groupBy('student_id')
+                    ->map(function (Collection $studentOrders): array {
+                        /** @var \App\Models\Order $first */
+                        $first = $studentOrders->first();
+                        $student = $first->student;
+
+                        $dates = $studentOrders
+                            ->pluck('order_date')
+                            ->filter()
+                            ->map(fn ($d) => $d->format('Y-m-d'))
+                            ->unique()
+                            ->flip()
+                            ->map(fn () => true);
+
+                        return [
+                            'student'  => $student,
+                            'sort_key' => mb_strtoupper((string) $student?->full_name),
+                            'name'     => $student?->full_name ?: '-',
+                            'dates'    => $dates,
+                            'total'    => $dates->count(),
+                        ];
+                    })
+                    ->sortBy('sort_key')
+                    ->values();
+            });
+
+        // Sort classes naturally: 5А, 5Б, 6А …
+        $byClass = $byClass->sortKeysUsing(function (string $a, string $b): int {
+            preg_match('/^(\d+)(.*)$/', $a, $ma);
+            preg_match('/^(\d+)(.*)$/', $b, $mb);
+            $gradeA = (int) ($ma[1] ?? 999);
+            $gradeB = (int) ($mb[1] ?? 999);
+            if ($gradeA !== $gradeB) {
+                return $gradeA <=> $gradeB;
+            }
+
+            return mb_strtolower($ma[2] ?? '') <=> mb_strtolower($mb[2] ?? '');
         });
 
-        $periodLabel = $report->date_from->format('d.m.Y') . ' - ' . $report->date_to->format('d.m.Y');
-        $title = 'Табель учащихся с категорией с ' . $periodLabel;
-        $schoolName = $report->school?->display_name ?: 'Все школы';
+        $writer = new Writer();
+        $writer->openToFile($path);
 
-        $html = <<<'HTML'
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<style>
-table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11pt; }
-td, th { border: 1px solid #000; padding: 4px 6px; }
-.plain { border: none; }
-.center { text-align: center; }
-.right { text-align: right; }
-.bold { font-weight: 700; }
-.day { width: 34px; text-align: center; }
-.name { min-width: 260px; }
-.class { min-width: 72px; text-align: center; }
-.num { width: 42px; text-align: center; }
-.total { width: 56px; text-align: center; font-weight: 700; }
-</style>
-</head>
-<body>
-<table>
-HTML;
+        // ════════════════════════════════════════════════════════════════════
+        // SHEET 1 — Summary: classes × dates
+        // ════════════════════════════════════════════════════════════════════
+        $summarySheet = $writer->getCurrentSheet();
+        $summarySheet->setName('Сводка');
 
-        $columnCount = 4 + $days->count();
-
-        $html .= '<tr>';
-        $html .= '<td class="plain"></td><td class="plain"></td>';
-        $html .= '<td class="plain right bold" colspan="' . max($columnCount - 2, 1) . '">Утверждаю</td>';
-        $html .= '</tr>';
-
-        $html .= '<tr>';
-        $html .= '<td class="plain"></td><td class="plain"></td>';
-        $html .= '<td class="plain right bold" colspan="' . max($columnCount - 2, 1) . '">Директор________________</td>';
-        $html .= '</tr>';
-
-        $html .= '<tr><td class="plain" colspan="' . $columnCount . '"></td></tr>';
-        $html .= '<tr><td class="plain center bold" colspan="' . $columnCount . '">' . e($title) . '</td></tr>';
-        $html .= '<tr><td class="plain center" colspan="' . $columnCount . '">' . e($schoolName) . '</td></tr>';
-        $html .= '<tr><td class="plain" colspan="' . $columnCount . '"></td></tr>';
-
-        $html .= '<tr>';
-        $html .= '<th class="num">№</th>';
-        $html .= '<th class="name">ФИО</th>';
-        $html .= '<th class="class">Класс</th>';
-        foreach ($days as $date) {
-            $html .= '<th class="day">' . $date->format('d') . '</th>';
+        // Column widths: № | Класс | days… | ИТОГО
+        $summarySheet->setColumnWidth(6, 1);
+        $summarySheet->setColumnWidth(14, 2);
+        foreach (range(3, 2 + $days->count()) as $col) {
+            $summarySheet->setColumnWidth(5, $col);
         }
-        $html .= '<th class="total">ИТОГО</th>';
-        $html .= '</tr>';
+        $summarySheet->setColumnWidth(8, 2 + $days->count() + 1);
 
-        foreach ($students as $index => $row) {
-            $html .= '<tr>';
-            $html .= '<td class="num">' . ($index + 1) . '</td>';
-            $html .= '<td class="name">' . e($row['full_name']) . '</td>';
-            $html .= '<td class="class">' . e($row['class_name']) . '</td>';
+        // Meta rows
+        $writer->addRow(Row::fromValues(['', '', '', 'Утверждаю'], $styleBold));
+        $writer->addRow(Row::fromValues(['', '', '', 'Директор________________'], $styleBold));
+        $writer->addRow(Row::fromValues([]));
+        $writer->addRow(Row::fromValues([$typeLabel . ' с ' . $periodLabel], $styleBold));
+        $writer->addRow(Row::fromValues([$schoolName]));
+        $writer->addRow(Row::fromValues([]));
+
+        // Header row
+        $headerValues = ['№', 'Класс'];
+        foreach ($days as $date) {
+            $headerValues[] = (int) $date->format('d');
+        }
+        $headerValues[] = 'ИТОГО';
+        $writer->addRow(Row::fromValues($headerValues, $styleHeader));
+
+        // One row per class
+        $grandTotal = 0;
+        $dayColTotals = [];
+        $rowIndex = 1;
+
+        foreach ($byClass as $className => $students) {
+            $classTotal = 0;
+            $dayCounts = [];
+
             foreach ($days as $date) {
                 $key = $date->format('Y-m-d');
-                $value = (int) ($row['daily_counts'][$key] ?? 0);
-                $html .= '<td class="day">' . ($value > 0 ? $value : '') . '</td>';
+                $count = $students->sum(fn (array $row): int => isset($row['dates'][$key]) ? 1 : 0);
+                $dayCounts[$key] = $count;
+                $dayColTotals[$key] = ($dayColTotals[$key] ?? 0) + $count;
+                $classTotal += $count;
             }
-            $html .= '<td class="total">' . $row['total'] . '</td>';
-            $html .= '</tr>';
+
+            $cells = [
+                Cell::fromValue($rowIndex++, $styleCenter),
+                Cell::fromValue($className),
+            ];
+            foreach ($days as $date) {
+                $v = $dayCounts[$date->format('Y-m-d')];
+                $cells[] = Cell::fromValue($v > 0 ? $v : '', $styleCenter);
+            }
+            $cells[] = Cell::fromValue($classTotal, $styleCenter);
+            $grandTotal += $classTotal;
+
+            $writer->addRow(new Row($cells));
         }
 
-        $html .= '<tr>';
-        $html .= '<td class="plain" colspan="3"></td>';
+        // Totals row
+        $totalsRow = ['', 'ИТОГО'];
         foreach ($days as $date) {
-            $html .= '<td class="day bold">' . ((int) $dayTotals[$date->format('Y-m-d')] ?: '') . '</td>';
+            $v = $dayColTotals[$date->format('Y-m-d')] ?? 0;
+            $totalsRow[] = $v > 0 ? $v : '';
         }
-        $html .= '<td class="total">' . $students->sum('total') . '</td>';
-        $html .= '</tr>';
+        $totalsRow[] = $grandTotal;
+        $writer->addRow(Row::fromValues($totalsRow, $styleTotalRow));
 
-        $html .= '<tr><td class="plain" colspan="' . $columnCount . '"></td></tr>';
-        $html .= '<tr><td class="plain" colspan="' . $columnCount . '"></td></tr>';
-        $html .= '<tr>';
-        $html .= '<td class="plain"></td>';
-        $html .= '<td class="plain center" colspan="' . max($columnCount - 2, 1) . '">Социальный педагог: ________________________________</td>';
-        $html .= '<td class="plain"></td>';
-        $html .= '</tr>';
+        // Footer
+        $writer->addRow(Row::fromValues([]));
+        $writer->addRow(Row::fromValues(['Социальный педагог: ________________________________']));
 
-        $html .= '</table></body></html>';
+        // ════════════════════════════════════════════════════════════════════
+        // SHEETS 2+ — one sheet per class
+        // ════════════════════════════════════════════════════════════════════
+        foreach ($byClass as $className => $students) {
+            $sheet = $writer->addNewSheetAndMakeItCurrent();
+            $sheet->setName(mb_substr($className, 0, 31));
 
-        return $html;
+            // Column widths: № | ФИО | days… | ИТОГО
+            $sheet->setColumnWidth(6, 1);
+            $sheet->setColumnWidth(36, 2);
+            foreach (range(3, 2 + $days->count()) as $col) {
+                $sheet->setColumnWidth(5, $col);
+            }
+            $sheet->setColumnWidth(8, 2 + $days->count() + 1);
+
+            // Meta
+            $writer->addRow(Row::fromValues(['', '', '', 'Утверждаю'], $styleBold));
+            $writer->addRow(Row::fromValues(['', '', '', 'Директор________________'], $styleBold));
+            $writer->addRow(Row::fromValues([]));
+            $writer->addRow(Row::fromValues([$typeLabel . ' с ' . $periodLabel . ' — ' . $className], $styleBold));
+            $writer->addRow(Row::fromValues([$schoolName]));
+            $writer->addRow(Row::fromValues([]));
+
+            // Header
+            $hdr = ['№', 'ФИО'];
+            foreach ($days as $date) {
+                $hdr[] = (int) $date->format('d');
+            }
+            $hdr[] = 'ИТОГО';
+            $writer->addRow(Row::fromValues($hdr, $styleHeader));
+
+            // Student rows
+            $classColTotals = [];
+            $classGrandTotal = 0;
+
+            foreach ($students as $i => $row) {
+                $cells = [
+                    Cell::fromValue($i + 1, $styleCenter),
+                    Cell::fromValue($row['name']),
+                ];
+                foreach ($days as $date) {
+                    $key = $date->format('Y-m-d');
+                    $has = isset($row['dates'][$key]);
+                    $classColTotals[$key] = ($classColTotals[$key] ?? 0) + ($has ? 1 : 0);
+                    $cells[] = Cell::fromValue($has ? 1 : '', $styleCenter);
+                }
+                $cells[] = Cell::fromValue($row['total'], $styleCenter);
+                $classGrandTotal += $row['total'];
+                $writer->addRow(new Row($cells));
+            }
+
+            // Totals row
+            $tRow = ['', 'ИТОГО'];
+            foreach ($days as $date) {
+                $v = $classColTotals[$date->format('Y-m-d')] ?? 0;
+                $tRow[] = $v > 0 ? $v : '';
+            }
+            $tRow[] = $classGrandTotal;
+            $writer->addRow(Row::fromValues($tRow, $styleTotalRow));
+
+            // Footer
+            $writer->addRow(Row::fromValues([]));
+            $writer->addRow(Row::fromValues(['Социальный педагог: ________________________________']));
+        }
+
+        $writer->close();
     }
 
     /**
