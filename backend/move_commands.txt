@@ -1,0 +1,46 @@
+Тестовый запуск, без записи в БД:
+chmod +x ./tools/migrate_schoolmeal_students.sh
+
+MYSQL_PWD='MYSQL_PASSWORD' \
+PGPASSWORD='PG_PASSWORD' \
+./tools/migrate_schoolmeal_students.sh \
+  --source-org-id 602 \
+  --target-school-id 22 \
+  --mysql-user schoolmeal \
+  --pg-user altyn_as_dbadmin
+
+
+Боевой запуск, с сохранением:
+MYSQL_PWD='MYSQL_PASSWORD' \
+PGPASSWORD='PG_PASSWORD' \
+./tools/migrate_schoolmeal_students.sh \
+  --source-org-id 602 \
+  --target-school-id 22 \
+  --mysql-user schoolmeal \
+  --pg-user altyn_as_dbadmin \
+  --commit
+
+
+Быстрая проверка результата:
+PGPASSWORD='PG_PASSWORD' psql \
+  -h 127.0.0.1 \
+  -p 5432 \
+  -U altyn_as_dbadmin \
+  -d altyn_as_prod <<'SQL'
+SELECT count(*) AS students_count
+FROM students
+WHERE school_id = 22;
+
+SELECT count(*) AS voucher_count
+FROM meal_benefits mb
+JOIN students s ON s.id = mb.student_id
+WHERE s.school_id = 22
+  AND mb.type = 'voucher';
+SQL
+
+
+
+Если нужно для другой школы, меняешь только:
+
+--source-org-id
+--target-school-id

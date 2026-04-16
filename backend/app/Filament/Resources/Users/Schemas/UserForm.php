@@ -76,7 +76,7 @@ class UserForm
                     ->getOptionLabelFromRecordUsing(fn ($record): string => $record->display_name)
                     ->searchable()
                     ->preload()
-                    ->visible(fn (Get $get): bool => self::shouldShowSchool($get('roles')))
+                    ->visible(fn (Get $get): bool => self::shouldShowSchool($get('roles')) || filled($get('school_id')))
                     ->required(fn (Get $get): bool => self::shouldShowSchool($get('roles'))),
                 Select::make('district_id')
                     ->label(__('admin.labels.district'))
