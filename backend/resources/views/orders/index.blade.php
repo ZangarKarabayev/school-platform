@@ -761,6 +761,7 @@
                                 <th>{{ __('admin.labels.academic_class') }}</th>
                                 <th>{{ __('admin.labels.dish') }}</th>
                                 <th>{{ __('ui.orders.date') }}</th>
+                                <th>Кто создал</th>
                                 <th>{{ __('admin.labels.status') }}</th>
                                 <th>{{ __('ui.orders.transaction_status') }}</th>
                                 <th>{{ __('ui.orders.transaction_error') }}</th>
@@ -780,6 +781,17 @@
                                         <div>{{ optional($order->order_date)->format('Y-m-d') ?: '-' }}</div>
                                         <div class="muted">
                                             {{ $order->order_time ? substr($order->order_time, 0, 5) : '-' }}</div>
+                                    </td>
+                                    <td>
+                                        @if ($order->creatorUser)
+                                            <div>{{ $order->creatorUser->full_name ?: ('User #' . $order->creatorUser->id) }}</div>
+                                            <div class="muted">user_id: {{ $order->creatorUser->id }}</div>
+                                        @elseif ($order->creatorTerminal)
+                                            <div>FaceID</div>
+                                            <div class="muted">terminal_id: {{ $order->creatorTerminal->id }}</div>
+                                        @else
+                                            -
+                                        @endif
                                     </td>
                                     <td>
                                         @php
@@ -873,6 +885,20 @@
                                         <div>{{ optional($order->order_date)->format('Y-m-d') ?: '-' }}</div>
                                         <div class="muted">
                                             {{ $order->order_time ? substr($order->order_time, 0, 5) : '-' }}</div>
+                                    </div>
+                                </div>
+                                <div class="orders-mobile-item">
+                                    <div class="orders-mobile-label">Кто создал</div>
+                                    <div class="orders-mobile-value">
+                                        @if ($order->creatorUser)
+                                            <div>{{ $order->creatorUser->full_name ?: ('User #' . $order->creatorUser->id) }}</div>
+                                            <div class="muted">user_id: {{ $order->creatorUser->id }}</div>
+                                        @elseif ($order->creatorTerminal)
+                                            <div>FaceID</div>
+                                            <div class="muted">terminal_id: {{ $order->creatorTerminal->id }}</div>
+                                        @else
+                                            -
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="orders-mobile-item">
@@ -1082,7 +1108,8 @@
                         <div class="orders-form-field">
                             <label for="order_date">{{ __('ui.orders.date') }}</label>
                             <input id="order_date" name="order_date" type="date"
-                                value="{{ old('order_date', now()->format('Y-m-d')) }}" required>
+                                value="{{ old('order_date', now()->format('Y-m-d')) }}"
+                                max="{{ now()->format('Y-m-d') }}" required>
                         </div>
 
                         <div class="orders-form-field">

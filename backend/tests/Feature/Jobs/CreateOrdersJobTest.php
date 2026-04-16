@@ -6,6 +6,7 @@ use App\Jobs\CreateOrdersJob;
 use App\Models\MealBenefit;
 use App\Models\Order;
 use App\Models\Student;
+use App\Models\User;
 use App\Modules\Organizations\Models\District;
 use App\Modules\Organizations\Models\Region;
 use App\Modules\Organizations\Models\School;
@@ -46,15 +47,25 @@ class CreateOrdersJobTest extends TestCase
             'type' => 'paid',
         ]);
 
+        $user = User::factory()->create([
+            'school_id' => $school->id,
+        ]);
+
         (new CreateOrdersJob(
             [$eligibleStudent->id, $ineligibleStudent->id],
             now()->toDateString(),
-            '12:30'
+            '12:30',
+            $user->id,
         ))->handle();
 
         $this->assertDatabaseCount('orders', 1);
         $this->assertTrue(Order::query()->where('student_id', $eligibleStudent->id)->exists());
         $this->assertFalse(Order::query()->where('student_id', $ineligibleStudent->id)->exists());
+        $this->assertDatabaseHas('orders', [
+            'student_id' => $eligibleStudent->id,
+            'created_by_user_id' => $user->id,
+            'created_by_terminal_id' => null,
+        ]);
     }
 
     private function makeSchool(): School

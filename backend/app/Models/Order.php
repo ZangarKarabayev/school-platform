@@ -16,6 +16,8 @@ class Order extends Model
     protected $fillable = [
         'student_id',
         'dish_id',
+        'created_by_user_id',
+        'created_by_terminal_id',
         'order_date',
         'order_time',
         'status',
@@ -39,5 +41,15 @@ class Order extends Model
     public function dish(): BelongsTo
     {
         return $this->belongsTo(Dish::class);
+    }
+
+    public function creatorUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function creatorTerminal(): BelongsTo
+    {
+        return $this->belongsTo(Terminal::class, 'created_by_terminal_id');
     }
 }

@@ -24,6 +24,7 @@ class CreateOrdersJob implements ShouldQueue
         public array $studentIds,
         public string $orderDate,
         public ?string $orderTime,
+        public ?int $createdByUserId = null,
     ) {
     }
 
@@ -43,6 +44,8 @@ class CreateOrdersJob implements ShouldQueue
                 ],
                 [
                     'dish_id' => null,
+                    'created_by_user_id' => $this->createdByUserId,
+                    'created_by_terminal_id' => null,
                     'order_time' => $this->orderTime,
                     'status' => 'created',
                     'transaction_status' => null,

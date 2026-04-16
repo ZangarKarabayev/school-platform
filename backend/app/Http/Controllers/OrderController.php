@@ -7,6 +7,7 @@ use App\Models\AcademicClass;
 use App\Models\Dish;
 use App\Models\Order;
 use App\Models\Student;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class OrderController extends Controller
         ];
 
         $orders = Order::query()
-            ->with(['student.classroom', 'dish'])
+            ->with(['student.classroom', 'dish', 'creatorUser', 'creatorTerminal'])
             ->when($restrictBySchool && $userSchoolId !== null, function ($query) use ($userSchoolId): void {
                 $query->whereHas('student', fn ($studentQuery) => $studentQuery->where('school_id', $userSchoolId));
             })
@@ -42,6 +43,20 @@ class OrderController extends Controller
                             ->orWhere('last_name', 'like', '%' . $search . '%')
                             ->orWhere('first_name', 'like', '%' . $search . '%')
                             ->orWhere('middle_name', 'like', '%' . $search . '%');
+
+                        $normalizedSearch = preg_replace('/\s+/u', ' ', trim($search));
+
+                        if ($normalizedSearch !== null && $normalizedSearch !== '') {
+                            $studentSearchQuery
+                                ->orWhereRaw(
+                                    "TRIM(CONCAT_WS(' ', last_name, first_name, middle_name)) LIKE ?",
+                                    ['%' . $normalizedSearch . '%']
+                                )
+                                ->orWhereRaw(
+                                    "TRIM(CONCAT_WS(' ', first_name, last_name, middle_name)) LIKE ?",
+                                    ['%' . $normalizedSearch . '%']
+                                );
+                        }
                     });
                 });
             })
@@ -103,6 +118,22 @@ class OrderController extends Controller
             'order_time' => ['nullable', 'date_format:H:i'],
         ]);
 
+        $now = now(config('app.timezone'));
+        $orderDate = Carbon::parse($data['order_date'], config('app.timezone'));
+        $selectedDateTime = $data['order_time']
+            ? Carbon::parse($data['order_date'].' '.$data['order_time'], config('app.timezone'))
+            : $orderDate->copy()->startOfDay();
+
+        if (
+            $orderDate->copy()->startOfDay()->isAfter($now->copy()->startOfDay())
+            || ($data['order_time'] && $selectedDateTime->isAfter($now))
+        ) {
+            return redirect()
+                ->route('orders.index')
+                ->withErrors(['order_date' => __('ui.orders.future_date_not_allowed')])
+                ->withInput();
+        }
+
         $studentIds = $this->resolveTargetStudentIds($request, $data);
 
         if ($studentIds->isEmpty()) {
@@ -114,6 +145,7 @@ class OrderController extends Controller
             $studentIds->map(fn ($studentId) => (int) $studentId)->all(),
             $data['order_date'],
             $data['order_time'] ?? null,
+            $request->user()?->id,
         );
 
         return redirect()

@@ -80,7 +80,7 @@ class FaceIDEventService
             'verify_status' => $verifyEvent->verify_status,
         ]);
 
-        self::upsertTerminal($info, $school?->id, $createTime);
+        $terminal = self::upsertTerminal($info, $school?->id, $createTime);
 
         $student = Student::query()
             ->with(['classroom', 'latestMealBenefit'])
@@ -117,6 +117,8 @@ class FaceIDEventService
                 'order_date' => $createTime->toDateString(),
             ],
             [
+                'created_by_user_id' => null,
+                'created_by_terminal_id' => $terminal?->id,
                 'order_time' => $createTime->format('H:i:s'),
                 'status' => 'created',
                 'transaction_status' => null,
@@ -164,11 +166,11 @@ class FaceIDEventService
         return is_array($info) ? $info : [];
     }
 
-    protected static function upsertTerminal(array $info, ?int $schoolId, Carbon $time): void
+    protected static function upsertTerminal(array $info, ?int $schoolId, Carbon $time): ?Terminal
     {
         $deviceId = self::nullableInt($info['DeviceID'] ?? null);
         if ($deviceId === null) {
-            return;
+            return null;
         }
 
         $attributes = [
@@ -181,7 +183,7 @@ class FaceIDEventService
             $attributes['school_id'] = $schoolId;
         }
 
-        Terminal::query()->updateOrCreate(
+        return Terminal::query()->updateOrCreate(
             ['device_id' => $deviceId],
             $attributes,
         );

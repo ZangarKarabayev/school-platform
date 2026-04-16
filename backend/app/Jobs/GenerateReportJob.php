@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\GeneratedReport;
 use App\Models\Order;
+use App\Models\Student;
 use Carbon\CarbonPeriod;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -42,27 +43,18 @@ class GenerateReportJob implements ShouldQueue
             $orders = Order::query()
                 ->with(['student.classroom', 'student.latestMealBenefit', 'student.school'])
                 ->whereBetween('order_date', [$report->date_from, $report->date_to])
-                ->whereHas('student', function ($query) use ($report): void {
-                    $query->when(
-                        $report->school_id !== null,
-                        fn ($studentQuery) => $studentQuery->where('school_id', $report->school_id)
-                    );
-
-                    match ($report->report_type) {
-                        GeneratedReport::TYPE_1_4 => $query
-                            ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [1, 4])),
-                        GeneratedReport::TYPE_1_5_SUSN => $query
-                            ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [1, 5]))
-                            ->whereHas('latestMealBenefit', fn ($benefitQuery) => $benefitQuery->where('type', 'susn')),
-                        GeneratedReport::TYPE_5_11 => $query
-                            ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [5, 11])),
-                        GeneratedReport::TYPE_5_11_SUSN => $query
-                            ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [5, 11]))
-                            ->whereHas('latestMealBenefit', fn ($benefitQuery) => $benefitQuery->where('type', 'susn')),
-                        default => null,
-                    };
-                })
+                ->whereHas('student', fn ($query) => $this->applyStudentReportFilters($query, $report))
                 ->orderBy('order_date')
+                ->orderBy('id')
+                ->get();
+
+            $students = Student::query()
+                ->with(['classroom', 'latestMealBenefit', 'school'])
+                ->whereNotNull('classroom_id')
+                ->tap(fn ($query) => $this->applyStudentReportFilters($query, $report))
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->orderBy('middle_name')
                 ->orderBy('id')
                 ->get();
 
@@ -80,7 +72,7 @@ class GenerateReportJob implements ShouldQueue
                 mkdir(dirname($path), 0777, true);
             }
 
-            $this->buildSchoolReportXlsx($path, $report, $orders);
+            $this->buildSchoolReportXlsx($path, $report, $orders, $students);
 
             $report->update([
                 'status' => GeneratedReport::STATUS_COMPLETED,
@@ -135,8 +127,12 @@ class GenerateReportJob implements ShouldQueue
         fclose($handle);
     }
 
-    private function buildSchoolReportXlsx(string $path, GeneratedReport $report, Collection $orders): void
-    {
+    private function buildSchoolReportXlsx(
+        string $path,
+        GeneratedReport $report,
+        Collection $orders,
+        Collection $students
+    ): void {
         $days = collect(CarbonPeriod::create($report->date_from, $report->date_to))
             ->map(fn ($date) => $date->copy())
             ->values();
@@ -145,60 +141,54 @@ class GenerateReportJob implements ShouldQueue
         $schoolName = $report->school?->display_name ?: 'Все школы';
         $typeLabel = $report->type_label;
 
-        // ── Styles ──────────────────────────────────────────────────────────
         $styleBold = (new Style())->setFontBold();
-
         $styleCenter = (new Style())->setCellAlignment(CellAlignment::CENTER);
-
         $styleHeader = (new Style())
             ->setFontBold()
             ->setBackgroundColor('D9E1F2')
             ->setCellAlignment(CellAlignment::CENTER);
-
         $styleTotalRow = (new Style())
             ->setFontBold()
             ->setBackgroundColor('F2F2F2')
             ->setCellAlignment(CellAlignment::CENTER);
 
+        $studentDatesMap = $orders
+            ->groupBy('student_id')
+            ->map(function (Collection $studentOrders): Collection {
+                return $studentOrders
+                    ->pluck('order_date')
+                    ->filter()
+                    ->map(fn ($date) => $date->format('Y-m-d'))
+                    ->unique()
+                    ->flip()
+                    ->map(fn () => true);
+            });
 
-        // ── Build class → students data ──────────────────────────────────────
-        $byClass = $orders
-            ->groupBy(fn ($order) => $order->student?->classroom?->full_name ?? '-')
-            ->sortKeys(SORT_NATURAL)
-            ->map(function (Collection $classOrders): Collection {
-                return $classOrders
-                    ->groupBy('student_id')
-                    ->map(function (Collection $studentOrders): array {
-                        /** @var \App\Models\Order $first */
-                        $first = $studentOrders->first();
-                        $student = $first->student;
-
-                        $dates = $studentOrders
-                            ->pluck('order_date')
-                            ->filter()
-                            ->map(fn ($d) => $d->format('Y-m-d'))
-                            ->unique()
-                            ->flip()
-                            ->map(fn () => true);
+        $byClass = $students
+            ->groupBy(fn (Student $student) => $student->classroom?->full_name ?? '-')
+            ->map(function (Collection $classStudents) use ($studentDatesMap): Collection {
+                return $classStudents
+                    ->map(function (Student $student) use ($studentDatesMap): array {
+                        $dates = $studentDatesMap->get($student->id, collect());
 
                         return [
-                            'student'  => $student,
-                            'sort_key' => mb_strtoupper((string) $student?->full_name),
-                            'name'     => $student?->full_name ?: '-',
-                            'dates'    => $dates,
-                            'total'    => $dates->count(),
+                            'student' => $student,
+                            'sort_key' => mb_strtoupper((string) $student->full_name),
+                            'name' => $student->full_name ?: '-',
+                            'dates' => $dates,
+                            'total' => $dates->count(),
                         ];
                     })
                     ->sortBy('sort_key')
                     ->values();
             });
 
-        // Sort classes naturally: 5А, 5Б, 6А …
         $byClass = $byClass->sortKeysUsing(function (string $a, string $b): int {
             preg_match('/^(\d+)(.*)$/', $a, $ma);
             preg_match('/^(\d+)(.*)$/', $b, $mb);
             $gradeA = (int) ($ma[1] ?? 999);
             $gradeB = (int) ($mb[1] ?? 999);
+
             if ($gradeA !== $gradeB) {
                 return $gradeA <=> $gradeB;
             }
@@ -209,13 +199,8 @@ class GenerateReportJob implements ShouldQueue
         $writer = new Writer();
         $writer->openToFile($path);
 
-        // ════════════════════════════════════════════════════════════════════
-        // SHEET 1 — Summary: classes × dates
-        // ════════════════════════════════════════════════════════════════════
         $summarySheet = $writer->getCurrentSheet();
         $summarySheet->setName('Сводка');
-
-        // Column widths: № | Класс | days… | ИТОГО
         $summarySheet->setColumnWidth(6, 1);
         $summarySheet->setColumnWidth(14, 2);
         foreach (range(3, 2 + $days->count()) as $col) {
@@ -223,7 +208,6 @@ class GenerateReportJob implements ShouldQueue
         }
         $summarySheet->setColumnWidth(8, 2 + $days->count() + 1);
 
-        // Meta rows
         $writer->addRow(Row::fromValues(['', '', '', 'Утверждаю'], $styleBold));
         $writer->addRow(Row::fromValues(['', '', '', 'Директор________________'], $styleBold));
         $writer->addRow(Row::fromValues([]));
@@ -231,7 +215,6 @@ class GenerateReportJob implements ShouldQueue
         $writer->addRow(Row::fromValues([$schoolName]));
         $writer->addRow(Row::fromValues([]));
 
-        // Header row
         $headerValues = ['№', 'Класс'];
         foreach ($days as $date) {
             $headerValues[] = (int) $date->format('d');
@@ -239,18 +222,17 @@ class GenerateReportJob implements ShouldQueue
         $headerValues[] = 'ИТОГО';
         $writer->addRow(Row::fromValues($headerValues, $styleHeader));
 
-        // One row per class
         $grandTotal = 0;
         $dayColTotals = [];
         $rowIndex = 1;
 
-        foreach ($byClass as $className => $students) {
+        foreach ($byClass as $className => $classStudents) {
             $classTotal = 0;
             $dayCounts = [];
 
             foreach ($days as $date) {
                 $key = $date->format('Y-m-d');
-                $count = $students->sum(fn (array $row): int => isset($row['dates'][$key]) ? 1 : 0);
+                $count = $classStudents->sum(fn (array $row): int => isset($row['dates'][$key]) ? 1 : 0);
                 $dayCounts[$key] = $count;
                 $dayColTotals[$key] = ($dayColTotals[$key] ?? 0) + $count;
                 $classTotal += $count;
@@ -260,37 +242,30 @@ class GenerateReportJob implements ShouldQueue
                 Cell::fromValue($rowIndex++, $styleCenter),
                 Cell::fromValue($className),
             ];
+
             foreach ($days as $date) {
-                $v = $dayCounts[$date->format('Y-m-d')];
-                $cells[] = Cell::fromValue($v > 0 ? $v : '', $styleCenter);
+                $cells[] = Cell::fromValue($dayCounts[$date->format('Y-m-d')], $styleCenter);
             }
+
             $cells[] = Cell::fromValue($classTotal, $styleCenter);
             $grandTotal += $classTotal;
 
             $writer->addRow(new Row($cells));
         }
 
-        // Totals row
         $totalsRow = ['', 'ИТОГО'];
         foreach ($days as $date) {
-            $v = $dayColTotals[$date->format('Y-m-d')] ?? 0;
-            $totalsRow[] = $v > 0 ? $v : '';
+            $totalsRow[] = $dayColTotals[$date->format('Y-m-d')] ?? 0;
         }
         $totalsRow[] = $grandTotal;
         $writer->addRow(Row::fromValues($totalsRow, $styleTotalRow));
 
-        // Footer
         $writer->addRow(Row::fromValues([]));
         $writer->addRow(Row::fromValues(['Социальный педагог: ________________________________']));
 
-        // ════════════════════════════════════════════════════════════════════
-        // SHEETS 2+ — one sheet per class
-        // ════════════════════════════════════════════════════════════════════
-        foreach ($byClass as $className => $students) {
+        foreach ($byClass as $className => $classStudents) {
             $sheet = $writer->addNewSheetAndMakeItCurrent();
             $sheet->setName(mb_substr($className, 0, 31));
-
-            // Column widths: № | ФИО | days… | ИТОГО
             $sheet->setColumnWidth(6, 1);
             $sheet->setColumnWidth(36, 2);
             foreach (range(3, 2 + $days->count()) as $col) {
@@ -298,7 +273,6 @@ class GenerateReportJob implements ShouldQueue
             }
             $sheet->setColumnWidth(8, 2 + $days->count() + 1);
 
-            // Meta
             $writer->addRow(Row::fromValues(['', '', '', 'Утверждаю'], $styleBold));
             $writer->addRow(Row::fromValues(['', '', '', 'Директор________________'], $styleBold));
             $writer->addRow(Row::fromValues([]));
@@ -306,7 +280,6 @@ class GenerateReportJob implements ShouldQueue
             $writer->addRow(Row::fromValues([$schoolName]));
             $writer->addRow(Row::fromValues([]));
 
-            // Header
             $hdr = ['№', 'ФИО'];
             foreach ($days as $date) {
                 $hdr[] = (int) $date->format('d');
@@ -314,36 +287,34 @@ class GenerateReportJob implements ShouldQueue
             $hdr[] = 'ИТОГО';
             $writer->addRow(Row::fromValues($hdr, $styleHeader));
 
-            // Student rows
             $classColTotals = [];
             $classGrandTotal = 0;
 
-            foreach ($students as $i => $row) {
+            foreach ($classStudents as $i => $row) {
                 $cells = [
                     Cell::fromValue($i + 1, $styleCenter),
                     Cell::fromValue($row['name']),
                 ];
+
                 foreach ($days as $date) {
                     $key = $date->format('Y-m-d');
                     $has = isset($row['dates'][$key]);
                     $classColTotals[$key] = ($classColTotals[$key] ?? 0) + ($has ? 1 : 0);
-                    $cells[] = Cell::fromValue($has ? 1 : '', $styleCenter);
+                    $cells[] = Cell::fromValue($has ? 1 : 0, $styleCenter);
                 }
+
                 $cells[] = Cell::fromValue($row['total'], $styleCenter);
                 $classGrandTotal += $row['total'];
                 $writer->addRow(new Row($cells));
             }
 
-            // Totals row
             $tRow = ['', 'ИТОГО'];
             foreach ($days as $date) {
-                $v = $classColTotals[$date->format('Y-m-d')] ?? 0;
-                $tRow[] = $v > 0 ? $v : '';
+                $tRow[] = $classColTotals[$date->format('Y-m-d')] ?? 0;
             }
             $tRow[] = $classGrandTotal;
             $writer->addRow(Row::fromValues($tRow, $styleTotalRow));
 
-            // Footer
             $writer->addRow(Row::fromValues([]));
             $writer->addRow(Row::fromValues(['Социальный педагог: ________________________________']));
         }
@@ -351,9 +322,31 @@ class GenerateReportJob implements ShouldQueue
         $writer->close();
     }
 
+    private function applyStudentReportFilters($query, GeneratedReport $report)
+    {
+        $query->when(
+            $report->school_id !== null,
+            fn ($studentQuery) => $studentQuery->where('school_id', $report->school_id)
+        );
+
+        match ($report->report_type) {
+            GeneratedReport::TYPE_1_4 => $query
+                ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [1, 4])),
+            GeneratedReport::TYPE_1_5_SUSN => $query
+                ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [1, 5]))
+                ->whereHas('latestMealBenefit', fn ($benefitQuery) => $benefitQuery->where('type', 'susn')),
+            GeneratedReport::TYPE_5_11 => $query
+                ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [5, 11])),
+            GeneratedReport::TYPE_5_11_SUSN => $query
+                ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [5, 11]))
+                ->whereHas('latestMealBenefit', fn ($benefitQuery) => $benefitQuery->where('type', 'susn')),
+            default => $query,
+        };
+
+        return $query;
+    }
+
     /**
-     * Use semicolon for better Excel compatibility on RU/KZ Windows locales.
-     *
      * @param resource $handle
      * @param array<int, mixed> $row
      */
