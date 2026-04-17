@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Modules\Organizations\Models\District;
 use App\Modules\Organizations\Models\Region;
 use App\Modules\Organizations\Models\School;
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -113,6 +114,7 @@ class DashboardDataService
         $susnStudents = (int) ($studentsStats->susn_count ?? 0);
         $voucherStudents = (int) ($studentsStats->voucher_count ?? 0);
         $otherStudents = max($totalStudents - $voucherStudents - $susnStudents, 0);
+        $ordersTable = $this->buildOrdersTable(clone $ordersAggregateBase, $filters);
 
         return [
             'filters' => $filters,
@@ -145,6 +147,7 @@ class DashboardDataService
                     ['label' => 'Без заказов', 'value' => max($totalStudents - $studentsWithOrders, 0)],
                 ],
             ],
+            'ordersTable' => $ordersTable,
         ];
     }
 
@@ -246,5 +249,98 @@ class DashboardDataService
         if ($allowedSchoolId !== null) {
             $query->where($studentAlias.'.school_id', $allowedSchoolId);
         }
+    }
+
+    /**
+     * @param \Illuminate\Database\Query\Builder $ordersAggregateBase
+     * @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
+    private function buildOrdersTable($ordersAggregateBase, array $filters): array
+    {
+        $startDate = Carbon::parse((string) $filters['date_from'])->startOfDay();
+        $endDate = Carbon::parse((string) $filters['date_to'])->startOfDay();
+
+        if ($startDate->greaterThan($endDate)) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
+
+        $days = [];
+        $columnTotals = [];
+        $cursor = $startDate->copy();
+
+        while ($cursor->lessThanOrEqualTo($endDate)) {
+            $dateKey = $cursor->toDateString();
+            $days[] = [
+                'key' => $dateKey,
+                'label' => $cursor->format('d.m'),
+                'title' => $cursor->format('d.m.Y'),
+            ];
+            $columnTotals[$dateKey] = 0;
+            $cursor->addDay();
+        }
+
+        $orders = $ordersAggregateBase
+            ->select([
+                's.id as student_id',
+                's.last_name',
+                's.first_name',
+                's.middle_name',
+                'c.full_name as classroom_name',
+                'o.order_date',
+            ])
+            ->orderBy('s.last_name')
+            ->orderBy('s.first_name')
+            ->orderBy('s.middle_name')
+            ->orderBy('s.id')
+            ->orderBy('o.order_date')
+            ->get();
+
+        $rows = [];
+        $dayKeys = array_column($days, 'key');
+
+        foreach ($orders as $order) {
+            $studentId = (int) $order->student_id;
+            $dateKey = Carbon::parse($order->order_date)->toDateString();
+
+            if (! isset($rows[$studentId])) {
+                $fullName = trim(implode(' ', array_filter([
+                    (string) $order->last_name,
+                    (string) $order->first_name,
+                    (string) $order->middle_name,
+                ])));
+
+                $rows[$studentId] = [
+                    'number' => 0,
+                    'student_id' => $studentId,
+                    'full_name' => $fullName !== '' ? $fullName : '#'.$studentId,
+                    'classroom_name' => (string) ($order->classroom_name ?? '-'),
+                    'values' => array_fill_keys($dayKeys, 0),
+                    'total' => 0,
+                ];
+            }
+
+            if (! isset($rows[$studentId]['values'][$dateKey]) || $rows[$studentId]['values'][$dateKey] === 1) {
+                continue;
+            }
+
+            $rows[$studentId]['values'][$dateKey] = 1;
+            $rows[$studentId]['total']++;
+            $columnTotals[$dateKey]++;
+        }
+
+        $rows = array_values($rows);
+
+        foreach ($rows as $index => &$row) {
+            $row['number'] = $index + 1;
+        }
+        unset($row);
+
+        return [
+            'days' => $days,
+            'rows' => $rows,
+            'column_totals' => $columnTotals,
+            'grand_total' => array_sum($columnTotals),
+        ];
     }
 }

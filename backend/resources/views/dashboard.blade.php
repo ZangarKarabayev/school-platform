@@ -7,6 +7,10 @@
     $classGroups = $charts['class_groups'] ?? [];
     $benefits = $charts['benefits'] ?? [];
     $coverage = $charts['coverage'] ?? [];
+    $ordersTableDays = $ordersTable['days'] ?? [];
+    $ordersTableRows = $ordersTable['rows'] ?? [];
+    $ordersTableColumnTotals = $ordersTable['column_totals'] ?? [];
+    $ordersTableGrandTotal = (int) ($ordersTable['grand_total'] ?? 0);
     $totalStudents = (int) ($coverage[0]['value'] ?? 0);
     $voucherStudents = (int) ($benefits[1]['value'] ?? 0);
     $susnStudents = (int) ($benefits[0]['value'] ?? 0);
@@ -73,6 +77,11 @@
             padding: 24px 0;
             display: grid;
             gap: 18px;
+            min-width: 0;
+        }
+
+        .dashboard-page section {
+            min-width: 0;
         }
 
         .dashboard-card {
@@ -80,6 +89,8 @@
             border: 1px solid #d1d8e5;
             border-radius: 20px;
             box-shadow: 0 12px 32px rgba(35, 64, 103, 0.08);
+            min-width: 0;
+            max-width: 100%;
         }
 
         .dashboard-filters {
@@ -116,6 +127,7 @@
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 16px;
+            min-width: 0;
         }
 
         .dashboard-stat,
@@ -140,6 +152,12 @@
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 16px;
+            min-width: 0;
+        }
+
+        .dashboard-stats>*,
+        .dashboard-charts>* {
+            min-width: 0;
         }
 
         .dashboard-chart-title {
@@ -246,6 +264,107 @@
         .dashboard-empty {
             padding: 24px;
             color: #71829a;
+        }
+
+        .dashboard-table-card {
+            overflow: hidden;
+        }
+
+        .dashboard-table-header {
+            padding: 20px 24px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .dashboard-table-title {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: #1d3151;
+        }
+
+        .dashboard-table-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dashboard-table-wrap {
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            padding: 20px 24px 24px;
+        }
+
+        .dashboard-table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dashboard-table col.dashboard-table-col-number {
+            width: 38px;
+        }
+
+        .dashboard-table col.dashboard-table-col-name {
+            width: 260px;
+        }
+
+        .dashboard-table col.dashboard-table-col-classroom {
+            width: 72px;
+        }
+
+        .dashboard-table col.dashboard-table-col-day {
+            width: 42px;
+        }
+
+        .dashboard-table col.dashboard-table-col-total {
+            width: 58px;
+        }
+
+        .dashboard-table th,
+        .dashboard-table td {
+            border: 1px solid #dbe4f0;
+            padding: 8px 8px;
+            font-size: 13px;
+            text-align: center;
+            color: #1d3151;
+            background: #fff;
+        }
+
+        .dashboard-table thead th {
+            background: #edf4ff;
+            font-weight: 700;
+        }
+
+        .dashboard-table th:nth-child(2),
+        .dashboard-table td:nth-child(2),
+        .dashboard-table tfoot th:nth-child(2) {
+            text-align: left;
+        }
+
+        .dashboard-table th:nth-child(3),
+        .dashboard-table td:nth-child(3),
+        .dashboard-table tfoot th:nth-child(3) {
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .dashboard-table tfoot th,
+        .dashboard-table tfoot td {
+            background: #f6f9ff;
+            font-weight: 700;
+        }
+
+        .dashboard-table-day {
+            width: 42px;
+            white-space: nowrap;
+            text-align: center !important;
+            padding-left: 0;
+            padding-right: 0;
         }
 
         @media (max-width: 1200px) {
@@ -439,5 +558,69 @@
                 </div>
             </div>
         </section>
+
+        @if ($showOrdersTable)
+            <section>
+                <div class="dashboard-card dashboard-table-card">
+                    <div class="dashboard-table-header">
+                        <h2 class="dashboard-table-title">{{ __('ui.dashboard_page.orders_table') }}</h2>
+                        <div class="dashboard-table-actions">
+                            <a class="btn secondary" href="{{ route('dashboard.export-orders-table', request()->query()) }}">{{ __('ui.dashboard_page.download_excel') }}</a>
+                        </div>
+                    </div>
+
+                    @if (count($ordersTableRows) > 0)
+                        <div class="dashboard-table-wrap">
+                            <table class="dashboard-table">
+                                <colgroup>
+                                    <col class="dashboard-table-col-number">
+                                    <col class="dashboard-table-col-name">
+                                    <col class="dashboard-table-col-classroom">
+                                    @foreach ($ordersTableDays as $day)
+                                        <col class="dashboard-table-col-day">
+                                    @endforeach
+                                    <col class="dashboard-table-col-total">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>№</th>
+                                        <th>ФИО</th>
+                                        <th>{{ __('ui.dashboard_page.classroom') }}</th>
+                                        @foreach ($ordersTableDays as $day)
+                                            <th class="dashboard-table-day" title="{{ $day['title'] }}">{{ $day['label'] }}</th>
+                                        @endforeach
+                                        <th>{{ __('ui.dashboard_page.total') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($ordersTableRows as $row)
+                                        <tr>
+                                            <td>{{ $row['number'] }}</td>
+                                            <td>{{ $row['full_name'] }}</td>
+                                            <td>{{ $row['classroom_name'] }}</td>
+                                            @foreach ($ordersTableDays as $day)
+                                                <td class="dashboard-table-day">{{ $row['values'][$day['key']] ?: '' }}</td>
+                                            @endforeach
+                                            <td><strong>{{ $row['total'] }}</strong></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="3">{{ __('ui.dashboard_page.total') }}</th>
+                                        @foreach ($ordersTableDays as $day)
+                                            <td class="dashboard-table-day">{{ $ordersTableColumnTotals[$day['key']] ?? 0 }}</td>
+                                        @endforeach
+                                        <td>{{ $ordersTableGrandTotal }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    @else
+                        <div class="dashboard-empty">{{ __('ui.dashboard_page.no_data_selected_period') }}</div>
+                    @endif
+                </div>
+            </section>
+        @endif
     </div>
 @endsection
