@@ -45,9 +45,11 @@ class WebAuthController extends Controller
         return view('auth.register');
     }
 
-    public function showPendingActivation(): View
+    public function showPendingActivation(Request $request): View
     {
-        return view('auth.pending-activation');
+        return view('auth.pending-activation', [
+            'reason' => $request->string('reason')->toString(),
+        ]);
     }
 
     public function showPhoneRegister(): View

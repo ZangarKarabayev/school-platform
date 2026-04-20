@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureBasicAuth;
 use App\Http\Middleware\EnsureKitchenAccess;
 use App\Http\Middleware\EnsureKitchenAuthenticated;
+use App\Http\Middleware\EnsureSchoolBoundForSchoolRoles;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Foundation\Application;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'basic.auth' => EnsureBasicAuth::class,
             'kitchen.auth' => EnsureKitchenAuthenticated::class,
             'kitchen.role' => EnsureKitchenAccess::class,
+            'school.bound' => EnsureSchoolBoundForSchoolRoles::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

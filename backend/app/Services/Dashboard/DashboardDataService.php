@@ -331,6 +331,28 @@ class DashboardDataService
 
         $rows = array_values($rows);
 
+        usort($rows, function (array $left, array $right): int {
+            $classCompare = strnatcasecmp(
+                (string) ($left['classroom_name'] ?? ''),
+                (string) ($right['classroom_name'] ?? '')
+            );
+
+            if ($classCompare !== 0) {
+                return $classCompare;
+            }
+
+            $nameCompare = strnatcasecmp(
+                (string) ($left['full_name'] ?? ''),
+                (string) ($right['full_name'] ?? '')
+            );
+
+            if ($nameCompare !== 0) {
+                return $nameCompare;
+            }
+
+            return (int) ($left['student_id'] ?? 0) <=> (int) ($right['student_id'] ?? 0);
+        });
+
         foreach ($rows as $index => &$row) {
             $row['number'] = $index + 1;
         }
