@@ -228,6 +228,8 @@ class StudentController extends Controller
 
     public function edit(Request $request, Student $student): View
     {
+        $userSchoolId = $this->resolveSchoolIdForUser($request);
+
         return view('students.edit', [
             'user' => $request->user()?->loadMissing('roles', 'scopes'),
             'student' => $student->load([
@@ -240,7 +242,9 @@ class StudentController extends Controller
                     ->orderByDesc('id'),
             ]),
             'classrooms' => AcademicClass::query()->orderBy('grade')->orderBy('letter')->get(),
-            'schools' => School::query()->orderBy('name_ru')->orderBy('name_kk')->get(),
+            'formSchool' => $userSchoolId !== null
+                ? School::query()->find($userSchoolId)
+                : $student->school,
             'title' => $student->full_name ?: __('admin.labels.student'),
         ]);
     }
@@ -255,7 +259,6 @@ class StudentController extends Controller
             'birth_date' => ['nullable', 'date'],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
             'classroom_id' => ['nullable', 'integer', 'exists:classrooms,id'],
-            'school_id' => ['nullable', 'integer', 'exists:schools,id'],
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:65535'],
             'student_number' => ['nullable', 'string', 'max:20'],
@@ -267,6 +270,12 @@ class StudentController extends Controller
 
         $mealBenefitType = $data['meal_benefit_type'] ?? null;
         unset($data['meal_benefit_type']);
+
+        $userSchoolId = $this->resolveSchoolIdForUser($request);
+
+        if ($userSchoolId !== null) {
+            $data['school_id'] = $userSchoolId;
+        }
 
         $student->update($data);
 

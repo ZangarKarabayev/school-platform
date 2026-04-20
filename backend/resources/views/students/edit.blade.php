@@ -287,15 +287,9 @@
                         </div>
 
                         <div class="student-edit-field">
-                            <label for="school_id">{{ __('admin.labels.organization') }}</label>
-                            <select id="school_id" name="school_id">
-                                <option value="">-</option>
-                                @foreach ($schools as $school)
-                                    <option value="{{ $school->id }}" @selected((string) old('school_id', $student->school_id) === (string) $school->id)>
-                                        {{ $school->display_name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <label for="school_display">{{ __('admin.labels.organization') }}</label>
+                            <input id="school_display" type="text"
+                                value="{{ $formSchool?->display_name ?: '-' }}" disabled>
                         </div>
 
                         <div class="student-edit-field">
