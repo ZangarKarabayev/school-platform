@@ -16,8 +16,7 @@ class SocialWalletService
 {
     public function __construct(
         private readonly HttpFactory $http,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{school_id:int,total:int,matched:int,created:int,updated:int,unmatched:int}
@@ -32,7 +31,7 @@ class SocialWalletService
 
         $voucherIins = $this->fetchAllActiveVoucherIins($schoolBin, $filters);
         $uniqueIins = collect($voucherIins)
-            ->map(fn (mixed $iin): string => trim((string) $iin))
+            ->map(fn(mixed $iin): string => trim((string) $iin))
             ->filter()
             ->unique()
             ->values();
@@ -41,7 +40,7 @@ class SocialWalletService
             ->with('latestMealBenefit')
             ->whereIn('iin', $uniqueIins->all())
             ->get()
-            ->keyBy(fn ($student) => (string) $student->iin);
+            ->keyBy(fn($student) => (string) $student->iin);
 
         $created = 0;
         $updated = 0;
@@ -112,6 +111,11 @@ class SocialWalletService
                     'school_bin' => $schoolBin,
                 ]);
 
+            Log::info('Social wallet transaction rejected', [
+                'date' => $this->formatOrderTimestampForSocialWallet($order),
+                'school_bin' => $schoolBin,
+            ]);
+
             $payload = $response->json();
 
             if ($response->successful() && ($payload['success'] ?? false) === true) {
@@ -128,7 +132,7 @@ class SocialWalletService
                 'status' => $response->status(),
                 'payload' => $payload,
             ]);
-        } catch (ConnectionException|RequestException|RuntimeException $exception) {
+        } catch (ConnectionException | RequestException | RuntimeException $exception) {
             $this->markOrderTransaction($order, false, $exception->getMessage());
 
             Log::error('Social wallet transaction request failed', [
@@ -159,7 +163,7 @@ class SocialWalletService
                 'gradeTo' => $filters['gradeTo'] ?? null,
                 'fromPeriod' => $filters['fromPeriod'] ?? null,
                 'toPeriod' => $filters['toPeriod'] ?? null,
-            ], fn (mixed $value): bool => $value !== null && $value !== '');
+            ], fn(mixed $value): bool => $value !== null && $value !== '');
 
             $response = $this->client()
                 ->get('/api/v1/sdu/meal/voucher/list/active', $query);
@@ -170,8 +174,8 @@ class SocialWalletService
 
             $payload = $response->json();
             $content = collect($payload['content'] ?? [])
-                ->filter(fn (mixed $value): bool => is_string($value) || is_numeric($value))
-                ->map(fn (mixed $value): string => trim((string) $value))
+                ->filter(fn(mixed $value): bool => is_string($value) || is_numeric($value))
+                ->map(fn(mixed $value): string => trim((string) $value))
                 ->filter()
                 ->all();
 
@@ -207,7 +211,7 @@ class SocialWalletService
         $date = $order->order_date?->toDateString() ?? now()->toDateString();
         $time = trim((string) $order->order_time) !== '' ? (string) $order->order_time : '00:00:00';
 
-        return Carbon::parse($date.' '.$time, config('app.timezone'))
+        return Carbon::parse($date . ' ' . $time, config('app.timezone'))
             ->format('Y-m-d H:i:s');
     }
 

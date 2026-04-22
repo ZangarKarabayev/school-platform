@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Order;
 use App\Models\Student;
+use App\Services\OrderCalendarService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -28,8 +29,14 @@ class CreateOrdersJob implements ShouldQueue
     ) {
     }
 
-    public function handle(): void
+    public function handle(?OrderCalendarService $orderCalendarService = null): void
     {
+        $orderCalendarService ??= app(OrderCalendarService::class);
+
+        if ($orderCalendarService->isBlockedOrderDate($this->orderDate)) {
+            return;
+        }
+
         $eligibleStudentIds = Student::query()
             ->eligibleForOrder()
             ->whereIn('id', $this->studentIds)

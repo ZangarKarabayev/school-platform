@@ -7,6 +7,7 @@ use App\Models\AcademicClass;
 use App\Models\Dish;
 use App\Models\Order;
 use App\Models\Student;
+use App\Services\OrderCalendarService;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,11 @@ use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
+    public function __construct(
+        private readonly OrderCalendarService $orderCalendarService,
+    ) {
+    }
+
     public function index(Request $request): View
     {
         $user = $request->user()?->loadMissing('roles', 'scopes');
@@ -131,6 +137,13 @@ class OrderController extends Controller
             return redirect()
                 ->route('orders.index')
                 ->withErrors(['order_date' => __('ui.orders.future_date_not_allowed')])
+                ->withInput();
+        }
+
+        if ($this->orderCalendarService->isBlockedOrderDate($orderDate)) {
+            return redirect()
+                ->route('orders.index')
+                ->withErrors(['order_date' => $this->orderCalendarService->blockedOrderDateMessage($orderDate)])
                 ->withInput();
         }
 

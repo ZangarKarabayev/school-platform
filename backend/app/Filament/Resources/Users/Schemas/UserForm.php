@@ -111,7 +111,11 @@ class UserForm
      */
     public static function normalizeScopeAssignments(array $data): array
     {
-        $roles = is_array($data['roles'] ?? null) ? $data['roles'] : [];
+        if (! array_key_exists('roles', $data)) {
+            return $data;
+        }
+
+        $roles = is_array($data['roles']) ? $data['roles'] : [];
 
         if (! self::shouldShowSchool($roles)) {
             $data['school_id'] = null;

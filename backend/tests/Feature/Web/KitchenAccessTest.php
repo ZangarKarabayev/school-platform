@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Modules\Organizations\Models\District;
 use App\Modules\Organizations\Models\Region;
 use App\Modules\Organizations\Models\School;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -15,6 +16,20 @@ use Tests\TestCase;
 class KitchenAccessTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Carbon::setTestNow(Carbon::parse('2026-04-22 12:00:00', config('app.timezone')));
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
 
     public function test_school_qr_opens_kitchen_without_login(): void
     {
@@ -90,6 +105,32 @@ class KitchenAccessTest extends TestCase
 
         $response->assertStatus(422);
         $this->assertSame('Ученик не состоит на соц обеспечении.', $response->json('message'));
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_kitchen_scan_rejects_non_working_day(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-03-24 12:00:00', config('app.timezone')));
+
+        [$school] = $this->makeSchools();
+
+        $student = Student::query()->create([
+            'school_id' => $school->id,
+            'first_name' => 'Ivan',
+            'last_name' => 'Ivanov',
+            'iin' => '123456789014',
+            'status' => 'active',
+        ]);
+
+        MealBenefit::query()->create([
+            'student_id' => $student->id,
+            'type' => 'susn',
+        ]);
+
+        $this->withSession(['kitchen_school_token' => $school->kitchen_access_token])
+            ->postJson(route('kitchen.scan'), ['student_code' => 'student:'.$student->id])
+            ->assertStatus(422);
 
         $this->assertDatabaseCount('orders', 0);
     }

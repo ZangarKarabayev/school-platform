@@ -100,6 +100,7 @@ class FaceIDEventService
         $grade = (int) ($student->classroom?->grade ?? 0);
         $benefitType = $student->latestMealBenefit?->type;
         $eligibleByBenefit = $student->canCreateOrder();
+        $orderCalendarService = app(OrderCalendarService::class);
 
         if (($grade < 1 || $grade > 4) && !$eligibleByBenefit) {
             Log::info('FaceID verify order skipped by eligibility', [
@@ -107,6 +108,15 @@ class FaceIDEventService
                 'student_id' => $student->id,
                 'grade' => $grade,
                 'benefit_type' => $benefitType,
+            ]);
+            return;
+        }
+
+        if ($orderCalendarService->isBlockedOrderDate($createTime)) {
+            Log::info('FaceID verify order skipped by non-working date', [
+                'verify_event_id' => $verifyEvent->id,
+                'student_id' => $student->id,
+                'order_date' => $createTime->toDateString(),
             ]);
             return;
         }

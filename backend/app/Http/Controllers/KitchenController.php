@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Student;
 use App\Models\User;
 use App\Modules\Organizations\Models\School;
+use App\Services\OrderCalendarService;
 use App\Support\QrCodeService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,11 @@ use Illuminate\Http\Response;
 class KitchenController extends Controller
 {
     private const SESSION_TOKEN_KEY = 'kitchen_school_token';
+
+    public function __construct(
+        private readonly OrderCalendarService $orderCalendarService,
+    ) {
+    }
 
     public function access(Request $request, string $token): View
     {
@@ -79,6 +85,12 @@ class KitchenController extends Controller
         }
 
         $today = now()->toDateString();
+
+        if ($this->orderCalendarService->isBlockedOrderDate($today)) {
+            return response()->json([
+                'message' => $this->orderCalendarService->blockedOrderDateMessage($today),
+            ], 422);
+        }
 
         $order = Order::query()
             ->where('student_id', $student->id)

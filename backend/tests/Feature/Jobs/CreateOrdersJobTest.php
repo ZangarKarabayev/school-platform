@@ -53,7 +53,7 @@ class CreateOrdersJobTest extends TestCase
 
         (new CreateOrdersJob(
             [$eligibleStudent->id, $ineligibleStudent->id],
-            now()->toDateString(),
+            '2026-04-22',
             '12:30',
             $user->id,
         ))->handle();
@@ -66,6 +66,30 @@ class CreateOrdersJobTest extends TestCase
             'created_by_user_id' => $user->id,
             'created_by_terminal_id' => null,
         ]);
+    }
+
+    public function test_it_does_not_create_orders_on_weekends_or_holidays(): void
+    {
+        $school = $this->makeSchool();
+
+        $student = Student::query()->create([
+            'school_id' => $school->id,
+            'first_name' => 'Ivan',
+            'last_name' => 'Ivanov',
+            'iin' => '123456789014',
+            'status' => 'active',
+        ]);
+
+        MealBenefit::query()->create([
+            'student_id' => $student->id,
+            'type' => 'susn',
+        ]);
+
+        (new CreateOrdersJob([$student->id], '2026-03-24', '12:30'))->handle();
+        (new CreateOrdersJob([$student->id], '2026-04-25', '12:30'))->handle();
+        (new CreateOrdersJob([$student->id], '2026-06-01', '12:30'))->handle();
+
+        $this->assertDatabaseCount('orders', 0);
     }
 
     private function makeSchool(): School
