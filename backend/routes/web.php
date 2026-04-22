@@ -71,6 +71,7 @@ Route::middleware('auth')->group(function (): void {
             'sectionKey' => 'support',
         ])->name('support.index');
     });
+    Route::get('/students/{student}/photo', [StudentController::class, 'showPhoto'])->name('students.photo.show');
     Route::post('/logout', [WebAuthController::class, 'logout'])->name('logout');
 });
 

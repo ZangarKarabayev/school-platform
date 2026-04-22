@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Students\Schemas;
 
 use App\Models\MealBenefit;
+use App\Models\Student;
+use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -26,6 +28,21 @@ class StudentForm
                     ->disk('public')
                     ->directory('user/photos')
                     ->visibility('public')
+                    ->fetchFileInformation(false)
+                    ->getUploadedFileUsing(function (BaseFileUpload $component, string $file, string|array|null $storedFileNames, ?Student $record): ?array {
+                        if (! $component->getDisk()->exists($file)) {
+                            return null;
+                        }
+
+                        return [
+                            'name' => is_string($storedFileNames) ? $storedFileNames : basename($file),
+                            'size' => 0,
+                            'type' => null,
+                            'url' => $record?->photo === $file
+                                ? route('students.photo.show', $record)
+                                : url('storage/'.ltrim($file, '/')),
+                        ];
+                    })
                     ->avatar()
                     ->openable()
                     ->downloadable(),

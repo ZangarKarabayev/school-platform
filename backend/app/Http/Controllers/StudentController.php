@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentController extends Controller
 {
@@ -321,6 +322,14 @@ class StudentController extends Controller
         }
 
         return back()->withErrors(['photo' => __('ui.messages.photo_required')]);
+    }
+
+    public function showPhoto(Student $student): StreamedResponse
+    {
+        abort_if(blank($student->photo), 404);
+        abort_unless(Storage::disk('public')->exists($student->photo), 404);
+
+        return Storage::disk('public')->response($student->photo);
     }
 
     private function replaceStudentPhoto(Student $student, string $path): void
