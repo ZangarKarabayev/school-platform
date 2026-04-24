@@ -6,7 +6,6 @@ use App\Jobs\ImportStudentsJob;
 use App\Models\AcademicClass;
 use App\Models\MealBenefit;
 use App\Models\Student;
-use App\Models\StudentImport;
 use App\Modules\Organizations\Models\School;
 use App\Services\Students\StudentImportService;
 use Carbon\CarbonImmutable;
@@ -185,11 +184,6 @@ class StudentController extends Controller
                 ->get(),
             'schools' => School::query()->orderBy('name_ru')->orderBy('name_kk')->get(),
             'statuses' => collect(MealBenefit::TYPES),
-            'studentImports' => StudentImport::query()
-                ->where('user_id', $request->user()?->id)
-                ->latest()
-                ->limit(5)
-                ->get(),
             'filters' => $filters,
             'title' => __('ui.menu.students'),
         ]);
@@ -406,7 +400,7 @@ class StudentController extends Controller
             1, 2 => 1800,
             3, 4 => 1900,
             5, 6 => 2000,
-            default => null,
+            default => $this->resolveFallbackCenturyFromIin($iin),
         };
 
         if ($century === null) {
@@ -430,6 +424,35 @@ class StudentController extends Controller
             return null;
         }
 
+        if (! in_array((int) $iin[6], [1, 2, 3, 4, 5, 6], true)) {
+            return null;
+        }
+
         return ((int) $iin[6]) % 2 === 1 ? 'male' : 'female';
+    }
+
+    private function resolveFallbackCenturyFromIin(string $iin): ?int
+    {
+        $month = (int) substr($iin, 2, 2);
+        $day = (int) substr($iin, 4, 2);
+        $minAge = 5;
+        $maxAge = 25;
+
+        foreach ([2000, 1900, 1800] as $candidateCentury) {
+            $year = $candidateCentury + (int) substr($iin, 0, 2);
+
+            if (! checkdate($month, $day, $year)) {
+                continue;
+            }
+
+            $birthDate = CarbonImmutable::create($year, $month, $day);
+            $age = $birthDate->diffInYears(now(), false);
+
+            if ($age >= $minAge && $age <= $maxAge) {
+                return $candidateCentury;
+            }
+        }
+
+        return null;
     }
 }

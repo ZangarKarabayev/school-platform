@@ -760,63 +760,6 @@
                 <div class="students-notice">{{ session('student_status') }}</div>
             @endif
 
-            @if ($studentImports->isNotEmpty())
-                <div class="students-imports">
-                    <h2 class="students-imports-title">{{ __('ui.students.import_history') }}</h2>
-
-                    <div class="students-imports-list">
-                        @foreach ($studentImports as $studentImport)
-                            @php
-                                $statusClass = 'status-' . $studentImport->status;
-                                $statusLabel = __('ui.students.import_statuses.' . $studentImport->status);
-                            @endphp
-
-                            <article class="students-import-item">
-                                <div class="students-import-top">
-                                    <div>
-                                        <div class="students-import-name">{{ $studentImport->original_name }}</div>
-                                        <div class="students-import-meta">
-                                            {{ optional($studentImport->created_at)->format('Y-m-d H:i') }}
-                                        </div>
-                                    </div>
-
-                                    <span class="students-import-status {{ $statusClass }}">
-                                        {{ $statusLabel !== 'ui.students.import_statuses.' . $studentImport->status ? $statusLabel : ucfirst($studentImport->status) }}
-                                    </span>
-                                </div>
-
-                                <div class="students-import-stats">
-                                    <span
-                                        class="students-import-stat">{{ __('ui.students.import_total', ['count' => $studentImport->total_rows]) }}</span>
-                                    <span
-                                        class="students-import-stat">{{ __('ui.students.import_added', ['count' => $studentImport->imported_count]) }}</span>
-                                    <span
-                                        class="students-import-stat">{{ __('ui.students.import_updated', ['count' => $studentImport->updated_count]) }}</span>
-                                    <span
-                                        class="students-import-stat">{{ __('ui.students.import_skipped', ['count' => $studentImport->skipped_count]) }}</span>
-                                </div>
-
-                                @if ($studentImport->error_message)
-                                    <div class="students-import-errors">
-                                        <div class="students-import-error">{{ $studentImport->error_message }}</div>
-                                    </div>
-                                @endif
-
-                                @if (!empty($studentImport->error_rows))
-                                    <div class="students-import-errors">
-                                        @foreach ($studentImport->error_rows as $errorRow)
-                                            <div class="students-import-error">
-                                                {{ $errorRow['message'] ?? '-' }}
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
-                            </article>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-
             <form method="GET" action="{{ route('students.index') }}" class="students-filters">
                 <div class="field">
                     <label for="search">{{ __('admin.labels.full_name') }} / {{ __('admin.labels.iin') }}</label>
