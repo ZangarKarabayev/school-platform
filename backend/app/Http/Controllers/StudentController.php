@@ -54,14 +54,24 @@ class StudentController extends Controller
 
     public function import(Request $request, StudentImportService $studentImportService): RedirectResponse
     {
+        $autoResolvedSchoolId = $this->shouldAutoResolveSchoolIdForImport($request)
+            ? $this->resolveSchoolIdForUser($request)
+            : null;
+
         $data = $request->validate([
             'students_file' => ['required', File::types(['xlsx', 'csv', 'txt'])->max(10 * 1024)],
+            'school_id' => [
+                Rule::requiredIf($autoResolvedSchoolId === null),
+                'nullable',
+                'integer',
+                'exists:schools,id',
+            ],
         ]);
 
         $storedFile = $studentImportService->storeUploadedFile($data['students_file']);
         $studentImport = StudentImport::query()->create([
             'user_id' => $request->user()?->id,
-            'school_id' => $this->resolveSchoolIdForUser($request),
+            'school_id' => $autoResolvedSchoolId ?? (int) $data['school_id'],
             'disk' => $storedFile['disk'],
             'file_path' => $storedFile['path'],
             'original_name' => $storedFile['original_name'],
@@ -376,6 +386,13 @@ class StudentController extends Controller
         return $user?->scopes
             ->first(fn($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
             ?->scope_id;
+    }
+
+    private function shouldAutoResolveSchoolIdForImport(Request $request): bool
+    {
+        $roleCodes = $request->user()?->loadMissing('roles')?->roles?->pluck('code')->all() ?? [];
+
+        return in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
     }
 
     private function extractBirthDateFromIin(?string $iin): ?string

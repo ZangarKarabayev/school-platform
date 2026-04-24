@@ -5,6 +5,7 @@
         $studentRoleCodes = $user?->roles?->pluck('code')->all() ?? [];
         $showSchoolFilter =
             !in_array('teacher', $studentRoleCodes, true) && !in_array('director', $studentRoleCodes, true);
+        $showImportSchoolSelect = $showSchoolFilter;
     @endphp
 
     <style>
@@ -1188,7 +1189,7 @@
     </div>
 
     <div class="student-create-modal" id="student-import-modal"
-        data-open="{{ $errors->has('students_file') ? 'true' : 'false' }}">
+        data-open="{{ $errors->has('students_file') || $errors->has('school_id') ? 'true' : 'false' }}">
         <div class="student-create-panel" style="width: min(100%, 560px);">
             <div class="student-create-header">
                 <div>
@@ -1200,12 +1201,28 @@
             </div>
 
             <div class="student-create-body">
-                @if ($errors->has('students_file'))
-                    <div class="student-create-error">{{ $errors->first('students_file') }}</div>
+                @if ($errors->has('students_file') || $errors->has('school_id'))
+                    <div class="student-create-error">
+                        {{ $errors->first('students_file') ?: $errors->first('school_id') }}
+                    </div>
                 @endif
 
                 <form method="POST" action="{{ route('students.import') }}" enctype="multipart/form-data">
                     @csrf
+
+                    @if ($showImportSchoolSelect)
+                        <div class="field" style="margin-bottom: 12px;">
+                            <label for="import_school_id">{{ __('admin.labels.organization') }}</label>
+                            <select id="import_school_id" name="school_id" required>
+                                <option value="">-</option>
+                                @foreach ($schools as $school)
+                                    <option value="{{ $school->id }}" @selected((string) old('school_id') === (string) $school->id)>
+                                        {{ $school->display_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @endif
 
                     <div class="field">
                         <label for="students_file">{{ __('ui.students.import_file') }}</label>

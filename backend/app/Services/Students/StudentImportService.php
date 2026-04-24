@@ -437,9 +437,73 @@ class StudentImportService
 
     private function sanitizeIin(mixed $value): ?string
     {
-        $value = preg_replace('/\D+/', '', (string) $value);
+        $value = $this->normalizeImportedValue($value);
+
+        if ($value === null) {
+            return null;
+        }
+
+        $normalizedNumericValue = $this->normalizeExcelNumericString($value);
+
+        if ($normalizedNumericValue !== null) {
+            $value = $normalizedNumericValue;
+        }
+
+        $value = preg_replace('/\D+/', '', $value);
 
         return preg_match('/^\d{12}$/', (string) $value) ? $value : null;
+    }
+
+    private function normalizeExcelNumericString(string $value): ?string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (! preg_match('/^[+-]?\d+(?:[.,]\d+)?(?:[eE][+-]?\d+)?$/', $value)) {
+            return null;
+        }
+
+        $normalized = str_replace(',', '.', $value);
+
+        if (! str_contains($normalized, 'e') && ! str_contains($normalized, 'E')) {
+            if (str_contains($normalized, '.')) {
+                $normalized = rtrim(rtrim($normalized, '0'), '.');
+            }
+
+            return $normalized;
+        }
+
+        if (! preg_match('/^(?<sign>[+-]?)(?<mantissa>\d+(?:\.\d+)?)[eE](?<exponent>[+-]?\d+)$/', $normalized, $matches)) {
+            return null;
+        }
+
+        $sign = $matches['sign'] === '-' ? '-' : '';
+        $mantissa = $matches['mantissa'];
+        $exponent = (int) $matches['exponent'];
+
+        [$integerPart, $fractionalPart] = array_pad(explode('.', $mantissa, 2), 2, '');
+        $digits = ltrim($integerPart . $fractionalPart, '0');
+        $digits = $digits === '' ? '0' : $digits;
+        $decimalPosition = strlen($integerPart) + $exponent;
+
+        if ($decimalPosition <= 0) {
+            $result = '0.' . str_repeat('0', abs($decimalPosition)) . $digits;
+        } elseif ($decimalPosition >= strlen($digits)) {
+            $result = $digits . str_repeat('0', $decimalPosition - strlen($digits));
+        } else {
+            $result = substr($digits, 0, $decimalPosition) . '.' . substr($digits, $decimalPosition);
+        }
+
+        $result = $sign . $result;
+
+        if (str_contains($result, '.')) {
+            $result = rtrim(rtrim($result, '0'), '.');
+        }
+
+        return $result;
     }
 
     private function normalizeImportedLanguage(mixed $value): ?string
