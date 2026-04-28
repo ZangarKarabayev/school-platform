@@ -4,8 +4,8 @@ chmod +x ./tools/migrate_schoolmeal_students.sh
 MYSQL_PWD='MYSQL_PASSWORD' \
 PGPASSWORD='PG_PASSWORD' \
 ./tools/migrate_schoolmeal_students.sh \
-  --source-org-id 602 \
-  --target-school-id 22 \
+  --source-org-id 328 \
+  --target-school-id 24 \
   --mysql-user schoolmeal \
   --pg-user altyn_as_dbadmin
 
@@ -14,8 +14,8 @@ PGPASSWORD='PG_PASSWORD' \
 MYSQL_PWD='MYSQL_PASSWORD' \
 PGPASSWORD='PG_PASSWORD' \
 ./tools/migrate_schoolmeal_students.sh \
-  --source-org-id 602 \
-  --target-school-id 22 \
+  --source-org-id 328 \
+  --target-school-id 24 \
   --mysql-user schoolmeal \
   --pg-user altyn_as_dbadmin \
   --commit
@@ -29,12 +29,12 @@ PGPASSWORD='PG_PASSWORD' psql \
   -d altyn_as_prod <<'SQL'
 SELECT count(*) AS students_count
 FROM students
-WHERE school_id = 22;
+WHERE school_id = 24;
 
 SELECT count(*) AS voucher_count
 FROM meal_benefits mb
 JOIN students s ON s.id = mb.student_id
-WHERE s.school_id = 22
+WHERE s.school_id = 24
   AND mb.type = 'voucher';
 SQL
 

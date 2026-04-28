@@ -184,7 +184,6 @@ psql \
   -U "$pg_user" \
   -d "$pg_db" \
   -v ON_ERROR_STOP=1 \
-  -v work_file="$work_file" \
   -v target_school_id="$target_school_id" <<SQL
 BEGIN;
 
@@ -203,7 +202,7 @@ CREATE TEMP TABLE tmp_schoolmeal_students_import (
     updated_at text
 );
 
-\copy tmp_schoolmeal_students_import FROM :'work_file' WITH (FORMAT text);
+\copy tmp_schoolmeal_students_import FROM '$work_file' WITH (FORMAT text);
 
 CREATE TEMP TABLE tmp_schoolmeal_students_normalized AS
 SELECT
