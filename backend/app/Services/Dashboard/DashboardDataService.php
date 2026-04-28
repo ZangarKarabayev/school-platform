@@ -34,6 +34,10 @@ class DashboardDataService
         $scopeConfig = $this->resolveScopeConfig($user, $roleCodes);
         $filters['scope_kind'] = $filters['scope_kind'] !== '' ? $filters['scope_kind'] : $scopeConfig['default_scope_kind'];
 
+        if (in_array('super_admin', $roleCodes, true)) {
+            return $this->buildEmptyDashboardPayload($filters, $scopeConfig);
+        }
+
         $ordersAggregateBase = DB::table('orders as o')
             ->join('students as s', 's.id', '=', 'o.student_id')
             ->leftJoin('classrooms as c', 'c.id', '=', 's.classroom_id')
@@ -148,6 +152,53 @@ class DashboardDataService
                 ],
             ],
             'ordersTable' => $ordersTable,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @param array<string, mixed> $scopeConfig
+     * @return array<string, mixed>
+     */
+    private function buildEmptyDashboardPayload(array $filters, array $scopeConfig): array
+    {
+        return [
+            'filters' => $filters,
+            'scopeConfig' => $scopeConfig,
+            'stats' => [
+                'orders_count' => 0,
+                'error_count' => 0,
+                'success_count' => 0,
+                'failed_count' => 0,
+            ],
+            'charts' => [
+                'transactions' => [
+                    ['label' => __('ui.dashboard_page.transactions_success'), 'value' => 0, 'color' => '#2f9e44'],
+                    ['label' => __('ui.dashboard_page.transactions_failed'), 'value' => 0, 'color' => '#d9485f'],
+                ],
+                'orders_by_school' => [],
+                'orders_by_district' => [],
+                'class_groups' => [
+                    ['label' => '1-4', 'value' => 0, 'color' => '#2876dd'],
+                    ['label' => '5-11', 'value' => 0, 'color' => '#f59f00'],
+                ],
+                'benefits' => [
+                    ['label' => __('ui.dashboard_page.susn'), 'value' => 0, 'color' => '#f59f00'],
+                    ['label' => __('ui.dashboard_page.voucher'), 'value' => 0, 'color' => '#3b82f6'],
+                    ['label' => __('ui.dashboard_page.other'), 'value' => 0, 'color' => '#94a3b8'],
+                ],
+                'coverage' => [
+                    ['label' => __('ui.dashboard_page.students_total'), 'value' => 0],
+                    ['label' => 'РЎ Р·Р°РєР°Р·Р°РјРё', 'value' => 0],
+                    ['label' => 'Р‘РµР· Р·Р°РєР°Р·РѕРІ', 'value' => 0],
+                ],
+            ],
+            'ordersTable' => [
+                'days' => [],
+                'rows' => [],
+                'column_totals' => [],
+                'grand_total' => 0,
+            ],
         ];
     }
 
