@@ -25,6 +25,12 @@ class TerminalsTable
                 TextColumn::make('school.name_ru')
                     ->label(__('admin.labels.school'))
                     ->formatStateUsing(fn ($state, $record): string => $record->school?->display_name ?? '-')
+                    ->limit(40)
+                    ->tooltip(fn ($record): ?string => $record->school?->display_name)
+                    ->grow(false)
+                    ->extraAttributes([
+                        'style' => 'width: 320px; min-width: 320px;',
+                    ])
                     ->sortable(),
                 TextColumn::make('ip')
                     ->label('IP')
