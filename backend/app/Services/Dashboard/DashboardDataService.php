@@ -147,8 +147,8 @@ class DashboardDataService
                 ],
                 'coverage' => [
                     ['label' => __('ui.dashboard_page.students_total'), 'value' => $totalStudents],
-                    ['label' => 'С заказами', 'value' => $studentsWithOrders],
-                    ['label' => 'Без заказов', 'value' => max($totalStudents - $studentsWithOrders, 0)],
+                    ['label' => __('ui.dashboard_page.with_orders'), 'value' => $studentsWithOrders],
+                    ['label' => __('ui.dashboard_page.without_orders'), 'value' => max($totalStudents - $studentsWithOrders, 0)],
                 ],
             ],
             'ordersTable' => $ordersTable,
@@ -189,8 +189,8 @@ class DashboardDataService
                 ],
                 'coverage' => [
                     ['label' => __('ui.dashboard_page.students_total'), 'value' => 0],
-                    ['label' => 'РЎ Р·Р°РєР°Р·Р°РјРё', 'value' => 0],
-                    ['label' => 'Р‘РµР· Р·Р°РєР°Р·РѕРІ', 'value' => 0],
+                    ['label' => __('ui.dashboard_page.with_orders'), 'value' => 0],
+                    ['label' => __('ui.dashboard_page.without_orders'), 'value' => 0],
                 ],
             ],
             'ordersTable' => [
