@@ -14,7 +14,7 @@ class GeneratedReport extends Model
 
     public const TYPE_SCHOOL = 'school';
     public const TYPE_1_4 = '1_4';
-    public const TYPE_1_5_SUSN = '1_5_susn';
+    public const TYPE_1_4_SUSN = '1_4_susn';
     public const TYPE_5_11 = '5_11';
     public const TYPE_5_11_SUSN = '5_11_susn';
 
@@ -55,7 +55,7 @@ class GeneratedReport extends Model
         return [
             self::TYPE_SCHOOL => __('ui.reports_page.type_school'),
             self::TYPE_1_4 => __('ui.reports_page.type_1_4'),
-            self::TYPE_1_5_SUSN => __('ui.reports_page.type_1_5_susn'),
+            self::TYPE_1_4_SUSN => __('ui.reports_page.type_1_4_susn'),
             self::TYPE_5_11 => __('ui.reports_page.type_5_11'),
             self::TYPE_5_11_SUSN => __('ui.reports_page.type_5_11_susn'),
         ];

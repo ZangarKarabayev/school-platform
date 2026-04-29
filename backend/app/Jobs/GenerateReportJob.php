@@ -27,9 +27,7 @@ class GenerateReportJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public function __construct(public GeneratedReport $report)
-    {
-    }
+    public function __construct(public GeneratedReport $report) {}
 
     public function handle(): void
     {
@@ -43,7 +41,7 @@ class GenerateReportJob implements ShouldQueue
             $orders = Order::query()
                 ->with(['student.classroom', 'student.latestMealBenefit', 'student.school'])
                 ->whereBetween('order_date', [$report->date_from, $report->date_to])
-                ->whereHas('student', fn ($query) => $this->applyStudentReportFilters($query, $report))
+                ->whereHas('student', fn($query) => $this->applyStudentReportFilters($query, $report))
                 ->orderBy('order_date')
                 ->orderBy('id')
                 ->get();
@@ -51,7 +49,7 @@ class GenerateReportJob implements ShouldQueue
             $students = Student::query()
                 ->with(['classroom', 'latestMealBenefit', 'school'])
                 ->whereNotNull('classroom_id')
-                ->tap(fn ($query) => $this->applyStudentReportFilters($query, $report))
+                ->tap(fn($query) => $this->applyStudentReportFilters($query, $report))
                 ->orderBy('last_name')
                 ->orderBy('first_name')
                 ->orderBy('middle_name')
@@ -134,7 +132,7 @@ class GenerateReportJob implements ShouldQueue
         Collection $students
     ): void {
         $days = collect(CarbonPeriod::create($report->date_from, $report->date_to))
-            ->map(fn ($date) => $date->copy())
+            ->map(fn($date) => $date->copy())
             ->values();
 
         $periodLabel = $report->date_from->format('d.m.Y') . ' по ' . $report->date_to->format('d.m.Y');
@@ -158,14 +156,14 @@ class GenerateReportJob implements ShouldQueue
                 return $studentOrders
                     ->pluck('order_date')
                     ->filter()
-                    ->map(fn ($date) => $date->format('Y-m-d'))
+                    ->map(fn($date) => $date->format('Y-m-d'))
                     ->unique()
                     ->flip()
-                    ->map(fn () => true);
+                    ->map(fn() => true);
             });
 
         $byClass = $students
-            ->groupBy(fn (Student $student) => $student->classroom?->full_name ?? '-')
+            ->groupBy(fn(Student $student) => $student->classroom?->full_name ?? '-')
             ->map(function (Collection $classStudents) use ($studentDatesMap): Collection {
                 return $classStudents
                     ->map(function (Student $student) use ($studentDatesMap): array {
@@ -232,7 +230,7 @@ class GenerateReportJob implements ShouldQueue
 
             foreach ($days as $date) {
                 $key = $date->format('Y-m-d');
-                $count = $classStudents->sum(fn (array $row): int => isset($row['dates'][$key]) ? 1 : 0);
+                $count = $classStudents->sum(fn(array $row): int => isset($row['dates'][$key]) ? 1 : 0);
                 $dayCounts[$key] = $count;
                 $dayColTotals[$key] = ($dayColTotals[$key] ?? 0) + $count;
                 $classTotal += $count;
@@ -326,20 +324,20 @@ class GenerateReportJob implements ShouldQueue
     {
         $query->when(
             $report->school_id !== null,
-            fn ($studentQuery) => $studentQuery->where('school_id', $report->school_id)
+            fn($studentQuery) => $studentQuery->where('school_id', $report->school_id)
         );
 
         match ($report->report_type) {
             GeneratedReport::TYPE_1_4 => $query
-                ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [1, 4])),
-            GeneratedReport::TYPE_1_5_SUSN => $query
-                ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [1, 5]))
-                ->whereHas('latestMealBenefit', fn ($benefitQuery) => $benefitQuery->where('type', 'susn')),
+                ->whereHas('classroom', fn($classroomQuery) => $classroomQuery->whereBetween('grade', [1, 4])),
+            GeneratedReport::TYPE_1_4_SUSN => $query
+                ->whereHas('classroom', fn($classroomQuery) => $classroomQuery->whereBetween('grade', [1, 4]))
+                ->whereHas('latestMealBenefit', fn($benefitQuery) => $benefitQuery->where('type', 'susn')),
             GeneratedReport::TYPE_5_11 => $query
-                ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [5, 11])),
+                ->whereHas('classroom', fn($classroomQuery) => $classroomQuery->whereBetween('grade', [5, 11])),
             GeneratedReport::TYPE_5_11_SUSN => $query
-                ->whereHas('classroom', fn ($classroomQuery) => $classroomQuery->whereBetween('grade', [5, 11]))
-                ->whereHas('latestMealBenefit', fn ($benefitQuery) => $benefitQuery->where('type', 'susn')),
+                ->whereHas('classroom', fn($classroomQuery) => $classroomQuery->whereBetween('grade', [5, 11]))
+                ->whereHas('latestMealBenefit', fn($benefitQuery) => $benefitQuery->where('type', 'susn')),
             default => $query,
         };
 
