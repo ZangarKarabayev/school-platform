@@ -12,6 +12,9 @@ use App\Http\Controllers\StudentController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/account-pending', [WebAuthController::class, 'showPendingActivation'])->name('auth.pending');
+Route::get('/dashboard/export-orders-table/pdf/verify', [DashboardController::class, 'verifyOrdersTablePdf'])
+    ->middleware('signed')
+    ->name('dashboard.verify-orders-table-pdf');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/', fn() => redirect()->route('login'));
@@ -42,6 +45,7 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware('school.bound')->group(function (): void {
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
         Route::get('/dashboard/export-orders-table', [DashboardController::class, 'exportOrdersTable'])->name('dashboard.export-orders-table');
+        Route::get('/dashboard/export-orders-table/pdf', [DashboardController::class, 'exportOrdersTablePdf'])->name('dashboard.export-orders-table-pdf');
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
         Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');

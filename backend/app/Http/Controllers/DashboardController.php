@@ -3,10 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Services\Dashboard\DashboardDataService;
+use Barryvdh\DomPDF\Facade\Pdf;
+use chillerlan\QRCode\Output\QROutputInterface;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\URL;
 use OpenSpout\Common\Entity\Cell;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\CellAlignment;
@@ -16,16 +22,11 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DashboardController extends Controller
 {
+    private const PDF_MEAL_PRICE = 100.00;
+
     public function __invoke(Request $request, DashboardDataService $dashboardData): View
     {
-        $data = $dashboardData->build($request->user(), [
-            'date_from' => $request->string('date_from')->toString(),
-            'date_to' => $request->string('date_to')->toString(),
-            'scope_kind' => $request->string('scope_kind')->toString(),
-            'school_id' => $request->integer('school_id') ?: null,
-            'district_id' => $request->integer('district_id') ?: null,
-            'region_id' => $request->integer('region_id') ?: null,
-        ]);
+        $data = $this->buildDashboardData($request, $dashboardData);
 
         return view('dashboard', [
             'user' => $request->user(),
@@ -40,14 +41,7 @@ class DashboardController extends Controller
 
     public function exportOrdersTable(Request $request, DashboardDataService $dashboardData): BinaryFileResponse
     {
-        $data = $dashboardData->build($request->user(), [
-            'date_from' => $request->string('date_from')->toString(),
-            'date_to' => $request->string('date_to')->toString(),
-            'scope_kind' => $request->string('scope_kind')->toString(),
-            'school_id' => $request->integer('school_id') ?: null,
-            'district_id' => $request->integer('district_id') ?: null,
-            'region_id' => $request->integer('region_id') ?: null,
-        ]);
+        $data = $this->buildDashboardData($request, $dashboardData);
 
         $ordersTable = $data['ordersTable'];
         $tempPath = tempnam(sys_get_temp_dir(), 'dashboard-orders-');
@@ -221,6 +215,29 @@ class DashboardController extends Controller
         return response()->download($xlsxPath, (string) $filename)->deleteFileAfterSend(true);
     }
 
+    public function exportOrdersTablePdf(Request $request, DashboardDataService $dashboardData): Response
+    {
+        $data = $this->buildDashboardData($request, $dashboardData);
+        $pdfData = $this->buildOrdersTablePdfData($data);
+
+        return Pdf::loadView('dashboard.orders-table-pdf', $pdfData)
+            ->setPaper('a4', 'landscape')
+            ->download($pdfData['filename']);
+    }
+
+    public function verifyOrdersTablePdf(Request $request): View
+    {
+        return view('dashboard.orders-table-pdf-verify', [
+            'scopeTitle' => (string) $request->query('scope_title', ''),
+            'dateFrom' => (string) $request->query('date_from', ''),
+            'dateTo' => (string) $request->query('date_to', ''),
+            'studentsCount' => (int) $request->query('students_count', 0),
+            'grandTotal' => (int) $request->query('grand_total', 0),
+            'mealPrice' => (float) $request->query('meal_price', self::PDF_MEAL_PRICE),
+            'documentHash' => (string) $request->query('hash', ''),
+        ]);
+    }
+
     /**
      * @param Collection<int, array<string, mixed>> $rows
      * @param Collection<int, array<string, mixed>> $days
@@ -289,5 +306,94 @@ class DashboardController extends Controller
         }
 
         return __('ui.dashboard_page.summary_orders_table');
+    }
+
+    private function buildDashboardData(Request $request, DashboardDataService $dashboardData): array
+    {
+        return $dashboardData->build($request->user(), [
+            'date_from' => $request->string('date_from')->toString(),
+            'date_to' => $request->string('date_to')->toString(),
+            'scope_kind' => $request->string('scope_kind')->toString(),
+            'school_id' => $request->integer('school_id') ?: null,
+            'district_id' => $request->integer('district_id') ?: null,
+            'region_id' => $request->integer('region_id') ?: null,
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function buildOrdersTablePdfData(array $data): array
+    {
+        $ordersTable = $data['ordersTable'] ?? [];
+        $rows = collect($ordersTable['rows'] ?? []);
+        $mealPrice = self::PDF_MEAL_PRICE;
+        $scopeTitle = $this->resolveDashboardScopeTitle($data);
+        $dateFrom = (string) ($data['filters']['date_from'] ?? '');
+        $dateTo = (string) ($data['filters']['date_to'] ?? '');
+        $grandTotal = (int) ($ordersTable['grand_total'] ?? 0);
+        $studentsCount = $rows->count();
+        $documentHash = strtoupper(substr(hash('sha256', implode('|', [
+            $scopeTitle,
+            $dateFrom,
+            $dateTo,
+            (string) $studentsCount,
+            (string) $grandTotal,
+            number_format($mealPrice, 2, '.', ''),
+        ])), 0, 16));
+
+        $verificationUrl = URL::signedRoute('dashboard.verify-orders-table-pdf', [
+            'scope_title' => $scopeTitle,
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'students_count' => $studentsCount,
+            'grand_total' => $grandTotal,
+            'meal_price' => number_format($mealPrice, 2, '.', ''),
+            'hash' => $documentHash,
+        ]);
+
+        $qrSvg = (new QRCode(new QROptions([
+            'outputType' => QROutputInterface::MARKUP_SVG,
+            'scale' => 4,
+        ])))->render($verificationUrl);
+
+        return [
+            'scopeTitle' => $scopeTitle,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'days' => $ordersTable['days'] ?? [],
+            'rows' => $rows->map(function (array $row) use ($mealPrice): array {
+                $daysTotal = (int) ($row['total'] ?? 0);
+
+                return [
+                    'number' => $row['number'] ?? '',
+                    'full_name' => $row['full_name'] ?? '',
+                    'classroom_name' => $row['classroom_name'] ?? '',
+                    'class_label' => $this->resolvePdfClassLabel((string) ($row['classroom_name'] ?? '')),
+                    'values' => $row['values'] ?? [],
+                    'days_total' => $daysTotal,
+                    'meal_price' => $mealPrice,
+                    'amount_total' => $daysTotal * $mealPrice,
+                ];
+            })->all(),
+            'studentsCount' => $studentsCount,
+            'grandTotal' => $grandTotal,
+            'grandAmount' => $grandTotal * $mealPrice,
+            'mealPrice' => $mealPrice,
+            'qrSvg' => $qrSvg,
+            'documentHash' => $documentHash,
+            'filename' => 'dashboard-orders-' . Str::of($dateFrom ?: now()->toDateString())->replace('-', '.')
+                . '-' . Str::of($dateTo ?: now()->toDateString())->replace('-', '.') . '.pdf',
+        ];
+    }
+
+    private function resolvePdfClassLabel(string $classroomName): string
+    {
+        if (preg_match('/^\d+/', trim($classroomName), $matches) === 1) {
+            return $matches[0];
+        }
+
+        return $classroomName !== '' ? $classroomName : '-';
     }
 }

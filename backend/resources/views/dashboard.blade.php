@@ -566,6 +566,7 @@
                         <h2 class="dashboard-table-title">{{ __('ui.dashboard_page.orders_table') }}</h2>
                         <div class="dashboard-table-actions">
                             <a class="btn secondary" href="{{ route('dashboard.export-orders-table', request()->query()) }}">{{ __('ui.dashboard_page.download_excel') }}</a>
+                            <a class="btn secondary" href="{{ route('dashboard.export-orders-table-pdf', request()->query()) }}">{{ __('ui.dashboard_page.download_pdf') }}</a>
                         </div>
                     </div>
 
