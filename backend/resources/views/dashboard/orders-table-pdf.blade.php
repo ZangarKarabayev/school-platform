@@ -51,10 +51,16 @@
 
         .report-table th,
         .report-table td {
-            border: 1px solid #000;
+            border: 2px solid #000;
             padding: 3px 4px;
             vertical-align: middle;
             font-weight: 400;
+        }
+
+        .compact-cell {
+            padding-left: 1px !important;
+            padding-right: 1px !important;
+            font-size: 10px;
         }
 
         .report-table thead th {
@@ -71,33 +77,13 @@
             text-align: left;
         }
 
-        .col-number {
-            width: 34px;
-        }
-
-        .col-name {
-            width: 690px;
-        }
-
-        .col-class {
-            width: 26px;
-        }
-
-        .col-day {
-            width: 20px;
-        }
-
-        .col-total-days {
-            width: 78px;
-        }
-
-        .col-price {
-            width: 112px;
-        }
-
-        .col-amount {
-            width: 112px;
-        }
+        .col-number { width: 24px; }
+        .col-name { width: 64%; }
+        .col-class { width: 16px; }
+        .col-day { width: 12px; }
+        .col-total-days { width: 32px; }
+        .col-price { width: 46px; }
+        .col-amount { width: 50px; }
 
         .vertical-wrap {
             position: relative;
@@ -154,17 +140,28 @@
     </div>
 
     <table class="report-table">
+        <colgroup>
+            <col class="col-number">
+            <col class="col-name">
+            <col class="col-class">
+            @foreach ($days as $day)
+                <col class="col-day">
+            @endforeach
+            <col class="col-total-days">
+            <col class="col-price">
+            <col class="col-amount">
+        </colgroup>
         <thead>
             <tr>
                 <th class="col-number">№</th>
                 <th class="col-name left">{{ __('ui.dashboard_page.pdf_student_name') }}</th>
-                <th class="col-class vertical-wrap"><div class="vertical-text">{{ __('ui.dashboard_page.classroom') }}</div></th>
+                <th class="col-class vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.classroom') }}</div></th>
                 @foreach ($days as $day)
-                    <th class="col-day vertical-wrap"><div class="vertical-text">{{ $day['title'] }}</div></th>
+                    <th class="col-day vertical-wrap compact-cell"><div class="vertical-text">{{ $day['title'] }}</div></th>
                 @endforeach
-                <th class="col-total-days vertical-wrap"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_total_days') }}</div></th>
-                <th class="col-price vertical-wrap"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_meal_price') }}</div></th>
-                <th class="col-amount vertical-wrap"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_total_amount') }}</div></th>
+                <th class="col-total-days vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_total_days') }}</div></th>
+                <th class="col-price vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_meal_price') }}</div></th>
+                <th class="col-amount vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_total_amount') }}</div></th>
             </tr>
         </thead>
         <tbody>
@@ -172,11 +169,11 @@
                 <tr>
                     <td>{{ $row['number'] }}</td>
                     <td class="left student-name">{{ $row['full_name'] }}</td>
-                    <td>{{ $row['class_label'] }}</td>
+                    <td class="compact-cell">{{ $row['class_label'] }}</td>
                     @foreach ($days as $day)
-                        <td>{{ ($row['values'][$day['key']] ?? 0) ? '+' : '' }}</td>
+                        <td class="compact-cell">{{ ($row['values'][$day['key']] ?? 0) ? '+' : '' }}</td>
                     @endforeach
-                    <td>{{ $row['days_total'] }}</td>
+                    <td class="compact-cell">{{ $row['days_total'] }}</td>
                     <td>{{ number_format((float) $row['meal_price'], 2, '.', '') }}</td>
                     <td>{{ number_format((float) $row['amount_total'], 2, '.', '') }}</td>
                 </tr>
