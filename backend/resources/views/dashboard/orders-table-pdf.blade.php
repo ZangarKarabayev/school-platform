@@ -82,12 +82,12 @@
         }
 
         .col-number { width: {{ $isDenseTable ? '18px' : '24px' }}; }
-        .col-name { width: {{ $isDenseTable ? '30%' : '36%' }}; }
+        .col-name { width: {{ $isDenseTable ? '24%' : '32%' }}; }
         .col-class { width: {{ $isDenseTable ? '12px' : '16px' }}; }
         .col-day { width: {{ $isDenseTable ? '8px' : '12px' }}; }
-        .col-total-days { width: {{ $isDenseTable ? '32px' : '44px' }}; }
-        .col-price { width: {{ $isDenseTable ? '68px' : '82px' }}; }
-        .col-amount { width: {{ $isDenseTable ? '74px' : '88px' }}; }
+        .col-total-days { width: {{ $isDenseTable ? '36px' : '44px' }}; }
+        .col-price { width: {{ $isDenseTable ? '84px' : '82px' }}; }
+        .col-amount { width: {{ $isDenseTable ? '92px' : '88px' }}; }
 
         .vertical-wrap {
             position: relative;
