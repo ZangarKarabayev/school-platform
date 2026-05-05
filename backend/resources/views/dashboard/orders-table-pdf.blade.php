@@ -2,6 +2,10 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
+    @php
+        $dayCount = count($days);
+        $isDenseTable = $dayCount > 10;
+    @endphp
     <style>
         @page {
             margin: 34px 42px 28px 42px;
@@ -46,7 +50,7 @@
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            margin-left: 8px;
+            margin-left: 0;
         }
 
         .report-table th,
@@ -60,7 +64,7 @@
         .compact-cell {
             padding-left: 1px !important;
             padding-right: 1px !important;
-            font-size: 10px;
+            font-size: {{ $isDenseTable ? '8px' : '10px' }};
         }
 
         .report-table thead th {
@@ -77,13 +81,13 @@
             text-align: left;
         }
 
-        .col-number { width: 24px; }
-        .col-name { width: 40%; }
-        .col-class { width: 16px; }
-        .col-day { width: 12px; }
-        .col-total-days { width: 44px; }
-        .col-price { width: 82px; }
-        .col-amount { width: 88px; }
+        .col-number { width: {{ $isDenseTable ? '18px' : '24px' }}; }
+        .col-name { width: {{ $isDenseTable ? '30%' : '36%' }}; }
+        .col-class { width: {{ $isDenseTable ? '12px' : '16px' }}; }
+        .col-day { width: {{ $isDenseTable ? '8px' : '12px' }}; }
+        .col-total-days { width: {{ $isDenseTable ? '32px' : '44px' }}; }
+        .col-price { width: {{ $isDenseTable ? '68px' : '82px' }}; }
+        .col-amount { width: {{ $isDenseTable ? '74px' : '88px' }}; }
 
         .vertical-wrap {
             position: relative;
@@ -101,6 +105,7 @@
             white-space: nowrap;
             line-height: 1;
             text-align: center;
+            font-size: {{ $isDenseTable ? '8px' : '11px' }};
         }
 
         .tfoot-label {
@@ -111,6 +116,21 @@
         .student-name {
             text-transform: uppercase;
             font-weight: 400;
+            font-size: {{ $isDenseTable ? '9px' : '11px' }};
+            white-space: nowrap;
+            word-break: keep-all;
+        }
+
+        .money-cell {
+            white-space: nowrap;
+            font-size: {{ $isDenseTable ? '9px' : '11px' }};
+            padding-left: 2px !important;
+            padding-right: 2px !important;
+        }
+
+        .count-cell {
+            white-space: nowrap;
+            font-size: {{ $isDenseTable ? '9px' : '11px' }};
         }
 
         .report-table thead th,
@@ -173,18 +193,18 @@
                     @foreach ($days as $day)
                         <td class="compact-cell">{{ ($row['values'][$day['key']] ?? 0) ? '+' : '' }}</td>
                     @endforeach
-                    <td class="compact-cell">{{ $row['days_total'] }}</td>
-                    <td>{{ number_format((float) $row['meal_price'], 2, '.', '') }}</td>
-                    <td>{{ number_format((float) $row['amount_total'], 2, '.', '') }}</td>
+                    <td class="compact-cell count-cell">{{ $row['days_total'] }}</td>
+                    <td class="money-cell">{{ number_format((float) $row['meal_price'], 2, '.', '') }}</td>
+                    <td class="money-cell">{{ number_format((float) $row['amount_total'], 2, '.', '') }}</td>
                 </tr>
             @endforeach
         </tbody>
         <tfoot>
             <tr>
                 <td colspan="{{ 3 + count($days) }}" class="tfoot-label">{{ __('ui.dashboard_page.total') }}</td>
-                <td>{{ $grandTotal }}</td>
+                <td class="count-cell">{{ $grandTotal }}</td>
                 <td></td>
-                <td>{{ number_format((float) $grandAmount, 2, '.', '') }}</td>
+                <td class="money-cell">{{ number_format((float) $grandAmount, 2, '.', '') }}</td>
             </tr>
         </tfoot>
     </table>
