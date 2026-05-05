@@ -78,12 +78,12 @@
         }
 
         .col-number { width: 24px; }
-        .col-name { width: 64%; }
+        .col-name { width: 58%; }
         .col-class { width: 16px; }
         .col-day { width: 12px; }
-        .col-total-days { width: 32px; }
-        .col-price { width: 46px; }
-        .col-amount { width: 50px; }
+        .col-total-days { width: 44px; }
+        .col-price { width: 66px; }
+        .col-amount { width: 72px; }
 
         .vertical-wrap {
             position: relative;
