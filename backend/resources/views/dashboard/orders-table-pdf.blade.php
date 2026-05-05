@@ -12,7 +12,7 @@
             font-family: DejaVu Sans, sans-serif;
             font-size: 11px;
             color: #000;
-            font-weight: 500;
+            font-weight: 400;
         }
 
         .header {
@@ -54,7 +54,7 @@
             border: 1px solid #000;
             padding: 3px 4px;
             vertical-align: middle;
-            font-weight: 500;
+            font-weight: 400;
         }
 
         .report-table thead th {
@@ -76,15 +76,15 @@
         }
 
         .col-name {
-            width: 560px;
+            width: 690px;
         }
 
         .col-class {
-            width: 34px;
+            width: 26px;
         }
 
         .col-day {
-            width: 26px;
+            width: 20px;
         }
 
         .col-total-days {
@@ -124,6 +124,16 @@
 
         .student-name {
             text-transform: uppercase;
+            font-weight: 400;
+        }
+
+        .report-table thead th,
+        .report-table tfoot td,
+        .report-table tfoot th,
+        .report-table tbody td:last-child,
+        .report-table tbody td:nth-last-child(2),
+        .report-table tbody td:nth-last-child(3) {
+            font-weight: 700;
         }
     </style>
 </head>
