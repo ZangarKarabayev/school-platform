@@ -82,12 +82,12 @@
         }
 
         .col-number { width: {{ $isDenseTable ? '18px' : '24px' }}; }
-        .col-name { width: {{ $isDenseTable ? '20%' : '30%' }}; }
+        .col-name { width: {{ $isDenseTable ? '12%' : '30%' }}; }
         .col-class { width: {{ $isDenseTable ? '12px' : '16px' }}; }
-        .col-day { width: {{ $isDenseTable ? '8px' : '12px' }}; }
+        .col-day { width: {{ $isDenseTable ? '10px' : '12px' }}; }
         .col-total-days { width: {{ $isDenseTable ? '36px' : '44px' }}; }
-        .col-price { width: {{ $isDenseTable ? '96px' : '88px' }}; }
-        .col-amount { width: {{ $isDenseTable ? '108px' : '96px' }}; }
+        .col-price { width: 88px; }
+        .col-amount { width: 104px; }
 
         .vertical-wrap {
             position: relative;
@@ -177,7 +177,7 @@
                 <th class="col-name left">{{ __('ui.dashboard_page.pdf_student_name') }}</th>
                 <th class="col-class vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.classroom') }}</div></th>
                 @foreach ($days as $day)
-                    <th class="col-day vertical-wrap compact-cell"><div class="vertical-text">{{ $day['title'] }}</div></th>
+                    <th class="col-day vertical-wrap compact-cell"><div class="vertical-text">{{ $isDenseTable ? $day['label'] : $day['title'] }}</div></th>
                 @endforeach
                 <th class="col-total-days vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_total_days') }}</div></th>
                 <th class="col-price vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_meal_price') }}</div></th>
