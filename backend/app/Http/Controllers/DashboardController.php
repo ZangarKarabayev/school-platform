@@ -4,15 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Services\Dashboard\DashboardDataService;
 use Barryvdh\DomPDF\Facade\Pdf;
-use chillerlan\QRCode\Output\QROutputInterface;
-use chillerlan\QRCode\QRCode;
-use chillerlan\QRCode\QROptions;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\URL;
 use OpenSpout\Common\Entity\Cell;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\CellAlignment;
@@ -345,21 +341,6 @@ class DashboardController extends Controller
             number_format($mealPrice, 2, '.', ''),
         ])), 0, 16));
 
-        $verificationUrl = URL::signedRoute('dashboard.verify-orders-table-pdf', [
-            'scope_title' => $scopeTitle,
-            'date_from' => $dateFrom,
-            'date_to' => $dateTo,
-            'students_count' => $studentsCount,
-            'grand_total' => $grandTotal,
-            'meal_price' => number_format($mealPrice, 2, '.', ''),
-            'hash' => $documentHash,
-        ]);
-
-        $qrSvg = (new QRCode(new QROptions([
-            'outputType' => QROutputInterface::MARKUP_SVG,
-            'scale' => 4,
-        ])))->render($verificationUrl);
-
         return [
             'scopeTitle' => $scopeTitle,
             'dateFrom' => $dateFrom,
@@ -370,7 +351,7 @@ class DashboardController extends Controller
 
                 return [
                     'number' => $row['number'] ?? '',
-                    'full_name' => $row['full_name'] ?? '',
+                    'full_name' => $this->formatPdfStudentName((string) ($row['full_name'] ?? '')),
                     'classroom_name' => $row['classroom_name'] ?? '',
                     'class_label' => $this->resolvePdfClassLabel((string) ($row['classroom_name'] ?? '')),
                     'values' => $row['values'] ?? [],
@@ -383,7 +364,6 @@ class DashboardController extends Controller
             'grandTotal' => $grandTotal,
             'grandAmount' => $grandTotal * $mealPrice,
             'mealPrice' => $mealPrice,
-            'qrSvg' => $qrSvg,
             'documentHash' => $documentHash,
             'filename' => 'dashboard-orders-' . Str::of($dateFrom ?: now()->toDateString())->replace('-', '.')
                 . '-' . Str::of($dateTo ?: now()->toDateString())->replace('-', '.') . '.pdf',
@@ -397,6 +377,28 @@ class DashboardController extends Controller
         }
 
         return $classroomName !== '' ? $classroomName : '-';
+    }
+
+    private function formatPdfStudentName(string $fullName): string
+    {
+        $parts = preg_split('/\s+/u', trim($fullName), -1, PREG_SPLIT_NO_EMPTY);
+
+        if ($parts === false || $parts === []) {
+            return $fullName;
+        }
+
+        $lastName = array_shift($parts);
+        $initials = collect($parts)
+            ->filter(fn (string $part): bool => $part !== '')
+            ->map(function (string $part): string {
+                $initial = mb_substr($part, 0, 1);
+
+                return $initial !== '' ? mb_strtoupper($initial) . '.' : '';
+            })
+            ->filter()
+            ->implode('');
+
+        return trim($lastName . ' ' . $initials);
     }
 
     private function prepareRuntimeForPdfExport(): void

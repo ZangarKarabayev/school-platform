@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <style>
         @page {
-            margin: 24px 28px;
+            margin: 34px 42px 28px 42px;
             size: A4 landscape;
         }
 
@@ -16,7 +16,9 @@
 
         .header {
             width: 100%;
-            margin-bottom: 18px;
+            margin-top: 10px;
+            margin-bottom: 28px;
+            padding-left: 10px;
         }
 
         .header-table {
@@ -29,42 +31,21 @@
             font-weight: 700;
             line-height: 1.35;
             vertical-align: top;
-            padding-right: 20px;
+            padding-right: 0;
+            max-width: 780px;
         }
 
         .header-period {
-            margin-top: 28px;
+            margin-top: 30px;
             font-size: 14px;
             font-weight: 700;
-        }
-
-        .header-qr {
-            width: 140px;
-            text-align: center;
-            vertical-align: top;
-        }
-
-        .header-qr svg {
-            width: 118px;
-            height: 118px;
-        }
-
-        .header-qr-text {
-            margin-top: 6px;
-            font-size: 10px;
-            line-height: 1.25;
-        }
-
-        .document-hash {
-            margin-top: 4px;
-            font-size: 9px;
-            color: #444;
         }
 
         table.report-table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+            margin-left: 8px;
         }
 
         .report-table th,
@@ -93,11 +74,11 @@
         }
 
         .col-name {
-            width: 330px;
+            width: 370px;
         }
 
         .col-class {
-            width: 42px;
+            width: 50px;
         }
 
         .col-day {
@@ -105,33 +86,42 @@
         }
 
         .col-total-days {
-            width: 62px;
+            width: 78px;
         }
 
         .col-price {
-            width: 96px;
+            width: 112px;
         }
 
         .col-amount {
-            width: 100px;
+            width: 112px;
         }
 
         .vertical-wrap {
-            height: 108px;
+            position: relative;
+            height: 132px;
             padding: 0;
+            overflow: hidden;
         }
 
         .vertical-text {
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            transform-origin: center center;
             white-space: nowrap;
-            margin: 0 auto;
             line-height: 1;
+            text-align: center;
         }
 
         .tfoot-label {
             font-weight: 700;
             text-align: center;
+        }
+
+        .student-name {
+            text-transform: uppercase;
         }
     </style>
 </head>
@@ -146,11 +136,6 @@
                     <div class="header-period">
                         {{ __('ui.dashboard_page.pdf_period', ['date_from' => \Illuminate\Support\Carbon::parse($dateFrom)->format('d.m.Y'), 'date_to' => \Illuminate\Support\Carbon::parse($dateTo)->format('d.m.Y')]) }}
                     </div>
-                </td>
-                <td class="header-qr">
-                    {!! $qrSvg !!}
-                    <div class="header-qr-text">{{ __('ui.dashboard_page.pdf_qr_hint') }}</div>
-                    <div class="document-hash">{{ $documentHash }}</div>
                 </td>
             </tr>
         </table>
@@ -174,7 +159,7 @@
             @foreach ($rows as $row)
                 <tr>
                     <td>{{ $row['number'] }}</td>
-                    <td class="left">{{ $row['full_name'] }}</td>
+                    <td class="left student-name">{{ $row['full_name'] }}</td>
                     <td>{{ $row['class_label'] }}</td>
                     @foreach ($days as $day)
                         <td>{{ ($row['values'][$day['key']] ?? 0) ? '+' : '' }}</td>
