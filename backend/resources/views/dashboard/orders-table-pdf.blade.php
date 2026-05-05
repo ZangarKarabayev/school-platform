@@ -81,13 +81,13 @@
             text-align: left;
         }
 
-        .col-number { width: {{ $isDenseTable ? '18px' : '24px' }}; }
-        .col-name { width: {{ $isDenseTable ? '12%' : '30%' }}; }
-        .col-class { width: {{ $isDenseTable ? '12px' : '16px' }}; }
-        .col-day { width: {{ $isDenseTable ? '10px' : '12px' }}; }
-        .col-total-days { width: {{ $isDenseTable ? '36px' : '44px' }}; }
-        .col-price { width: 88px; }
-        .col-amount { width: 104px; }
+        .col-number { width: {{ $isDenseTable ? '20px' : '24px' }}; }
+        .col-name { width: {{ $isDenseTable ? '140px' : '260px' }}; }
+        .col-class { width: {{ $isDenseTable ? '16px' : '16px' }}; }
+        .col-day { width: {{ $isDenseTable ? '14px' : '18px' }}; }
+        .col-total-days { width: {{ $isDenseTable ? '42px' : '44px' }}; }
+        .col-price { width: {{ $isDenseTable ? '64px' : '88px' }}; }
+        .col-amount { width: {{ $isDenseTable ? '78px' : '104px' }}; }
 
         .vertical-wrap {
             position: relative;
@@ -123,9 +123,10 @@
 
         .money-cell {
             white-space: nowrap;
-            font-size: {{ $isDenseTable ? '9px' : '11px' }};
+            font-size: {{ $isDenseTable ? '8px' : '11px' }};
             padding-left: 4px !important;
             padding-right: 4px !important;
+            text-align: right !important;
         }
 
         .count-cell {
