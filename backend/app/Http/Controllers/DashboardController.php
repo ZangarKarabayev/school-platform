@@ -217,6 +217,8 @@ class DashboardController extends Controller
 
     public function exportOrdersTablePdf(Request $request, DashboardDataService $dashboardData): Response
     {
+        $this->prepareRuntimeForPdfExport();
+
         $data = $this->buildDashboardData($request, $dashboardData);
         $pdfData = $this->buildOrdersTablePdfData($data);
 
@@ -395,5 +397,16 @@ class DashboardController extends Controller
         }
 
         return $classroomName !== '' ? $classroomName : '-';
+    }
+
+    private function prepareRuntimeForPdfExport(): void
+    {
+        $currentLimit = ini_get('memory_limit');
+
+        if ($currentLimit !== false && $currentLimit !== '-1') {
+            @ini_set('memory_limit', '512M');
+        }
+
+        @set_time_limit(120);
     }
 }
