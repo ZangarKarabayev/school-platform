@@ -12,6 +12,7 @@
             font-family: DejaVu Sans, sans-serif;
             font-size: 11px;
             color: #000;
+            font-weight: 500;
         }
 
         .header {
@@ -53,6 +54,7 @@
             border: 1px solid #000;
             padding: 3px 4px;
             vertical-align: middle;
+            font-weight: 500;
         }
 
         .report-table thead th {
@@ -74,15 +76,15 @@
         }
 
         .col-name {
-            width: 370px;
+            width: 560px;
         }
 
         .col-class {
-            width: 50px;
+            width: 34px;
         }
 
         .col-day {
-            width: 42px;
+            width: 26px;
         }
 
         .col-total-days {
