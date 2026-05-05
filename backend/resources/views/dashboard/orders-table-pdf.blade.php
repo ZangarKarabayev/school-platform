@@ -51,7 +51,7 @@
 
         .report-table th,
         .report-table td {
-            border: 2px solid #000;
+            border: 1.5px solid #000;
             padding: 3px 4px;
             vertical-align: middle;
             font-weight: 400;
@@ -78,12 +78,12 @@
         }
 
         .col-number { width: 24px; }
-        .col-name { width: 58%; }
+        .col-name { width: 40%; }
         .col-class { width: 16px; }
         .col-day { width: 12px; }
         .col-total-days { width: 44px; }
-        .col-price { width: 66px; }
-        .col-amount { width: 72px; }
+        .col-price { width: 82px; }
+        .col-amount { width: 88px; }
 
         .vertical-wrap {
             position: relative;
