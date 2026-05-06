@@ -501,6 +501,7 @@
             });
         })();
     </script>
+    @include('auth.partials.phone-mask-script')
 </body>
 
 </html>

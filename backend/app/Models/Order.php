@@ -9,6 +9,8 @@ class Order extends Model
 {
     public const STATUS_CREATED = 'created';
 
+    public const STATUS_ISSUED = 'issued';
+
     public const STATUS_COMPLETED = 'completed';
 
     public const STATUS_FAILED = 'failed';
@@ -21,6 +23,7 @@ class Order extends Model
         'order_date',
         'order_time',
         'status',
+        'completed_at',
         'transaction_status',
         'transaction_error',
     ];
@@ -29,6 +32,7 @@ class Order extends Model
     {
         return [
             'order_date' => 'date',
+            'completed_at' => 'datetime',
             'transaction_status' => 'boolean',
         ];
     }

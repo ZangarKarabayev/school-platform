@@ -273,6 +273,11 @@ class StudentController extends Controller
             'meal_benefit_type' => ['nullable', Rule::in(MealBenefit::TYPES)],
         ]);
 
+        if (array_key_exists('phone', $data)) {
+            $normalizedPhone = preg_replace('/\s+/', '', (string) $data['phone']) ?? '';
+            $data['phone'] = $normalizedPhone !== '' ? $normalizedPhone : null;
+        }
+
         $mealBenefitType = $data['meal_benefit_type'] ?? null;
         unset($data['meal_benefit_type']);
 

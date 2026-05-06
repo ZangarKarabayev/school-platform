@@ -3,8 +3,17 @@
 <head>
     <meta charset="utf-8">
     @php
-        $dayCount = count($days);
+        $days         = collect($days)->slice(-31)->values();
+        $dayCount     = count($days);
         $isDenseTable = $dayCount > 10;
+
+        $colNumberPct = 2;
+        $colClassPct  = 2;
+        $colNamePct   = 15;
+        $colLastPct   = 5;
+        $colDayPct    = $dayCount > 0
+            ? round((100 - $colNumberPct - $colClassPct - $colNamePct - 3 * $colLastPct) / $dayCount, 3)
+            : 2;
     @endphp
     <style>
         @page {
@@ -81,25 +90,24 @@
             text-align: left;
         }
 
-        .col-number { width: {{ $isDenseTable ? '20px' : '24px' }}; }
-        .col-name { width: {{ $isDenseTable ? '140px' : '260px' }}; }
-        .col-class { width: {{ $isDenseTable ? '16px' : '16px' }}; }
-        .col-day { width: {{ $isDenseTable ? '14px' : '18px' }}; }
-        .col-total-days { width: {{ $isDenseTable ? '42px' : '44px' }}; }
-        .col-price { width: {{ $isDenseTable ? '64px' : '88px' }}; }
-        .col-amount { width: {{ $isDenseTable ? '78px' : '104px' }}; }
+        .col-number     { width: {{ $colNumberPct }}%; }
+        .col-name       { width: {{ $colNamePct }}%; }
+        .col-class      { width: {{ $colClassPct }}%; }
+        .col-day        { width: {{ $colDayPct }}%; }
+        .col-total-days { width: {{ $colLastPct }}%; }
+        .col-price      { width: {{ $colLastPct }}%; }
+        .col-amount     { width: {{ $colLastPct }}%; }
 
         .vertical-wrap {
             position: relative;
-            height: 132px;
+            height: 160px;
             padding: 0;
-            overflow: hidden;
         }
 
         .vertical-text {
             position: absolute;
             left: 50%;
-            top: 50%;
+            top: 46%;
             transform: translate(-50%, -50%) rotate(-90deg);
             transform-origin: center center;
             white-space: nowrap;
@@ -118,7 +126,6 @@
             font-weight: 400;
             font-size: {{ $isDenseTable ? '9px' : '11px' }};
             white-space: nowrap;
-            word-break: keep-all;
         }
 
         .money-cell {
@@ -178,7 +185,7 @@
                 <th class="col-name left">{{ __('ui.dashboard_page.pdf_student_name') }}</th>
                 <th class="col-class vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.classroom') }}</div></th>
                 @foreach ($days as $day)
-                    <th class="col-day vertical-wrap compact-cell"><div class="vertical-text">{{ $isDenseTable ? $day['label'] : $day['title'] }}</div></th>
+                    <th class="col-day vertical-wrap compact-cell"><div class="vertical-text">{{ $day['title'] }}</div></th>
                 @endforeach
                 <th class="col-total-days vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_total_days') }}</div></th>
                 <th class="col-price vertical-wrap compact-cell"><div class="vertical-text">{{ __('ui.dashboard_page.pdf_meal_price') }}</div></th>

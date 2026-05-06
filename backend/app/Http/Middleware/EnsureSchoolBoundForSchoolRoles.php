@@ -21,7 +21,9 @@ class EnsureSchoolBoundForSchoolRoles
         }
 
         $requiresSchool = $user->hasRole(RoleCode::Teacher->value)
-            || $user->hasRole(RoleCode::Director->value);
+            || $user->hasRole(RoleCode::Director->value)
+            || $user->hasRole(RoleCode::Kitchen->value)
+            || $user->hasRole(RoleCode::Library->value);
 
         if ($requiresSchool && $user->school_id === null) {
             return redirect()->route('auth.pending', ['reason' => 'school']);

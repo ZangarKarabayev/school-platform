@@ -219,6 +219,7 @@ class DashboardController extends Controller
         $pdfData = $this->buildOrdersTablePdfData($data);
 
         return Pdf::loadView('dashboard.orders-table-pdf', $pdfData)
+            ->setOptions(['enable_javascript' => false, 'enable_html5_parser' => true, 'dpi' => 96])
             ->setPaper('a4', 'landscape')
             ->download($pdfData['filename']);
     }
@@ -406,7 +407,7 @@ class DashboardController extends Controller
         $currentLimit = ini_get('memory_limit');
 
         if ($currentLimit !== false && $currentLimit !== '-1') {
-            @ini_set('memory_limit', '512M');
+            @ini_set('memory_limit', '1G');
         }
 
         @set_time_limit(120);

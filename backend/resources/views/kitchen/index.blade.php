@@ -2,566 +2,779 @@
 
 @section('content')
     <style>
+        .wrap {
+            display: block;
+            padding: 18px;
+        }
+
+        .card {
+            width: min(100%, 1600px);
+            min-height: calc(100vh - 36px);
+            margin: 0 auto;
+        }
+
+        .body {
+            min-height: calc(100vh - 120px);
+        }
+
         .kitchen-page {
-            padding: 8px 0;
+            height: 100%;
+            padding: 0;
         }
 
         .kitchen-shell {
+            height: 100%;
             display: grid;
             gap: 16px;
         }
 
-        .kitchen-camera-wrap {
+        .kitchen-toolbar {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .kitchen-toolbar-school {
+            max-width: min(820px, 100%);
+            color: #5d7697;
+            font-size: 14px;
+            line-height: 1.5;
+            font-weight: 700;
+        }
+
+        .kitchen-toolbar-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .kitchen-logout-form {
+            margin: 0;
+        }
+
+        .kitchen-layout {
+            min-height: 100%;
+            display: grid;
+            grid-template-columns: minmax(520px, 680px) minmax(0, 1fr);
+            gap: 16px;
+        }
+
+        .kitchen-panel {
             border: 1px solid #dbe4f2;
             border-radius: 20px;
-            background: #f8fbff;
-            padding: 16px;
-            display: grid;
-            gap: 16px;
-        }
-
-        .kitchen-title {
-            padding: 12px 14px;
-            border-radius: 12px;
-            background: #eef3fb;
-            color: #234067;
-            font-size: 16px;
-            font-weight: 700;
-            text-align: center;
-        }
-
-        .kitchen-camera-frame {
-            position: relative;
-            border-radius: 18px;
+            background: #fff;
             overflow: hidden;
-            background: #0f1a2d;
-            min-height: 420px;
         }
 
-        .kitchen-camera-actions {
-            display: none;
+        .kitchen-panel-header {
+            padding: 16px 18px;
+            border-bottom: 1px solid #e6edf7;
+            background: #f7faff;
+            display: grid;
+            gap: 10px;
         }
 
-        .kitchen-camera-switch {
-            border: 0;
-            border-radius: 12px;
-            background: #234067;
-            color: #f3f7ff;
-            padding: 10px 14px;
+        .kitchen-panel-title {
+            margin: 0;
+            color: #18365f;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .kitchen-panel-subtitle {
+            color: #67809f;
             font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .kitchen-camera-switch:disabled {
-            opacity: 0.55;
-            cursor: wait;
-        }
-
-        #kitchen-reader {
-            min-height: 420px;
-            background: #0f1a2d;
-        }
-
-        #kitchen-reader video {
-            width: 100% !important;
-            height: auto !important;
-            object-fit: cover;
-            border-radius: 18px;
-        }
-
-        #kitchen-reader__scan_region {
-            min-height: 420px;
-            border: 0 !important;
-            background: #0f1a2d;
-        }
-
-        #kitchen-reader__dashboard {
-            display: none !important;
-        }
-
-        .kitchen-camera-overlay {
-            position: absolute;
-            inset: 0;
-            display: grid;
-            place-items: center;
-            padding: 24px;
-            background: rgba(15, 26, 45, 0.88);
-            text-align: center;
-            z-index: 2;
-        }
-
-        .kitchen-camera-overlay[hidden] {
-            display: none;
-        }
-
-        .kitchen-camera-message {
-            max-width: 420px;
-            display: grid;
-            gap: 14px;
-        }
-
-        .kitchen-camera-text {
-            color: #f3f7ff;
-            font-size: 18px;
-            font-weight: 700;
-            line-height: 1.45;
-        }
-
-        .kitchen-camera-hint {
-            color: rgba(243, 247, 255, 0.76);
-            font-size: 13px;
             line-height: 1.5;
         }
 
-        .kitchen-result {
-            min-height: 96px;
+        .kitchen-panel-body {
+            padding: 16px 18px 18px;
         }
 
-        .kitchen-result-card {
-            display: flex;
-            align-items: center;
-            gap: 16px;
+        .kitchen-filters {
+            display: grid;
+            grid-template-columns: minmax(140px, 0.9fr) minmax(140px, 0.8fr) minmax(180px, 1.35fr);
+            gap: 10px;
+            align-items: end;
+        }
+
+        .kitchen-date-form {
+            display: grid;
+            gap: 8px;
+        }
+
+        .kitchen-date-form label,
+        .kitchen-filter-field label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #4d6584;
+        }
+
+        .kitchen-date-form input,
+        .kitchen-filter-field input {
+            width: 100%;
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 1px solid #d0ddee;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        .kitchen-filter-field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .kitchen-orders {
+            display: grid;
+            gap: 8px;
+            max-height: calc(100vh - 340px);
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .kitchen-orders::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .kitchen-orders::-webkit-scrollbar-thumb {
+            background: #c8d8ef;
+            border-radius: 999px;
+            border: 2px solid #fff;
+        }
+
+        .kitchen-orders::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .kitchen-order-card {
+            position: relative;
+            display: grid;
+            gap: 6px;
+            padding: 10px 12px;
             border: 1px solid #dbe4f2;
-            border-radius: 18px;
-            background: #ffffff;
-            padding: 14px 16px;
+            border-radius: 16px;
+            background: #fff;
         }
 
-        .kitchen-result-photo,
-        .kitchen-result-placeholder {
-            width: 72px;
-            height: 72px;
-            border-radius: 20px;
-            flex: 0 0 72px;
+        .kitchen-order-card.active {
+            border-color: #2876dd;
+            background: #eef5ff;
+            box-shadow: inset 0 0 0 1px rgba(40, 118, 221, 0.08);
         }
 
-        .kitchen-result-photo {
+        .kitchen-order-link {
+            display: grid;
+            grid-template-columns: 52px minmax(0, 1fr);
+            gap: 10px;
+            color: #18365f;
+            text-decoration: none;
+        }
+
+        .kitchen-order-photo,
+        .kitchen-order-placeholder {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
             object-fit: cover;
-            background: #d9e6f7;
+            background: #dce8f8;
+            border: 2px solid #edf4ff;
         }
 
-        .kitchen-result-placeholder {
+        .kitchen-order-placeholder {
             display: grid;
             place-items: center;
-            background: linear-gradient(135deg, #dce8f8 0%, #c8d9f0 100%);
             color: #24487b;
-            font-size: 28px;
+            font-size: 20px;
             font-weight: 800;
         }
 
-        .kitchen-result-name {
-            font-size: 24px;
-            font-weight: 800;
-            line-height: 1.15;
-            color: #18365f;
+        .kitchen-order-content {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
         }
 
-        .kitchen-result-classroom {
-            margin-top: 4px;
-            color: #6c809c;
+        .kitchen-order-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .kitchen-order-name {
             font-size: 15px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .kitchen-order-class {
+            color: #67809f;
+            font-size: 13px;
             font-weight: 600;
         }
 
-        .kitchen-result-status {
-            margin-top: 10px;
+        .kitchen-badge {
             display: inline-flex;
             align-items: center;
-            padding: 7px 12px;
+            justify-content: center;
+            min-height: 30px;
+            min-width: 30px;
+            padding: 0 10px;
             border-radius: 999px;
-            font-size: 13px;
+            font-size: 16px;
             font-weight: 800;
-            letter-spacing: 0.01em;
+            white-space: nowrap;
+            line-height: 1;
         }
 
-        .kitchen-result-status.success {
-            background: #e8f7ee;
-            color: #1b7a46;
-        }
-
-        .kitchen-result-status.warning {
+        .kitchen-badge.pending {
             background: #fff2e2;
             color: #a85d00;
         }
 
-        .kitchen-empty {
-            min-height: 96px;
+        .kitchen-badge.done {
+            background: #16a34a;
+            color: #fff;
         }
 
-        @media (max-width: 720px) {
-            .kitchen-camera-actions[data-mobile='true'] {
-                display: block;
-            }
+        .kitchen-order-meta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            color: #6f83a0;
+            font-size: 12px;
+        }
 
-            .kitchen-camera-frame,
-            #kitchen-reader,
-            #kitchen-reader__scan_region {
-                min-height: 320px;
-            }
+        .kitchen-order-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 0;
+        }
 
-            .kitchen-result-card {
+        .kitchen-order-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .kitchen-order-check {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #4f6d96;
+            font-size: 13px;
+            font-weight: 700;
+            user-select: none;
+        }
+
+        .kitchen-order-check input {
+            width: 18px;
+            height: 18px;
+            accent-color: #2876dd;
+            cursor: pointer;
+        }
+
+        .kitchen-order-check input:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .kitchen-selection-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid #dbe4f2;
+            border-radius: 14px;
+            background: #f7faff;
+            margin-bottom: 16px;
+        }
+
+        .kitchen-selection-count {
+            color: #35557f;
+            font-size: 14px;
+            font-weight: 800;
+        }
+
+        .kitchen-inline-form {
+            margin: 0;
+        }
+
+        .kitchen-btn.small {
+            min-height: 32px;
+            min-width: 40px;
+            padding: 0 10px;
+            font-size: 18px;
+        }
+
+        .kitchen-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .kitchen-empty {
+            padding: 24px 10px;
+            color: #6f83a0;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .kitchen-detail {
+            display: grid;
+            gap: 18px;
+        }
+
+        .kitchen-student {
+            display: grid;
+            justify-items: center;
+            gap: 14px;
+            padding: 8px 0 4px;
+            text-align: center;
+        }
+
+        .kitchen-student-photo,
+        .kitchen-student-placeholder {
+            width: 180px;
+            height: 180px;
+            border-radius: 999px;
+            object-fit: cover;
+            border: 6px solid #edf4ff;
+            background: #dce8f8;
+        }
+
+        .kitchen-student-placeholder {
+            display: grid;
+            place-items: center;
+            color: #24487b;
+            font-size: 56px;
+            font-weight: 800;
+        }
+
+        .kitchen-student-name {
+            margin: 0;
+            color: #18365f;
+            font-size: 30px;
+            font-weight: 900;
+            line-height: 1.1;
+        }
+
+        .kitchen-student-class {
+            color: #67809f;
+            font-size: 17px;
+            font-weight: 700;
+        }
+
+        .kitchen-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .kitchen-detail-card {
+            padding: 14px 16px;
+            border: 1px solid #dbe4f2;
+            border-radius: 16px;
+            background: #f8fbff;
+        }
+
+        .kitchen-detail-label {
+            color: #6f83a0;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .kitchen-detail-value {
+            margin-top: 8px;
+            color: #18365f;
+            font-size: 18px;
+            font-weight: 800;
+            line-height: 1.35;
+        }
+
+        .kitchen-detail-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .kitchen-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 16px;
+            border: 0;
+            border-radius: 12px;
+            background: #2876dd;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .kitchen-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .kitchen-icon.status {
+            font-size: 15px;
+        }
+
+        .kitchen-icon.action {
+            font-size: 18px;
+        }
+
+        .kitchen-btn.secondary {
+            background: #edf4ff;
+            color: #1e4f91;
+            border: 1px solid #cfe0fb;
+        }
+
+        .kitchen-btn.done {
+            background: #d9e5f4;
+            color: #38557e;
+            cursor: default;
+        }
+
+        .kitchen-note,
+        .kitchen-success {
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .kitchen-note {
+            background: #fff4e6;
+            color: #9f5e0f;
+        }
+
+        .kitchen-success {
+            background: #e7f7ee;
+            color: #1f8a54;
+        }
+
+        @media (max-width: 980px) {
+            .wrap {
                 padding: 12px;
-                gap: 12px;
             }
 
-            .kitchen-result-photo,
-            .kitchen-result-placeholder {
-                width: 60px;
-                height: 60px;
-                border-radius: 16px;
-                flex-basis: 60px;
+            .card {
+                min-height: calc(100vh - 24px);
             }
 
-            .kitchen-result-name {
-                font-size: 20px;
+            .body {
+                min-height: calc(100vh - 108px);
+            }
+
+            .kitchen-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .kitchen-filters {
+                grid-template-columns: 1fr;
+            }
+
+            .kitchen-orders {
+                max-height: none;
+                overflow: visible;
+                padding-right: 0;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .kitchen-detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kitchen-student-photo,
+            .kitchen-student-placeholder {
+                width: 132px;
+                height: 132px;
+            }
+
+            .kitchen-student-name {
+                font-size: 24px;
             }
         }
     </style>
 
     <section class="kitchen-page">
         <div class="kitchen-shell">
-            <div class="kitchen-camera-wrap">
-                @if (!$school)
-                    <div class="error">Получите токен для кухни и откройте страницу по ссылке /kitchen/{token}.</div>
-                @else
-                    <div class="kitchen-title">QR-сканер</div>
-                    <div class="kitchen-camera-actions" id="kitchen-camera-actions" data-mobile="false">
-                        <button class="kitchen-camera-switch" id="kitchen-camera-switch" type="button">
-                            &#1057;&#1084;&#1077;&#1085;&#1080;&#1090;&#1100; &#1082;&#1072;&#1084;&#1077;&#1088;&#1091;
-                        </button>
-                    </div>
-                    <div class="kitchen-camera-frame">
-                        <div id="kitchen-reader"></div>
-                        <div class="kitchen-camera-overlay" id="kitchen-camera-overlay">
-                            <div class="kitchen-camera-message">
-                                <div class="kitchen-camera-text" id="kitchen-camera-text">Запуск камеры...</div>
-                                <div class="kitchen-camera-hint" id="kitchen-camera-hint">Наведите камеру на QR ученика.
-                                    Если доступ уже разрешен, камера включится автоматически.</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="kitchen-result" id="kitchen-result"></div>
-                @endif
+            <div class="kitchen-toolbar">
+                <div class="kitchen-toolbar-school">
+                    @if ($school)
+                        {{ $school->display_name ?? $school->name }}
+                    @endif
+                </div>
+                <div class="kitchen-toolbar-actions">
+                    <form class="kitchen-logout-form" method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="kitchen-btn secondary" type="submit">{{ __('ui.common.logout') }}</button>
+                    </form>
+                </div>
             </div>
+
+            @if (session('kitchen_status'))
+                <div class="kitchen-success">{{ session('kitchen_status') }}</div>
+            @endif
+
+            @if (! $school)
+                <div class="kitchen-note">{{ __('ui.kitchen_page.access_denied') }}</div>
+            @else
+                <div class="kitchen-layout">
+                    <section class="kitchen-panel">
+                        <div class="kitchen-panel-header">
+                            <h2 class="kitchen-panel-title">{{ __('ui.kitchen_page.orders_title') }}</h2>
+                        </div>
+                        <div class="kitchen-panel-body">
+                            <form id="kitchen-filters-form" class="kitchen-filters" method="GET" action="{{ route('kitchen.index') }}">
+                                <div class="kitchen-date-form">
+                                    <label for="kitchen_date">{{ __('ui.kitchen_page.date') }}</label>
+                                    <input id="kitchen_date" type="date" name="date" value="{{ $selectedDate }}">
+                                </div>
+                                <div class="kitchen-filter-field">
+                                    <label for="kitchen_class">{{ __('ui.kitchen_page.search_class') }}</label>
+                                    <input id="kitchen_class" type="text" name="class" value="{{ $classQuery }}"
+                                        placeholder="{{ __('ui.kitchen_page.search_class_placeholder') }}">
+                                </div>
+                                <div class="kitchen-filter-field">
+                                    <label for="kitchen_student">{{ __('ui.kitchen_page.search_student') }}</label>
+                                    <input id="kitchen_student" type="text" name="q" value="{{ $studentQuery }}"
+                                        placeholder="{{ __('ui.kitchen_page.search_student_placeholder') }}">
+                                </div>
+                            </form>
+
+                            <div style="height: 16px;"></div>
+
+                            @if ($orders->isEmpty())
+                                <div class="kitchen-empty">{{ __('ui.kitchen_page.empty_for_date') }}</div>
+                            @else
+                                <form id="kitchen-bulk-complete-form" method="POST" action="{{ route('kitchen.orders.complete-selected') }}">
+                                    @csrf
+                                    <input type="hidden" name="date" value="{{ $selectedDate }}">
+                                    <div class="kitchen-selection-bar">
+                                        <div class="kitchen-selection-count" id="kitchen-selection-count">{{ __('ui.kitchen_page.selected_count', ['count' => 0]) }}</div>
+                                        <div id="kitchen-bulk-order-ids"></div>
+                                        <button class="kitchen-btn small" id="kitchen-bulk-submit" type="submit" disabled>{{ __('ui.kitchen_page.done_selected') }}</button>
+                                    </div>
+                                </form>
+
+                                <div class="kitchen-orders">
+                                    @foreach ($orders as $order)
+                                        @php
+                                            $isCompleted = in_array($order->status, [\App\Models\Order::STATUS_ISSUED, \App\Models\Order::STATUS_COMPLETED], true);
+                                            $isActive = (int) optional($selectedOrder)->id === (int) $order->id;
+                                            $studentName = $order->student?->full_name ?: __('ui.kitchen_page.student_fallback');
+                                            $studentInitial = mb_strtoupper(mb_substr($studentName, 0, 1));
+                                        @endphp
+                                        <article @class(['kitchen-order-card', 'active' => $isActive])>
+                                            <a class="kitchen-order-link"
+                                                href="{{ route('kitchen.index', ['date' => $selectedDate, 'order_id' => $order->id]) }}">
+                                                @if ($order->student?->photo_url)
+                                                    <img class="kitchen-order-photo" src="{{ $order->student->photo_url }}" alt="{{ $studentName }}">
+                                                @else
+                                                    <div class="kitchen-order-placeholder">{{ $studentInitial }}</div>
+                                                @endif
+
+                                                <div class="kitchen-order-content">
+                                                    <div class="kitchen-order-top">
+                                                        <div class="kitchen-order-name">{{ $studentName }}</div>
+                                                        <span @class(['kitchen-badge', 'done' => $isCompleted, 'pending' => ! $isCompleted])>
+                                                            <span class="kitchen-icon status" aria-label="{{ $isCompleted ? __('ui.kitchen_page.status_issued') : __('ui.kitchen_page.status_not_issued') }}" title="{{ $isCompleted ? __('ui.kitchen_page.status_issued') : __('ui.kitchen_page.status_not_issued') }}">
+                                                                {{ $isCompleted ? '✓' : '◷' }}
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="kitchen-order-class">{{ $order->student?->classroom?->full_name ?: __('ui.kitchen_page.class_not_set') }}</div>
+                                                    <div class="kitchen-order-meta">
+                                                        <span>{{ __('ui.kitchen_page.created_at') }}: {{ $order->created_at?->format('d.m.Y H:i') ?: '-' }}</span>
+                                                        <span>{{ __('ui.kitchen_page.issued_at') }}: {{ $order->completed_at?->format('d.m.Y H:i') ?: '-' }}</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+
+                                            <div class="kitchen-order-footer">
+                                                <label class="kitchen-order-check">
+                                                    <input type="checkbox" value="{{ $order->id }}" data-order-checkbox @disabled($isCompleted)>
+                                                </label>
+
+                                                @if (! $isCompleted)
+                                                    <div class="kitchen-order-actions">
+                                                        <form class="kitchen-inline-form" method="POST" action="{{ route('kitchen.orders.complete', $order) }}">
+                                                            @csrf
+                                                            <button class="kitchen-btn small" type="submit" aria-label="{{ __('ui.kitchen_page.done') }}" title="{{ __('ui.kitchen_page.done') }}">
+                                                                <span class="kitchen-icon action">✓</span>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </article>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    </section>
+
+                    <section class="kitchen-panel">
+                        <div class="kitchen-panel-header">
+                            <h2 class="kitchen-panel-title">{{ __('ui.kitchen_page.details_title') }}</h2>
+                            <div class="kitchen-panel-subtitle">{{ __('ui.kitchen_page.details_subtitle') }}</div>
+                        </div>
+                        <div class="kitchen-panel-body">
+                            @if (! $selectedOrder)
+                                <div class="kitchen-empty">{{ __('ui.kitchen_page.choose_order') }}</div>
+                            @else
+                                @php
+                                    $student = $selectedOrder->student;
+                                    $isCompleted = in_array($selectedOrder->status, [\App\Models\Order::STATUS_ISSUED, \App\Models\Order::STATUS_COMPLETED], true);
+                                    $studentName = $student?->full_name ?: __('ui.kitchen_page.student_fallback');
+                                    $studentClass = $student?->classroom?->full_name ?: __('ui.kitchen_page.class_not_set');
+                                    $initial = mb_strtoupper(mb_substr($studentName, 0, 1));
+                                @endphp
+
+                                <div class="kitchen-detail">
+                                    <div class="kitchen-student">
+                                        @if ($student?->photo_url)
+                                            <img class="kitchen-student-photo" src="{{ $student->photo_url }}" alt="{{ $studentName }}">
+                                        @else
+                                            <div class="kitchen-student-placeholder">{{ $initial }}</div>
+                                        @endif
+
+                                        <div>
+                                            <h3 class="kitchen-student-name">{{ $studentName }}</h3>
+                                            <div class="kitchen-student-class">{{ $studentClass }}</div>
+                                        </div>
+                                        <span @class(['kitchen-badge', 'done' => $isCompleted, 'pending' => ! $isCompleted])>
+                                            <span class="kitchen-icon status" aria-label="{{ $isCompleted ? __('ui.kitchen_page.status_issued') : __('ui.kitchen_page.status_not_issued') }}" title="{{ $isCompleted ? __('ui.kitchen_page.status_issued') : __('ui.kitchen_page.status_not_issued') }}">
+                                                {{ $isCompleted ? '✓' : '◷' }}
+                                            </span>
+                                        </span>
+                                    </div>
+
+                                    <div class="kitchen-detail-grid">
+                                        <div class="kitchen-detail-card">
+                                            <div class="kitchen-detail-label">{{ __('ui.kitchen_page.order_created_when') }}</div>
+                                            <div class="kitchen-detail-value">{{ $selectedOrder->created_at?->format('d.m.Y H:i') ?: '-' }}</div>
+                                        </div>
+                                        <div class="kitchen-detail-card">
+                                            <div class="kitchen-detail-label">{{ __('ui.kitchen_page.order_issued_when') }}</div>
+                                            <div class="kitchen-detail-value">{{ $selectedOrder->completed_at?->format('d.m.Y H:i') ?: __('ui.kitchen_page.not_issued') }}</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="kitchen-detail-actions">
+                                        @if (! $isCompleted)
+                                            <form method="POST" action="{{ route('kitchen.orders.complete', $selectedOrder) }}">
+                                                @csrf
+                                                <button class="kitchen-btn" type="submit" aria-label="{{ __('ui.kitchen_page.done') }}" title="{{ __('ui.kitchen_page.done') }}">
+                                                    <span class="kitchen-icon action">✓</span>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </section>
+                </div>
+            @endif
         </div>
     </section>
 
-    @if ($school)
-        <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    @if ($school && $orders->isNotEmpty())
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                const readerId = 'kitchen-reader';
-                const resultBox = document.getElementById('kitchen-result');
-                const overlay = document.getElementById('kitchen-camera-overlay');
-                const overlayText = document.getElementById('kitchen-camera-text');
-                const overlayHint = document.getElementById('kitchen-camera-hint');
-                const cameraActions = document.getElementById('kitchen-camera-actions');
-                const cameraSwitchButton = document.getElementById('kitchen-camera-switch');
-                const csrfToken = @json(csrf_token());
-                const scanUrl = @json(route('kitchen.scan'));
-                let scanner = null;
-                let submitting = false;
-                let lastScannedValue = null;
-                let lastScannedAt = 0;
-                let resultTimer = null;
-                let currentFacingMode = 'environment';
-                let restartingScanner = false;
-                const rescanDelayMs = 1500;
-                const isMobileDevice = window.matchMedia('(max-width: 720px)').matches &&
-                    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+                const filtersForm = document.getElementById('kitchen-filters-form');
+                const filterInputs = filtersForm ? Array.from(filtersForm.querySelectorAll('input')) : [];
+                let filterTimer = null;
 
-                const logStep = (step, payload = null) => {
-                    if (payload === null) {
-                        console.log(`[kitchen] ${step}`);
+                const submitFilters = () => {
+                    if (!filtersForm) {
                         return;
                     }
 
-                    console.log(`[kitchen] ${step}`, payload);
+                    filtersForm.requestSubmit();
                 };
 
-                const showOverlay = (title, hint = '') => {
-                    logStep('overlay', {
-                        title,
-                        hint
-                    });
-                    overlayText.textContent = title;
-                    overlayHint.textContent = hint;
-                    overlay.hidden = false;
-                };
-
-                const hideOverlay = () => {
-                    logStep('overlay hidden');
-                    overlay.hidden = true;
-                };
-
-                const clearResult = () => {
-                    if (resultTimer) {
-                        clearTimeout(resultTimer);
-                        resultTimer = null;
+                const scheduleFiltersSubmit = () => {
+                    if (filterTimer) {
+                        clearTimeout(filterTimer);
                     }
 
-                    resultBox.innerHTML = '<div class="kitchen-empty"></div>';
+                    filterTimer = setTimeout(submitFilters, 350);
                 };
 
-                const escapeHtml = (value) => {
-                    return String(value ?? '')
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/'/g, '&#039;');
-                };
-
-                const renderTimedResult = (html) => {
-                    if (resultTimer) {
-                        clearTimeout(resultTimer);
-                    }
-
-                    resultBox.innerHTML = html;
-                    resultTimer = setTimeout(() => {
-                        clearResult();
-                    }, 5000);
-                };
-
-                const renderResult = (payload) => {
-                    const student = payload.student || {};
-                    const fullName = student.full_name || '-';
-                    const classroom = student.classroom || '';
-                    const statusText = payload.created ? '\u0417\u0430\u043a\u0430\u0437 \u0441\u043e\u0437\u0434\u0430\u043d' : '\u0417\u0430\u043a\u0430\u0437 \u0443\u0436\u0435 \u0435\u0441\u0442\u044c';
-                    const statusClass = payload.created ? 'success' : 'warning';
-                    const initialSource = (student.full_name || '').trim();
-                    const initial = initialSource ? initialSource.charAt(0).toUpperCase() : 'U';
-                    const photo = student.photo_url ?
-                        `<img class="kitchen-result-photo" src="${escapeHtml(student.photo_url)}" alt="${escapeHtml(fullName)}">` :
-                        `<div class="kitchen-result-placeholder">${escapeHtml(initial)}</div>`;
-
-                    renderTimedResult(`
-                        <div class="kitchen-result-card">
-                            ${photo}
-                            <div>
-                                <div class="kitchen-result-name">${escapeHtml(fullName)}</div>
-                                ${classroom ? `<div class="kitchen-result-classroom">${escapeHtml(classroom)}</div>` : ''}
-                                <div class="kitchen-result-status ${statusClass}">${escapeHtml(statusText)}</div>
-                            </div>
-                        </div>
-                    `);
-                };
-
-                const renderScanError = (message) => {
-                    renderTimedResult(`
-                        <div class="kitchen-result-card">
-                            <div class="kitchen-result-placeholder">!</div>
-                            <div>
-                                <div class="kitchen-result-name">\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043a\u0430\u043d\u0438\u0440\u043e\u0432\u0430\u043d\u0438\u044f.</div>
-                                <div class="kitchen-result-classroom">${escapeHtml(message)}</div>
-                                <div class="kitchen-result-status warning">\u0421\u043a\u0430\u043d \u043e\u0442\u043a\u043b\u043e\u043d\u0435\u043d</div>
-                            </div>
-                        </div>
-                    `);
-                };
-
-                const submitCode = async (studentCode) => {
-                    const normalized = (studentCode || '').trim();
-
-                    if (!normalized || submitting) {
-                        logStep('submit skipped', {
-                            normalized,
-                            submitting
-                        });
+                filterInputs.forEach((input) => {
+                    if (input.name === 'date') {
+                        input.addEventListener('change', submitFilters);
                         return;
                     }
 
-                    submitting = true;
-                    logStep('submit start', {
-                        normalized
-                    });
-                    clearResult();
-
-                    try {
-                        logStep('request sent', {
-                            url: scanUrl,
-                            student_code: normalized
-                        });
-                        const response = await fetch(scanUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken,
-                                'Accept': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                student_code: normalized
-                            }),
-                        });
-
-                        const payload = await response.json();
-                        logStep('response received', {
-                            ok: response.ok,
-                            status: response.status,
-                            payload
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(payload.message || 'Не удалось обработать QR-код.');
-                        }
-
-                        logStep('render result', payload);
-                        renderResult(payload);
-                    } catch (error) {
-                        hideOverlay();
-                        renderScanError(error.message || '\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u0430\u0442\u044c QR-\u043a\u043e\u0434.');
-                    } finally {
-                        submitting = false;
-                    }
-                };
-
-                const consumeScannedValue = (rawValue) => {
-                    const normalized = (rawValue || '').trim();
-
-                    if (normalized === '') {
-                        logStep('decoded empty value');
-                        return;
-                    }
-
-                    const now = Date.now();
-
-                    if (!submitting && (normalized !== lastScannedValue || now - lastScannedAt > rescanDelayMs)) {
-                        logStep('decoded value accepted', {
-                            normalized
-                        });
-                        lastScannedValue = normalized;
-                        lastScannedAt = now;
-                        void submitCode(normalized);
-                        return;
-                    }
-
-                    logStep('decoded value ignored', {
-                        normalized,
-                        submitting,
-                        lastScannedValue,
-                        age: now - lastScannedAt,
-                    });
-                };
-
-                const stopScanner = async () => {
-                    if (!scanner) {
-                        return;
-                    }
-
-                    try {
-                        if (scanner.isScanning) {
-                            await scanner.stop();
-                        }
-                    } catch (error) {
-                        // ignore
-                    }
-                };
-
-                const updateCameraSwitchVisibility = () => {
-                    if (!cameraActions) {
-                        return;
-                    }
-
-                    cameraActions.dataset.mobile = isMobileDevice ? 'true' : 'false';
-                };
-
-                const updateCameraSwitchState = (disabled) => {
-                    if (!cameraSwitchButton) {
-                        return;
-                    }
-
-                    cameraSwitchButton.disabled = disabled;
-                };
-
-                const startScanner = async () => {
-                    logStep('scanner bootstrap');
-
-                    if (typeof window.Html5Qrcode === 'undefined') {
-                        showOverlay(
-                            'Сканер QR не загрузился.',
-                            'Проверьте интернет или доступ к CDN.',
-                        );
-                        return;
-                    }
-
-                    logStep('html5-qrcode loaded');
-                    scanner = new Html5Qrcode(readerId, {
-                        verbose: false,
-                        formatsToSupport: [
-                            Html5QrcodeSupportedFormats.QR_CODE,
-                            Html5QrcodeSupportedFormats.DATA_MATRIX,
-                        ],
-                    });
-
-                    try {
-                        logStep('scanner start requested');
-                        await scanner.start({
-                                facingMode: currentFacingMode,
-                            }, {
-                                fps: 10,
-                                disableFlip: false,
-                                rememberLastUsedCamera: true,
-                            },
-                            (decodedText) => {
-                                logStep('decoded callback', {
-                                    decodedText
-                                });
-                                hideOverlay();
-                                consumeScannedValue(decodedText);
-                            },
-                            () => {
-                                // keep listening silently
-                            }
-                        );
-
-                        logStep('scanner started');
-                        updateCameraSwitchState(false);
-                        hideOverlay();
-                    } catch (error) {
-                        logStep('scanner start error', {
-                            message: error?.message || String(error)
-                        });
-                        updateCameraSwitchState(false);
-                        showOverlay(
-                            'Нет доступа к камере или сканер не запустился.',
-                            'Разрешите доступ к камере и попробуйте снова. В Firefox сканер должен работать через html5-qrcode.',
-                        );
-                    }
-                };
-
-                const restartScannerWithFacingMode = async () => {
-                    if (restartingScanner) {
-                        return;
-                    }
-
-                    restartingScanner = true;
-                    updateCameraSwitchState(true);
-                    showOverlay('?????&#1057;&#1084;&#1077;&#1085;&#1080;&#1090;&#1100; &#1082;&#1072;&#1084;&#1077;&#1088;&#1091;...', '?????????, ?????? ???????????????.');
-
-                    try {
-                        await stopScanner();
-                        await startScanner();
-                    } finally {
-                        restartingScanner = false;
-                    }
-                };
-
-                clearResult();
-                updateCameraSwitchVisibility();
-                logStep('page ready');
-                startScanner();
-
-                if (cameraSwitchButton && isMobileDevice) {
-                    cameraSwitchButton.addEventListener('click', () => {
-                        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-                        void restartScannerWithFacingMode();
-                    });
-                }
-
-                window.addEventListener('beforeunload', () => {
-                    void stopScanner();
+                    input.addEventListener('input', scheduleFiltersSubmit);
+                    input.addEventListener('search', scheduleFiltersSubmit);
                 });
+
+                const storageKey = ['kitchen-selected-orders', @json((int) $school->id), @json($selectedDate)].join(':');
+                const checkboxes = Array.from(document.querySelectorAll('[data-order-checkbox]'));
+                const countNode = document.getElementById('kitchen-selection-count');
+                const submitButton = document.getElementById('kitchen-bulk-submit');
+                const idsContainer = document.getElementById('kitchen-bulk-order-ids');
+
+                const readSelection = () => {
+                    try {
+                        const parsed = JSON.parse(sessionStorage.getItem(storageKey) || '[]');
+
+                        return Array.isArray(parsed) ? parsed.map((value) => String(value)) : [];
+                    } catch (error) {
+                        return [];
+                    }
+                };
+
+                const writeSelection = (values) => {
+                    sessionStorage.setItem(storageKey, JSON.stringify(values));
+                };
+
+                const renderSelectionState = () => {
+                    const selectedIds = checkboxes
+                        .filter((checkbox) => checkbox.checked && !checkbox.disabled)
+                        .map((checkbox) => checkbox.value);
+
+                    writeSelection(selectedIds);
+                    idsContainer.innerHTML = '';
+
+                    selectedIds.forEach((id) => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'order_ids[]';
+                        input.value = id;
+                        idsContainer.appendChild(input);
+                    });
+
+                    countNode.textContent = @json(__('ui.kitchen_page.selected_count', ['count' => ':count'])).replace(':count', selectedIds.length);
+                    submitButton.disabled = selectedIds.length === 0;
+                };
+
+                const selectedFromStorage = new Set(readSelection());
+
+                checkboxes.forEach((checkbox) => {
+                    if (!checkbox.disabled && selectedFromStorage.has(checkbox.value)) {
+                        checkbox.checked = true;
+                    }
+
+                    checkbox.addEventListener('change', renderSelectionState);
+                });
+
+                renderSelectionState();
             });
         </script>
     @endif

@@ -270,8 +270,12 @@
 
                         <div class="student-edit-field">
                             <label for="phone">{{ __('admin.labels.phone') }}</label>
-                            <input id="phone" name="phone" type="text"
-                                value="{{ old('phone', $student->phone) }}">
+                            <input id="phone" name="phone" type="tel"
+                                value="{{ old('phone', $student->phone) }}"
+                                placeholder="+7 777 123 45 67"
+                                inputmode="tel"
+                                autocomplete="tel"
+                                data-phone-input>
                         </div>
 
                         <div class="student-edit-field">
@@ -391,7 +395,15 @@
                                     <td>{{ $order->dish?->name ?: '-' }}</td>
                                     <td>{{ optional($order->order_date)->format('Y-m-d') ?: '-' }}</td>
                                     <td>{{ $order->order_time ? substr($order->order_time, 0, 5) : '-' }}</td>
-                                    <td>{{ $order->status ?: '-' }}</td>
+                                    <td>
+                                        @php
+                                            $orderStatus = $order->status;
+                                            $orderStatusLabel = $orderStatus
+                                                ? __('ui.orders.statuses.' . $orderStatus)
+                                                : null;
+                                        @endphp
+                                        {{ $orderStatus && $orderStatusLabel !== 'ui.orders.statuses.' . $orderStatus ? $orderStatusLabel : ($orderStatus ?: '-') }}
+                                    </td>
                                     <td>
                                         @if ($order->transaction_status === null)
                                             <span class="student-orders-status inactive">

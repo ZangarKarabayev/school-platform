@@ -20,4 +20,5 @@ class VerifyPhoneOtpRequest extends FormRequest
             'device_name' => ['nullable', 'string', 'max:100'],
         ];
     }
+
 }

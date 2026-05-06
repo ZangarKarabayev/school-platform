@@ -94,7 +94,7 @@ class WebAuthController extends Controller
         $user?->forceFill(['last_login_at' => now()])->save();
         $this->syncKitchenGuard($user, (bool) $request->boolean('remember'));
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended($this->postLoginRoute($user));
     }
 
     public function registerByPhone(Request $request): RedirectResponse
@@ -112,6 +112,8 @@ class WebAuthController extends Controller
                 Rule::requiredIf(fn () => in_array($request->input('role'), [
                     RoleCode::Teacher->value,
                     RoleCode::Director->value,
+                    RoleCode::Kitchen->value,
+                    RoleCode::Library->value,
                 ], true)),
                 'nullable',
                 'integer',
@@ -223,7 +225,7 @@ class WebAuthController extends Controller
         $request->session()->regenerate();
         $this->syncKitchenGuard($user);
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended($this->postLoginRoute($user));
     }
 
     public function createRegisterEdsChallenge(StartEdsLoginAction $action): RedirectResponse
@@ -274,6 +276,8 @@ class WebAuthController extends Controller
                 Rule::requiredIf(fn () => in_array($request->input('role'), [
                     RoleCode::Teacher->value,
                     RoleCode::Director->value,
+                    RoleCode::Kitchen->value,
+                    RoleCode::Library->value,
                 ], true)),
                 'nullable',
                 'integer',
@@ -547,7 +551,12 @@ class WebAuthController extends Controller
      */
     private function resolveRegistrationSchoolId(array $data): ?int
     {
-        return in_array($data['role'] ?? null, [RoleCode::Teacher->value, RoleCode::Director->value], true)
+        return in_array($data['role'] ?? null, [
+            RoleCode::Teacher->value,
+            RoleCode::Director->value,
+            RoleCode::Kitchen->value,
+            RoleCode::Library->value,
+        ], true)
             ? (int) ($data['school_id'] ?? 0) ?: null
             : null;
     }
@@ -591,5 +600,20 @@ class WebAuthController extends Controller
         }
 
         Auth::guard('kitchen')->logout();
+    }
+
+    private function postLoginRoute(?User $user): string
+    {
+        if (! $user) {
+            return route('dashboard');
+        }
+
+        $user->loadMissing('roles');
+
+        if ($user->roles->pluck('code')->values()->all() === [RoleCode::Kitchen->value]) {
+            return route('kitchen.index');
+        }
+
+        return route('dashboard');
     }
 }

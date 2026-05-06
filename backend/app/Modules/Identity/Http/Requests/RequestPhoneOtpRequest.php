@@ -18,4 +18,5 @@ class RequestPhoneOtpRequest extends FormRequest
             'purpose' => ['nullable', 'string', 'max:50'],
         ];
     }
+
 }

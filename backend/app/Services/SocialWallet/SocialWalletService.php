@@ -218,7 +218,6 @@ class SocialWalletService
     private function markOrderTransaction(Order $order, bool $success, ?string $error): void
     {
         $order->forceFill([
-            'status' => $success ? Order::STATUS_COMPLETED : Order::STATUS_FAILED,
             'transaction_status' => $success,
             'transaction_error' => $error !== null ? mb_substr(trim($error), 0, 65535) : null,
         ])->save();

@@ -9,8 +9,10 @@ use App\Models\User;
 use App\Modules\Organizations\Models\School;
 use App\Services\OrderCalendarService;
 use App\Support\QrCodeService;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -31,8 +33,8 @@ class KitchenController extends Controller
 
         $request->session()->put(self::SESSION_TOKEN_KEY, $school->kitchen_access_token);
 
-        return view('kitchen.index', [
-            'user' => null,
+        return view('kitchen.scanner', [
+            'user' => $request->user(),
             'school' => $school,
             'title' => __('ui.menu.kitchen'),
         ]);
@@ -40,13 +42,68 @@ class KitchenController extends Controller
 
     public function index(Request $request): View
     {
-        $request->session()->forget(self::SESSION_TOKEN_KEY);
+        $school = $this->resolvePageSchool($request);
 
-        return view('kitchen.index', [
-            'user' => null,
-            'school' => null,
-            'title' => __('ui.menu.kitchen'),
+        if ($school === null && ! $request->user()) {
+            $request->session()->forget(self::SESSION_TOKEN_KEY);
+        }
+
+        return $this->renderKitchenPage($request, $school);
+    }
+
+    public function complete(Request $request, Order $order): RedirectResponse
+    {
+        $school = $this->resolvePageSchool($request);
+
+        abort_if($school === null, 403, 'Kitchen school is not resolved.');
+
+        $order->loadMissing(['student.classroom']);
+
+        abort_if((int) $order->student?->school_id !== (int) $school->id, 403);
+
+        $this->markOrderCompleted($order);
+
+        return redirect()
+            ->route('kitchen.index', [
+                'date' => optional($order->order_date)->toDateString(),
+                'order_id' => $order->id,
+            ])
+            ->with('kitchen_status', __('ui.kitchen_page.marked_done'));
+    }
+
+    public function completeSelected(Request $request): RedirectResponse
+    {
+        $school = $this->resolvePageSchool($request);
+
+        abort_if($school === null, 403, 'Kitchen school is not resolved.');
+
+        $data = $request->validate([
+            'date' => ['nullable', 'date'],
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['integer'],
         ]);
+
+        $selectedDate = isset($data['date'])
+            ? $this->resolveSelectedDate((string) $data['date'])->toDateString()
+            : now()->toDateString();
+
+        $orders = Order::query()
+            ->with('student')
+            ->whereIn('id', $data['order_ids'])
+            ->whereHas('student', fn ($query) => $query->where('school_id', $school->id))
+            ->get();
+
+        $updatedCount = 0;
+
+        foreach ($orders as $order) {
+            if ($this->markOrderCompleted($order)) {
+                $updatedCount++;
+            }
+        }
+
+        return redirect()
+            ->route('kitchen.index', ['date' => $selectedDate])
+            ->with('kitchen_status', __('ui.kitchen_page.marked_done_many', ['count' => $updatedCount]));
     }
 
     public function scan(Request $request): JsonResponse
@@ -105,6 +162,7 @@ class KitchenController extends Controller
                 'order_date' => $today,
                 'order_time' => now()->format('H:i:s'),
                 'status' => 'created',
+                'completed_at' => null,
                 'transaction_status' => null,
                 'transaction_error' => null,
             ]);
@@ -125,11 +183,13 @@ class KitchenController extends Controller
                 'iin' => $student->iin,
                 'classroom' => $student->classroom?->full_name,
                 'benefit_type' => $student->latestMealBenefit?->type,
+                'photo_url' => $student->photo_url,
             ],
             'order' => [
                 'date' => optional($order->order_date)->format('Y-m-d'),
                 'time' => $order->order_time ? substr($order->order_time, 0, 5) : null,
                 'status' => $order->status,
+                'completed_at' => optional($order->completed_at)?->format('Y-m-d H:i'),
                 'transaction_status' => $order->transaction_status,
                 'transaction_error' => $order->transaction_error,
             ],
@@ -216,5 +276,103 @@ class KitchenController extends Controller
         return School::query()
             ->where('kitchen_access_token', $token)
             ->first();
+    }
+
+    private function resolvePageSchool(Request $request): ?School
+    {
+        $user = $request->user()?->loadMissing('roles', 'scopes');
+        $userSchoolId = $this->resolveSchoolIdForUser($user);
+
+        if ($userSchoolId !== null) {
+            return School::query()->find($userSchoolId);
+        }
+
+        return $this->resolveKitchenSchool($request);
+    }
+
+    private function renderKitchenPage(Request $request, ?School $school): View
+    {
+        $selectedDate = $this->resolveSelectedDate((string) $request->query('date', now()->toDateString()));
+        $selectedOrderId = $request->integer('order_id') ?: null;
+        $studentQuery = trim((string) $request->query('q', ''));
+        $classQuery = trim((string) $request->query('class', ''));
+        $orders = collect();
+        $selectedOrder = null;
+
+        if ($school !== null) {
+            $ordersQuery = Order::query()
+                ->with(['student.classroom'])
+                ->whereDate('order_date', $selectedDate->toDateString())
+                ->whereHas('student', fn ($query) => $query->where('school_id', $school->id))
+                ->orderByRaw("CASE WHEN status IN ('issued', 'completed') THEN 1 ELSE 0 END");
+
+            if ($studentQuery !== '') {
+                $ordersQuery->whereHas('student', function ($query) use ($studentQuery): void {
+                    $query->where(function ($innerQuery) use ($studentQuery): void {
+                        $innerQuery
+                            ->where('first_name', 'like', '%'.$studentQuery.'%')
+                            ->orWhere('last_name', 'like', '%'.$studentQuery.'%')
+                            ->orWhere('middle_name', 'like', '%'.$studentQuery.'%')
+                            ->orWhereRaw("CONCAT(last_name, ' ', first_name, ' ', COALESCE(middle_name, '')) like ?", ['%'.$studentQuery.'%'])
+                            ->orWhere('iin', 'like', '%'.$studentQuery.'%');
+                    });
+                });
+            }
+
+            if ($classQuery !== '') {
+                $ordersQuery->whereHas('student.classroom', function ($query) use ($classQuery): void {
+                    $query->where(function ($innerQuery) use ($classQuery): void {
+                        $innerQuery
+                            ->where('name', 'like', '%'.$classQuery.'%')
+                            ->orWhere('letter', 'like', '%'.$classQuery.'%')
+                            ->orWhereRaw("CONCAT(name, letter) like ?", ['%'.$classQuery.'%'])
+                            ->orWhereRaw("CONCAT(name, ' ', letter) like ?", ['%'.$classQuery.'%']);
+                    });
+                });
+            }
+
+            $orders = $ordersQuery
+                ->orderBy('order_time')
+                ->orderBy('id')
+                ->get();
+
+            $selectedOrder = $selectedOrderId !== null
+                ? $orders->firstWhere('id', $selectedOrderId)
+                : $orders->first();
+        }
+
+        return view('kitchen.index', [
+            'user' => $request->user(),
+            'school' => $school,
+            'orders' => $orders,
+            'selectedOrder' => $selectedOrder,
+            'selectedDate' => $selectedDate->toDateString(),
+            'studentQuery' => $studentQuery,
+            'classQuery' => $classQuery,
+            'title' => __('ui.menu.kitchen'),
+        ]);
+    }
+
+    private function resolveSelectedDate(string $value): Carbon
+    {
+        try {
+            return Carbon::parse($value, config('app.timezone'))->startOfDay();
+        } catch (\Throwable) {
+            return now(config('app.timezone'))->startOfDay();
+        }
+    }
+
+    private function markOrderCompleted(Order $order): bool
+    {
+        if ($order->status === Order::STATUS_ISSUED) {
+            return false;
+        }
+
+        $order->forceFill([
+            'status' => Order::STATUS_ISSUED,
+            'completed_at' => now(),
+        ])->save();
+
+        return true;
     }
 }

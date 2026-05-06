@@ -218,7 +218,11 @@
                             <label for="phone">{{ __('ui.common.phone') }}</label>
                             <input id="phone" name="phone" type="tel"
                                 class="{{ $errors->has('phone') ? 'error' : '' }}"
-                                value="{{ old('phone', $user->phone) }}">
+                                value="{{ old('phone', $user->phone) }}"
+                                placeholder="+7 777 123 45 67"
+                                inputmode="tel"
+                                autocomplete="tel"
+                                data-phone-input>
                             @error('phone')
                                 <div class="field-error">{{ $message }}</div>
                             @enderror

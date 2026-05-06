@@ -36,6 +36,8 @@ Route::middleware('guest')->group(function (): void {
 
 Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen.index');
 Route::post('/kitchen/scan', [KitchenController::class, 'scan'])->name('kitchen.scan');
+Route::post('/kitchen/orders/{order}/complete', [KitchenController::class, 'complete'])->name('kitchen.orders.complete');
+Route::post('/kitchen/orders/complete-selected', [KitchenController::class, 'completeSelected'])->name('kitchen.orders.complete-selected');
 Route::get('/kitchen/{token}', [KitchenController::class, 'access'])->name('kitchen.access');
 
 Route::middleware('auth')->group(function (): void {

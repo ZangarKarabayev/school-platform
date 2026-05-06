@@ -119,4 +119,13 @@ class Student extends Model
             $this->middle_name,
         ])));
     }
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        if (blank($this->photo)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->photo);
+    }
 }

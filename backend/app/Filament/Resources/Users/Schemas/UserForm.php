@@ -37,8 +37,26 @@ class UserForm
                 TextInput::make('phone')
                     ->label(__('admin.labels.phone'))
                     ->tel()
+                    ->mask('+7 999 999 99 99')
+                    ->stripCharacters([' '])
+                    ->placeholder('+7 777 123 45 67')
                     ->maxLength(20)
                     ->unique(ignoreRecord: true),
+                TextInput::make('password')
+                    ->label('Пароль')
+                    ->password()
+                    ->revealable()
+                    ->required()
+                    ->minLength(8)
+                    ->same('password_confirmation')
+                    ->visibleOn('create'),
+                TextInput::make('password_confirmation')
+                    ->label('Подтверждение пароля')
+                    ->password()
+                    ->revealable()
+                    ->required()
+                    ->dehydrated(false)
+                    ->visibleOn('create'),
                 ToggleButtons::make('status')
                     ->label(__('admin.labels.status'))
                     ->options([
@@ -144,6 +162,8 @@ class UserForm
         return self::hasAnySelectedRole($selectedRoleIds, [
             RoleCode::Teacher->value,
             RoleCode::Director->value,
+            RoleCode::Kitchen->value,
+            RoleCode::Library->value,
         ]);
     }
 
