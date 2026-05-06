@@ -94,7 +94,7 @@ class WebAuthController extends Controller
         $user?->forceFill(['last_login_at' => now()])->save();
         $this->syncKitchenGuard($user, (bool) $request->boolean('remember'));
 
-        return redirect()->intended($this->postLoginRoute($user));
+        return $this->redirectAfterLogin($user);
     }
 
     public function registerByPhone(Request $request): RedirectResponse
@@ -225,7 +225,7 @@ class WebAuthController extends Controller
         $request->session()->regenerate();
         $this->syncKitchenGuard($user);
 
-        return redirect()->intended($this->postLoginRoute($user));
+        return $this->redirectAfterLogin($user);
     }
 
     public function createRegisterEdsChallenge(StartEdsLoginAction $action): RedirectResponse
@@ -610,10 +610,21 @@ class WebAuthController extends Controller
 
         $user->loadMissing('roles');
 
-        if ($user->roles->pluck('code')->values()->all() === [RoleCode::Kitchen->value]) {
+        if ($user->hasRole(RoleCode::Kitchen->value)) {
             return route('kitchen.index');
         }
 
         return route('dashboard');
+    }
+
+    private function redirectAfterLogin(?User $user): RedirectResponse
+    {
+        $route = $this->postLoginRoute($user);
+
+        if ($user?->hasRole(RoleCode::Kitchen->value)) {
+            return redirect()->to($route);
+        }
+
+        return redirect()->intended($route);
     }
 }
