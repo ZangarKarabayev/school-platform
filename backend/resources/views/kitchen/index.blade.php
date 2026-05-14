@@ -369,7 +369,7 @@
 
         .kitchen-detail-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: minmax(0, 1fr);
             gap: 12px;
         }
 
@@ -665,10 +665,6 @@
                                         <div class="kitchen-detail-card">
                                             <div class="kitchen-detail-label">{{ __('ui.kitchen_page.order_created_when') }}</div>
                                             <div class="kitchen-detail-value">{{ $selectedOrder->created_at?->format('d.m.Y H:i') ?: '-' }}</div>
-                                        </div>
-                                        <div class="kitchen-detail-card">
-                                            <div class="kitchen-detail-label">{{ __('ui.kitchen_page.order_issued_when') }}</div>
-                                            <div class="kitchen-detail-value">{{ $selectedOrder->completed_at?->format('d.m.Y H:i') ?: __('ui.kitchen_page.not_issued') }}</div>
                                         </div>
                                     </div>
 
