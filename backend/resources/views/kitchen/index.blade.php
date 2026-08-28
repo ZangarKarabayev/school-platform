@@ -594,7 +594,7 @@
                                                             </span>
                                                         </span>
                                                     </div>
-                                                    <div class="kitchen-order-class">{{ $order->student?->classroom?->full_name ?: __('ui.kitchen_page.class_not_set') }}</div>
+                                                    <div class="kitchen-order-class">{{ $order->classroom?->full_name ?: $order->student?->classroom?->full_name ?: __('ui.kitchen_page.class_not_set') }}</div>
                                                     <div class="kitchen-order-meta">
                                                         <span>{{ __('ui.kitchen_page.created_at') }}: {{ $order->created_at?->format('d.m.Y H:i') ?: '-' }}</span>
                                                         <span>{{ __('ui.kitchen_page.issued_at') }}: {{ $order->completed_at?->format('d.m.Y H:i') ?: '-' }}</span>
@@ -638,7 +638,7 @@
                                     $student = $selectedOrder->student;
                                     $isCompleted = in_array($selectedOrder->status, [\App\Models\Order::STATUS_ISSUED, \App\Models\Order::STATUS_COMPLETED], true);
                                     $studentName = $student?->full_name ?: __('ui.kitchen_page.student_fallback');
-                                    $studentClass = $student?->classroom?->full_name ?: __('ui.kitchen_page.class_not_set');
+                                    $studentClass = $selectedOrder?->classroom?->full_name ?: $student?->classroom?->full_name ?: __('ui.kitchen_page.class_not_set');
                                     $initial = mb_strtoupper(mb_substr($studentName, 0, 1));
                                 @endphp
 

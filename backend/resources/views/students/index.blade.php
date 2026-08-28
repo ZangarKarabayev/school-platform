@@ -1274,6 +1274,12 @@
                                 @endforeach
                             </select>
                         </div>
+
+                        <div class="field">
+                            <label for="create_school_year">{{ __('admin.labels.school_year') }}</label>
+                            <input id="create_school_year" name="school_year" type="text" required maxlength="9"
+                                pattern="\d{4}-\d{4}" placeholder="2026-2027" value="{{ old('school_year') }}">
+                        </div>
                     </div>
 
                     <div class="students-actions" style="margin-top: 16px;">

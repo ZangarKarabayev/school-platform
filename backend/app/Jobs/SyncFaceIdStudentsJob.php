@@ -10,14 +10,14 @@ use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
-class SyncFaceIdStudentsJob implements ShouldQueue, ShouldBeUnique
+class SyncFaceIdStudentsJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable;
     use InteractsWithQueue;
@@ -30,8 +30,7 @@ class SyncFaceIdStudentsJob implements ShouldQueue, ShouldBeUnique
         public int $schoolId,
         public ?string $forcedTerminalId = null,
         public int $delayMs = 500,
-    ) {
-    }
+    ) {}
 
     public function uniqueId(): string
     {
@@ -51,6 +50,7 @@ class SyncFaceIdStudentsJob implements ShouldQueue, ShouldBeUnique
             Log::channel('faceid')->warning('FACEID SYNC SKIPPED: SCHOOL NOT FOUND', [
                 'school_id' => $this->schoolId,
             ]);
+
             return;
         }
 
@@ -62,6 +62,7 @@ class SyncFaceIdStudentsJob implements ShouldQueue, ShouldBeUnique
             Log::channel('faceid')->warning('FACEID SYNC SKIPPED: TERMINAL EMPTY', [
                 'school_id' => $school->id,
             ]);
+
             return;
         }
 
@@ -80,6 +81,7 @@ class SyncFaceIdStudentsJob implements ShouldQueue, ShouldBeUnique
                 'school_id' => $school->id,
                 'terminal_id' => $terminalId,
             ]);
+
             return;
         }
 
@@ -90,6 +92,7 @@ class SyncFaceIdStudentsJob implements ShouldQueue, ShouldBeUnique
 
         Student::query()
             ->where('school_id', $school->id)
+            ->whereNotNull('classroom_id')
             ->whereNotNull('photo')
             ->where(function (Builder $query): void {
                 $query->whereNull('photo_synced_at')
@@ -105,6 +108,7 @@ class SyncFaceIdStudentsJob implements ShouldQueue, ShouldBeUnique
                             'student_id' => $student->id,
                             'photo' => $student->photo,
                         ]);
+
                         continue;
                     }
 

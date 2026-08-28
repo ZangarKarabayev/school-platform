@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Order;
 use App\Models\Student;
 use App\Services\OrderCalendarService;
+use App\Services\Orders\OrderEligibilityService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -26,30 +27,41 @@ class CreateOrdersJob implements ShouldQueue
         public string $orderDate,
         public ?string $orderTime,
         public ?int $createdByUserId = null,
-    ) {
-    }
+        public ?string $schoolYear = null,
+    ) {}
 
-    public function handle(?OrderCalendarService $orderCalendarService = null): void
-    {
+    public function handle(
+        ?OrderCalendarService $orderCalendarService = null,
+        ?OrderEligibilityService $orderEligibilityService = null,
+    ): void {
         $orderCalendarService ??= app(OrderCalendarService::class);
+        $orderEligibilityService ??= app(OrderEligibilityService::class);
 
         if ($orderCalendarService->isBlockedOrderDate($this->orderDate)) {
             return;
         }
 
-        $eligibleStudentIds = Student::query()
-            ->eligibleForOrder()
+        $students = Student::query()
+            ->with(['classroom', 'latestMealBenefit', 'enrollments.classroom'])
             ->whereIn('id', $this->studentIds)
-            ->pluck('id')
-            ->all();
+            ->get();
 
-        foreach ($eligibleStudentIds as $studentId) {
+        foreach ($students as $student) {
+            $schoolYear = $this->schoolYear ?: $student->school_year;
+            $eligibility = $orderEligibilityService->evaluate($student, $schoolYear, $this->orderDate);
+
+            if (! $eligibility['eligible']) {
+                continue;
+            }
+
             $order = Order::query()->firstOrCreate(
                 [
-                    'student_id' => $studentId,
+                    'student_id' => $student->id,
                     'order_date' => $this->orderDate,
                 ],
                 [
+                    'school_year' => $schoolYear,
+                    'classroom_id' => $eligibility['classroom_id'],
                     'dish_id' => null,
                     'created_by_user_id' => $this->createdByUserId,
                     'created_by_terminal_id' => null,

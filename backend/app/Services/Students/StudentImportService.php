@@ -6,6 +6,7 @@ use App\Models\AcademicClass;
 use App\Models\MealBenefit;
 use App\Models\Student;
 use App\Models\StudentImport;
+use App\Rules\ValidSchoolYear;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -148,6 +149,7 @@ class StudentImportService
             ["\u{0421}\u{0442}\u{0430}\u{0442}\u{0443}\u{0441}", implode(', ', MealBenefit::TYPES)],
             ["\u{042F}\u{0437}\u{044B}\u{043A}", 'ru, kk'],
             ["\u{0421}\u{043C}\u{0435}\u{043D}\u{0430}", '1, 2'],
+            ['Учебный год', 'Обязательное поле. Формат: 2025-2026; годы должны быть последовательными.'],
             ["\u{0424}\u{043E}\u{0440}\u{043C}\u{0430}\u{0442} IIN", "12 \u{0446}\u{0438}\u{0444}\u{0440}, \u{043E}\u{0431}\u{044F}\u{0437}\u{0430}\u{0442}\u{0435}\u{043B}\u{044C}\u{043D}\u{043E}\u{0435} \u{043F}\u{043E}\u{043B}\u{0435}"],
             ["\u{041E}\u{0442}\u{0447}\u{0435}\u{0441}\u{0442}\u{0432}\u{043E}", "\u{041D}\u{0435}\u{043E}\u{0431}\u{044F}\u{0437}\u{0430}\u{0442}\u{0435}\u{043B}\u{044C}\u{043D}\u{043E}\u{0435} \u{043F}\u{043E}\u{043B}\u{0435}"],
             ["\u{041A}\u{043B}\u{0430}\u{0441}\u{0441}", "\u{041D}\u{0430}\u{043F}\u{0440}\u{0438}\u{043C}\u{0435}\u{0440}: 5\u{0410}, 10\u{0411}, 11\u{04D8}"],
@@ -209,6 +211,15 @@ class StudentImportService
             ];
         }
 
+        $schoolYear = $this->normalizeImportedValue($row['school_year'] ?? null);
+
+        if (! ValidSchoolYear::isValid($schoolYear)) {
+            return [
+                'counter' => 'skipped_count',
+                'error' => __('ui.students.import_error_school_year', ['row' => $line]),
+            ];
+        }
+
         $classroomId = $this->resolveImportedClassroomId($row['classroom'] ?? null);
 
         if (($row['classroom'] ?? null) && $classroomId === null) {
@@ -256,7 +267,7 @@ class StudentImportService
             'student_number' => $this->normalizeImportedValue($row['student_number'] ?? null),
             'language' => $this->normalizeImportedLanguage($row['language'] ?? null),
             'shift' => $this->normalizeImportedShift($row['shift'] ?? null),
-            'school_year' => $this->normalizeImportedValue($row['school_year'] ?? null),
+            'school_year' => $schoolYear,
             'birth_date' => $this->extractBirthDateFromIin($iin),
             'gender' => $this->extractGenderFromIin($iin),
         ];
@@ -309,7 +320,7 @@ class StudentImportService
 
     private function readXlsxRows(string $filePath): array
     {
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if ($zip->open($filePath) !== true) {
             return [];
@@ -485,19 +496,19 @@ class StudentImportService
         $exponent = (int) $matches['exponent'];
 
         [$integerPart, $fractionalPart] = array_pad(explode('.', $mantissa, 2), 2, '');
-        $digits = ltrim($integerPart . $fractionalPart, '0');
+        $digits = ltrim($integerPart.$fractionalPart, '0');
         $digits = $digits === '' ? '0' : $digits;
         $decimalPosition = strlen($integerPart) + $exponent;
 
         if ($decimalPosition <= 0) {
-            $result = '0.' . str_repeat('0', abs($decimalPosition)) . $digits;
+            $result = '0.'.str_repeat('0', abs($decimalPosition)).$digits;
         } elseif ($decimalPosition >= strlen($digits)) {
-            $result = $digits . str_repeat('0', $decimalPosition - strlen($digits));
+            $result = $digits.str_repeat('0', $decimalPosition - strlen($digits));
         } else {
-            $result = substr($digits, 0, $decimalPosition) . '.' . substr($digits, $decimalPosition);
+            $result = substr($digits, 0, $decimalPosition).'.'.substr($digits, $decimalPosition);
         }
 
-        $result = $sign . $result;
+        $result = $sign.$result;
 
         if (str_contains($result, '.')) {
             $result = rtrim(rtrim($result, '0'), '.');
@@ -648,7 +659,7 @@ class StudentImportService
 
     private function createSimpleXlsx(string $path, array $sheets): void
     {
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if ($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             abort(500, 'Unable to create template archive.');
@@ -663,7 +674,7 @@ class StudentImportService
 
         foreach (array_values($sheets) as $sheetIndex => $sheet) {
             $sheetId = $sheetIndex + 1;
-            $sheetFile = 'sheet' . $sheetId . '.xml';
+            $sheetFile = 'sheet'.$sheetId.'.xml';
             $sheetTitle = $sheet['title'];
             $rows = $sheet['rows'];
             $sheetRows = [];
@@ -681,71 +692,71 @@ class StudentImportService
                         $sharedStrings[] = $value;
                     }
 
-                    $cellReference = $this->xlsxColumnName($columnIndex) . ($rowIndex + 1);
-                    $cellsXml .= '<c r="' . $cellReference . '" t="s"><v>' . $sharedStringIndex . '</v></c>';
+                    $cellReference = $this->xlsxColumnName($columnIndex).($rowIndex + 1);
+                    $cellsXml .= '<c r="'.$cellReference.'" t="s"><v>'.$sharedStringIndex.'</v></c>';
                 }
 
-                $sheetRows[] = '<row r="' . ($rowIndex + 1) . '">' . $cellsXml . '</row>';
+                $sheetRows[] = '<row r="'.($rowIndex + 1).'">'.$cellsXml.'</row>';
             }
 
             $sheetContents[] = [
-                'path' => 'xl/worksheets/' . $sheetFile,
+                'path' => 'xl/worksheets/'.$sheetFile,
                 'xml' => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-                    . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-                    . '<sheetData>' . implode('', $sheetRows) . '</sheetData>'
-                    . '</worksheet>',
+                    .'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+                    .'<sheetData>'.implode('', $sheetRows).'</sheetData>'
+                    .'</worksheet>',
             ];
 
-            $workbookSheets[] = '<sheet name="' . htmlspecialchars($sheetTitle, ENT_XML1) . '" sheetId="' . $sheetId . '" r:id="rId' . $sheetId . '"/>';
-            $workbookRelationships[] = '<Relationship Id="rId' . $sheetId . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/' . $sheetFile . '"/>';
-            $contentTypeOverrides[] = '<Override PartName="/xl/worksheets/' . $sheetFile . '" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+            $workbookSheets[] = '<sheet name="'.htmlspecialchars($sheetTitle, ENT_XML1).'" sheetId="'.$sheetId.'" r:id="rId'.$sheetId.'"/>';
+            $workbookRelationships[] = '<Relationship Id="rId'.$sheetId.'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/'.$sheetFile.'"/>';
+            $contentTypeOverrides[] = '<Override PartName="/xl/worksheets/'.$sheetFile.'" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
         }
 
         $sharedStringsRelationId = count($workbookRelationships) + 1;
 
         $sharedStringsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' . count($sharedStrings) . '" uniqueCount="' . count($sharedStrings) . '">'
-            . implode('', array_map(fn (string $value): string => '<si><t>' . htmlspecialchars($value, ENT_XML1) . '</t></si>', $sharedStrings))
-            . '</sst>';
+            .'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="'.count($sharedStrings).'" uniqueCount="'.count($sharedStrings).'">'
+            .implode('', array_map(fn (string $value): string => '<si><t>'.htmlspecialchars($value, ENT_XML1).'</t></si>', $sharedStrings))
+            .'</sst>';
 
         $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-            . '<Default Extension="xml" ContentType="application/xml"/>'
-            . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
-            . implode('', $contentTypeOverrides)
-            . '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
-            . '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
-            . '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
-            . '</Types>');
+            .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            .'<Default Extension="xml" ContentType="application/xml"/>'
+            .'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+            .implode('', $contentTypeOverrides)
+            .'<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+            .'<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+            .'<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
+            .'</Types>');
 
         $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
-            . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>'
-            . '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>'
-            . '</Relationships>');
+            .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            .'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>'
+            .'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>'
+            .'</Relationships>');
 
         $zip->addFromString('docProps/app.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
-            . '<Application>Codex</Application>'
-            . '</Properties>');
+            .'<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
+            .'<Application>Codex</Application>'
+            .'</Properties>');
 
         $zip->addFromString('docProps/core.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
-            . '<dc:title>Students Import Template</dc:title>'
-            . '</cp:coreProperties>');
+            .'<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+            .'<dc:title>Students Import Template</dc:title>'
+            .'</cp:coreProperties>');
 
         $zip->addFromString('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-            . '<sheets>' . implode('', $workbookSheets) . '</sheets>'
-            . '</workbook>');
+            .'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            .'<sheets>'.implode('', $workbookSheets).'</sheets>'
+            .'</workbook>');
 
         $zip->addFromString('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            . implode('', $workbookRelationships)
-            . '<Relationship Id="rId' . $sharedStringsRelationId . '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'
-            . '</Relationships>');
+            .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            .implode('', $workbookRelationships)
+            .'<Relationship Id="rId'.$sharedStringsRelationId.'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'
+            .'</Relationships>');
 
         foreach ($sheetContents as $sheetContent) {
             $zip->addFromString($sheetContent['path'], $sheetContent['xml']);
@@ -763,7 +774,7 @@ class StudentImportService
 
         while ($index > 0) {
             $modulo = ($index - 1) % 26;
-            $name = chr(65 + $modulo) . $name;
+            $name = chr(65 + $modulo).$name;
             $index = intdiv($index - $modulo - 1, 26);
         }
 

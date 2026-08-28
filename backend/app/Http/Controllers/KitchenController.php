@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Modules\Organizations\Models\School;
 use App\Services\OrderCalendarService;
+use App\Services\Orders\OrderEligibilityService;
 use App\Support\QrCodeService;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
@@ -22,8 +23,8 @@ class KitchenController extends Controller
 
     public function __construct(
         private readonly OrderCalendarService $orderCalendarService,
-    ) {
-    }
+        private readonly OrderEligibilityService $orderEligibilityService,
+    ) {}
 
     public function access(Request $request, string $token): View
     {
@@ -57,7 +58,7 @@ class KitchenController extends Controller
 
         abort_if($school === null, 403, 'Kitchen school is not resolved.');
 
-        $order->loadMissing(['student.classroom']);
+        $order->loadMissing(['student.classroom', 'classroom']);
 
         abort_if((int) $order->student?->school_id !== (int) $school->id, 403);
 
@@ -125,7 +126,7 @@ class KitchenController extends Controller
         }
 
         $student = Student::query()
-            ->with(['classroom', 'latestMealBenefit'])
+            ->with(['classroom', 'latestMealBenefit', 'enrollments.classroom'])
             ->where('school_id', $school->id)
             ->find($studentId);
 
@@ -135,7 +136,14 @@ class KitchenController extends Controller
             ], 404);
         }
 
-        if (! $student->canCreateOrder()) {
+        $eligibility = $this->orderEligibilityService->evaluate(
+            $student,
+            $student->school_year,
+            now(),
+            $school->id,
+        );
+
+        if (! $eligibility['eligible']) {
             return response()->json([
                 'message' => "\u{0423}\u{0447}\u{0435}\u{043d}\u{0438}\u{043a} \u{043d}\u{0435} \u{0441}\u{043e}\u{0441}\u{0442}\u{043e}\u{0438}\u{0442} \u{043d}\u{0430} \u{0441}\u{043e}\u{0446} \u{043e}\u{0431}\u{0435}\u{0441}\u{043f}\u{0435}\u{0447}\u{0435}\u{043d}\u{0438}\u{0438}.",
             ], 422);
@@ -159,6 +167,8 @@ class KitchenController extends Controller
         if (! $order) {
             $order = Order::query()->create([
                 'student_id' => $student->id,
+                'school_year' => $student->school_year,
+                'classroom_id' => $eligibility['classroom_id'],
                 'order_date' => $today,
                 'order_time' => now()->format('H:i:s'),
                 'status' => 'created',
@@ -301,7 +311,7 @@ class KitchenController extends Controller
 
         if ($school !== null) {
             $ordersQuery = Order::query()
-                ->with(['student.classroom'])
+                ->with(['student.classroom', 'classroom'])
                 ->whereDate('order_date', $selectedDate->toDateString())
                 ->whereHas('student', fn ($query) => $query->where('school_id', $school->id))
                 ->orderByRaw("CASE WHEN status IN ('issued', 'completed') THEN 1 ELSE 0 END");
@@ -320,13 +330,13 @@ class KitchenController extends Controller
             }
 
             if ($classQuery !== '') {
-                $ordersQuery->whereHas('student.classroom', function ($query) use ($classQuery): void {
+                $ordersQuery->whereHas('classroom', function ($query) use ($classQuery): void {
                     $query->where(function ($innerQuery) use ($classQuery): void {
                         $innerQuery
-                            ->where('name', 'like', '%'.$classQuery.'%')
+                            ->where('full_name', 'like', '%'.$classQuery.'%')
                             ->orWhere('letter', 'like', '%'.$classQuery.'%')
-                            ->orWhereRaw("CONCAT(name, letter) like ?", ['%'.$classQuery.'%'])
-                            ->orWhereRaw("CONCAT(name, ' ', letter) like ?", ['%'.$classQuery.'%']);
+                            ->orWhereRaw('CONCAT(grade, letter) like ?', ['%'.$classQuery.'%'])
+                            ->orWhereRaw("CONCAT(grade, ' ', letter) like ?", ['%'.$classQuery.'%']);
                     });
                 });
             }

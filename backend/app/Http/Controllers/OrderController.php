@@ -7,20 +7,24 @@ use App\Models\AcademicClass;
 use App\Models\Dish;
 use App\Models\Order;
 use App\Models\Student;
+use App\Models\StudentEnrollment;
+use App\Rules\ValidSchoolYear;
 use App\Services\OrderCalendarService;
+use App\Services\Orders\OrderEligibilityService;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
     public function __construct(
         private readonly OrderCalendarService $orderCalendarService,
-    ) {
-    }
+        private readonly OrderEligibilityService $orderEligibilityService,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -28,15 +32,25 @@ class OrderController extends Controller
         $roleCodes = $user?->roles?->pluck('code')->all() ?? [];
         $restrictBySchool = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
         $userSchoolId = $this->resolveSchoolId($user);
+        $schoolYears = StudentEnrollment::query()
+            ->when($restrictBySchool && $userSchoolId !== null, fn ($query) => $query->where('school_id', $userSchoolId))
+            ->distinct()
+            ->orderByDesc('school_year')
+            ->pluck('school_year');
+        $requestedSchoolYear = trim((string) $request->string('school_year'));
+        $selectedSchoolYear = ValidSchoolYear::isValid($requestedSchoolYear)
+            ? $requestedSchoolYear
+            : $schoolYears->first();
         $filters = [
             'search' => trim((string) $request->string('search')),
             'order_date' => (string) $request->string('order_date'),
             'transaction_status' => (string) $request->string('transaction_status'),
             'transaction_error' => trim((string) $request->string('transaction_error')),
+            'school_year' => $selectedSchoolYear,
         ];
 
         $orders = Order::query()
-            ->with(['student.classroom', 'dish', 'creatorUser', 'creatorTerminal'])
+            ->with(['student.classroom', 'classroom', 'dish', 'creatorUser', 'creatorTerminal'])
             ->when($restrictBySchool && $userSchoolId !== null, function ($query) use ($userSchoolId): void {
                 $query->whereHas('student', fn ($studentQuery) => $studentQuery->where('school_id', $userSchoolId));
             })
@@ -45,10 +59,10 @@ class OrderController extends Controller
                 $query->whereHas('student', function ($studentQuery) use ($search): void {
                     $studentQuery->where(function ($studentSearchQuery) use ($search): void {
                         $studentSearchQuery
-                            ->where('iin', 'like', '%' . $search . '%')
-                            ->orWhere('last_name', 'like', '%' . $search . '%')
-                            ->orWhere('first_name', 'like', '%' . $search . '%')
-                            ->orWhere('middle_name', 'like', '%' . $search . '%');
+                            ->where('iin', 'like', '%'.$search.'%')
+                            ->orWhere('last_name', 'like', '%'.$search.'%')
+                            ->orWhere('first_name', 'like', '%'.$search.'%')
+                            ->orWhere('middle_name', 'like', '%'.$search.'%');
 
                         $normalizedSearch = preg_replace('/\s+/u', ' ', trim($search));
 
@@ -56,11 +70,11 @@ class OrderController extends Controller
                             $studentSearchQuery
                                 ->orWhereRaw(
                                     "TRIM(CONCAT_WS(' ', last_name, first_name, middle_name)) LIKE ?",
-                                    ['%' . $normalizedSearch . '%']
+                                    ['%'.$normalizedSearch.'%']
                                 )
                                 ->orWhereRaw(
                                     "TRIM(CONCAT_WS(' ', first_name, last_name, middle_name)) LIKE ?",
-                                    ['%' . $normalizedSearch . '%']
+                                    ['%'.$normalizedSearch.'%']
                                 );
                         }
                     });
@@ -72,17 +86,35 @@ class OrderController extends Controller
             })
             ->when(
                 $filters['transaction_error'] !== '',
-                fn ($query) => $query->where('transaction_error', 'like', '%' . $filters['transaction_error'] . '%')
+                fn ($query) => $query->where('transaction_error', 'like', '%'.$filters['transaction_error'].'%')
             )
+            ->when($selectedSchoolYear !== null, fn ($query) => $query->where('school_year', $selectedSchoolYear))
             ->orderByDesc('order_date')
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
 
         $students = Student::query()
-            ->with('classroom')
+            ->with([
+                'latestMealBenefit',
+                'enrollments' => fn ($query) => $query
+                    ->with('classroom')
+                    ->when($selectedSchoolYear !== null, fn ($enrollmentQuery) => $enrollmentQuery->where('school_year', $selectedSchoolYear)),
+            ])
             ->when($restrictBySchool && $userSchoolId !== null, fn ($query) => $query->where('school_id', $userSchoolId))
+            ->when($selectedSchoolYear !== null, fn ($query) => $query->whereHas(
+                'enrollments',
+                fn ($enrollmentQuery) => $enrollmentQuery->where('school_year', $selectedSchoolYear),
+            ))
             ->get()
+            ->each(function (Student $student): void {
+                $enrollment = $student->enrollments->first();
+
+                if ($enrollment) {
+                    $student->setAttribute('classroom_id', $enrollment->classroom_id);
+                    $student->setRelation('classroom', $enrollment->classroom);
+                }
+            })
             ->sortBy(function (Student $student): string {
                 $grade = str_pad((string) ($student->classroom?->grade ?? 999), 3, '0', STR_PAD_LEFT);
                 $letter = mb_strtoupper((string) ($student->classroom?->letter ?? 'ZZZ'));
@@ -108,6 +140,8 @@ class OrderController extends Controller
                 ->orderBy('name')
                 ->get(),
             'filters' => $filters,
+            'schoolYears' => $schoolYears,
+            'selectedSchoolYear' => $selectedSchoolYear,
             'title' => __('ui.menu.orders'),
         ]);
     }
@@ -122,7 +156,14 @@ class OrderController extends Controller
             'student_ids.*' => ['integer', 'exists:students,id'],
             'order_date' => ['required', 'date'],
             'order_time' => ['nullable', 'date_format:H:i'],
+            'school_year' => ['required', 'string', new ValidSchoolYear],
         ]);
+
+        if (! $this->orderEligibilityService->dateBelongsToSchoolYear($data['order_date'], $data['school_year'])) {
+            throw ValidationException::withMessages([
+                'order_date' => __('validation.school_year_date'),
+            ]);
+        }
 
         $now = now(config('app.timezone'));
         $orderDate = Carbon::parse($data['order_date'], config('app.timezone'));
@@ -159,6 +200,7 @@ class OrderController extends Controller
             $data['order_date'],
             $data['order_time'] ?? null,
             $request->user()?->id,
+            $data['school_year'],
         );
 
         return redirect()
@@ -195,19 +237,33 @@ class OrderController extends Controller
         $userSchoolId = $this->resolveSchoolId($user);
 
         $query = Student::query()
-            ->eligibleForOrder()
+            ->with([
+                'classroom',
+                'latestMealBenefit',
+                'enrollments' => fn ($query) => $query
+                    ->with('classroom')
+                    ->where('school_year', $data['school_year']),
+            ])
+            ->whereHas('enrollments', fn ($query) => $query->where('school_year', $data['school_year']))
             ->when($restrictBySchool && $userSchoolId !== null, fn ($studentQuery) => $studentQuery->where('school_id', $userSchoolId));
 
-        return match ($data['target_type']) {
-            'all' => $query->pluck('id'),
-            'classes' => $query
-                ->whereIn('classroom_id', $data['classroom_ids'] ?? [])
-                ->pluck('id'),
-            'students' => $query
-                ->whereIn('id', $data['student_ids'] ?? [])
-                ->pluck('id'),
-            default => collect(),
+        match ($data['target_type']) {
+            'classes' => $query->whereHas('enrollments', fn ($enrollmentQuery) => $enrollmentQuery
+                ->where('school_year', $data['school_year'])
+                ->whereIn('classroom_id', $data['classroom_ids'] ?? [])),
+            'students' => $query->whereIn('id', $data['student_ids'] ?? []),
+            'all' => null,
+            default => $query->whereRaw('1 = 0'),
         };
+
+        return $query->get()
+            ->filter(fn (Student $student): bool => $this->orderEligibilityService->isEligible(
+                $student,
+                $data['school_year'],
+                $data['order_date'],
+                $restrictBySchool ? $userSchoolId : null,
+            ))
+            ->pluck('id');
     }
 
     private function resolveSchoolId($user): ?int

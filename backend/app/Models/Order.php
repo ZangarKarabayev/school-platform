@@ -17,6 +17,8 @@ class Order extends Model
 
     protected $fillable = [
         'student_id',
+        'school_year',
+        'classroom_id',
         'dish_id',
         'created_by_user_id',
         'created_by_terminal_id',
@@ -40,6 +42,11 @@ class Order extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function classroom(): BelongsTo
+    {
+        return $this->belongsTo(AcademicClass::class, 'classroom_id');
     }
 
     public function dish(): BelongsTo

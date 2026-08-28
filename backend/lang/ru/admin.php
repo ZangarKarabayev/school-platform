@@ -26,7 +26,6 @@ return [
         'student_number' => 'Номер ученика',
         'shift' => 'Смена',
         'school_year' => 'Учебный год',
-        'archived' => 'Архивный',
         'meal_benefit' => 'Льгота на питание',
         'meal_benefits' => 'Льготы на питание',
         'dish' => 'Блюдо',

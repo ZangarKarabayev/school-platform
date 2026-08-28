@@ -134,6 +134,7 @@ return [
         'no_dishes_found' => 'Тағамдар табылмады.',
     ],
     'students' => [
+        'import_error_school_year' => ':row-жол: оқу жылы міндетті және тізбекті жылдары бар YYYY-YYYY форматында болуы керек.',
         'import_button' => "\u{0418}\u{043C}\u{043F}\u{043E}\u{0440}\u{0442}",
         'import_title' => "\u{041E}\u{049B}\u{0443}\u{0448}\u{044B}\u{043B}\u{0430}\u{0440}\u{0434}\u{044B} \u{0438}\u{043C}\u{043F}\u{043E}\u{0440}\u{0442}\u{0442}\u{0430}\u{0443}",
         'import_file' => "Excel / CSV",

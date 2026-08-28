@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\Terminal;
 use App\Models\VerifyEvent;
 use App\Modules\Organizations\Models\School;
+use App\Services\Orders\OrderEligibilityService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -17,7 +18,7 @@ class FaceIDEventService
     {
         $operator = $data['operator'] ?? null;
 
-        if (!$operator) {
+        if (! $operator) {
             throw new \InvalidArgumentException('Missing operator field.');
         }
 
@@ -43,6 +44,7 @@ class FaceIDEventService
                 'device_id' => $deviceId,
                 'payload' => $info,
             ]);
+
             return;
         }
 
@@ -53,6 +55,7 @@ class FaceIDEventService
                 'student_id' => $studentId,
                 'create_time' => $createTime->toDateTimeString(),
             ]);
+
             return;
         }
 
@@ -83,10 +86,10 @@ class FaceIDEventService
         $terminal = self::upsertTerminal($info, $school?->id, $createTime);
 
         $student = Student::query()
-            ->with(['classroom', 'latestMealBenefit'])
+            ->with(['classroom', 'latestMealBenefit', 'enrollments.classroom'])
             ->find($studentId);
 
-        if (!$student || !$student->classroom_id || !$student->school_id) {
+        if (! $student || ! $student->classroom_id || ! $student->school_id) {
             Log::warning('FaceID verify saved without matched student', [
                 'verify_event_id' => $verifyEvent->id,
                 'student_id' => $studentId,
@@ -94,21 +97,39 @@ class FaceIDEventService
                 'classroom_id' => $student?->classroom_id,
                 'school_id' => $student?->school_id,
             ]);
+
             return;
         }
 
-        $grade = (int) ($student->classroom?->grade ?? 0);
+        if ($school !== null && (int) $student->school_id !== (int) $school->id) {
+            Log::warning('FaceID verify student does not belong to terminal school', [
+                'verify_event_id' => $verifyEvent->id,
+                'student_id' => $student->id,
+                'student_school_id' => $student->school_id,
+                'terminal_school_id' => $school->id,
+            ]);
+
+            return;
+        }
+
+        $eligibility = app(OrderEligibilityService::class)->evaluate(
+            $student,
+            $student->school_year,
+            $createTime,
+            $school?->id,
+        );
+        $grade = $eligibility['grade'] ?? 0;
         $benefitType = $student->latestMealBenefit?->type;
-        $eligibleByBenefit = $student->canCreateOrder();
         $orderCalendarService = app(OrderCalendarService::class);
 
-        if (($grade < 1 || $grade > 4) && !$eligibleByBenefit) {
+        if (! $eligibility['eligible']) {
             Log::info('FaceID verify order skipped by eligibility', [
                 'verify_event_id' => $verifyEvent->id,
                 'student_id' => $student->id,
                 'grade' => $grade,
                 'benefit_type' => $benefitType,
             ]);
+
             return;
         }
 
@@ -118,6 +139,7 @@ class FaceIDEventService
                 'student_id' => $student->id,
                 'order_date' => $createTime->toDateString(),
             ]);
+
             return;
         }
 
@@ -127,6 +149,8 @@ class FaceIDEventService
                 'order_date' => $createTime->toDateString(),
             ],
             [
+                'school_year' => $student->school_year,
+                'classroom_id' => $eligibility['classroom_id'],
                 'created_by_user_id' => null,
                 'created_by_terminal_id' => $terminal?->id,
                 'order_time' => $createTime->format('H:i:s'),
@@ -170,6 +194,7 @@ class FaceIDEventService
 
         if (is_string($info)) {
             $decoded = json_decode($info, true);
+
             return is_array($decoded) ? $decoded : [];
         }
 
@@ -217,6 +242,7 @@ class FaceIDEventService
         }
 
         $normalized = preg_replace('/\D+/', '', $value);
+
         return $normalized !== '' ? $normalized : $value;
     }
 
@@ -237,6 +263,7 @@ class FaceIDEventService
     protected static function nullableString(mixed $value): ?string
     {
         $normalized = trim((string) $value);
+
         return $normalized !== '' ? $normalized : null;
     }
 }

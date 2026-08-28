@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Students\Schemas;
 
 use App\Models\MealBenefit;
 use App\Models\Student;
+use App\Rules\ValidSchoolYear;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
@@ -66,14 +67,19 @@ class StudentForm
                     1 => '1',
                     2 => '2',
                 ]),
-                TextInput::make('school_year')->label(__('admin.labels.school_year'))->maxLength(9),
+                TextInput::make('school_year')
+                    ->label(__('admin.labels.school_year'))
+                    ->required()
+                    ->length(9)
+                    ->placeholder('2026-2027')
+                    ->rules([new ValidSchoolYear]),
                 Select::make('meal_benefit_type')
                     ->label(__('admin.labels.status'))
                     ->options(collect(MealBenefit::TYPES)->mapWithKeys(function (string $type): array {
-                        $label = __('admin.meal_benefit_types.' . $type);
+                        $label = __('admin.meal_benefit_types.'.$type);
 
                         return [
-                            $type => $label !== 'admin.meal_benefit_types.' . $type
+                            $type => $label !== 'admin.meal_benefit_types.'.$type
                                 ? $label
                                 : str_replace('_', ' ', ucfirst($type)),
                         ];

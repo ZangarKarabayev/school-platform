@@ -34,7 +34,6 @@ class SeedStudentsTestDataCommand extends Command
         $firstNames = ['Айбек', 'Аружан', 'Нұрай', 'Дамир', 'Алихан', 'Томирис', 'Ернар', 'Жансая', 'Мадина', 'Санжар'];
         $lastNames = ['Ахметов', 'Серикова', 'Касымов', 'Омарова', 'Тлеубергенов', 'Жумабекова', 'Нургалиев', 'Иманова', 'Абдрахманов', 'Сулейменова'];
         $middleNames = ['Ерланович', 'Аскаровна', 'Нурланович', 'Бауыржановна', 'Серикович', 'Кайратовна'];
-        $statuses = ['active', 'archived'];
         $languages = ['ru', 'kk'];
         $genders = ['male', 'female'];
 
@@ -53,7 +52,7 @@ class SeedStudentsTestDataCommand extends Command
                 'phone' => '+7701' . str_pad((string) random_int(0, 9999999), 7, '0', STR_PAD_LEFT),
                 'address' => 'Test address ' . $index,
                 'photo' => null,
-                'status' => $statuses[array_rand($statuses)],
+                'status' => 'active',
                 'student_number' => 'ST-' . now()->format('y') . '-' . str_pad((string) $index, 4, '0', STR_PAD_LEFT),
                 'language' => $languages[array_rand($languages)],
                 'shift' => random_int(1, 2),

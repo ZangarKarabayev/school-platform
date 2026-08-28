@@ -26,7 +26,6 @@ return [
         'student_number' => 'Оқушы нөмірі',
         'shift' => 'Ауысым',
         'school_year' => 'Оқу жылы',
-        'archived' => 'Мұрағат',
         'meal_benefit' => 'Тамақтану жеңілдігі',
         'meal_benefits' => 'Тамақтану жеңілдіктері',
         'dish' => 'Тағам',

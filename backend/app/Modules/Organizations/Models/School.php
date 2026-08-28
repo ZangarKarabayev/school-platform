@@ -3,6 +3,8 @@
 namespace App\Modules\Organizations\Models;
 
 use App\Models\Student;
+use App\Models\StudentEnrollment;
+use App\Models\StudentPromotionBatch;
 use App\Models\Terminal;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,6 +51,16 @@ class School extends Model
     public function terminals(): HasMany
     {
         return $this->hasMany(Terminal::class, 'school_id');
+    }
+
+    public function studentEnrollments(): HasMany
+    {
+        return $this->hasMany(StudentEnrollment::class);
+    }
+
+    public function studentPromotionBatches(): HasMany
+    {
+        return $this->hasMany(StudentPromotionBatch::class);
     }
 
     public function getDisplayNameAttribute(): string

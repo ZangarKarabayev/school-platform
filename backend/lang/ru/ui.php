@@ -134,6 +134,7 @@ return [
         'no_dishes_found' => 'Блюда не найдены.',
     ],
     'students' => [
+        'import_error_school_year' => 'Строка :row: учебный год обязателен и должен иметь формат YYYY-YYYY с последовательными годами.',
         'import_button' => "\u{0418}\u{043C}\u{043F}\u{043E}\u{0440}\u{0442}",
         'import_title' => "\u{0418}\u{043C}\u{043F}\u{043E}\u{0440}\u{0442} \u{0443}\u{0447}\u{0435}\u{043D}\u{0438}\u{043A}\u{043E}\u{0432}",
         'import_file' => "Excel / CSV",

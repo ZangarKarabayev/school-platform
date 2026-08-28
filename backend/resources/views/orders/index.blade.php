@@ -728,6 +728,15 @@
                 </div>
 
                 <div class="orders-form-field">
+                    <label for="filter_school_year">{{ __('admin.labels.school_year') }}</label>
+                    <select id="filter_school_year" name="school_year">
+                        @foreach ($schoolYears as $schoolYear)
+                            <option value="{{ $schoolYear }}" @selected($selectedSchoolYear === $schoolYear)>{{ $schoolYear }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="orders-form-field">
                     <label for="filter_transaction_status">{{ __('ui.orders.transaction_status') }}</label>
                     <select id="filter_transaction_status" name="transaction_status">
                         <option value="">-</option>
@@ -775,7 +784,7 @@
                                         <div>{{ $order->student?->full_name ?: '-' }}</div>
                                         <div class="muted">{{ $order->student?->iin ?: '-' }}</div>
                                     </td>
-                                    <td>{{ $order->student?->classroom?->full_name ?: '-' }}</td>
+                                    <td>{{ $order->classroom?->full_name ?: $order->student?->classroom?->full_name ?: '-' }}</td>
                                     <td>{{ $order->dish?->name ?: '-' }}</td>
                                     <td>
                                         <div>{{ optional($order->order_date)->format('Y-m-d') ?: '-' }}</div>
@@ -873,7 +882,7 @@
                             <div class="orders-mobile-grid">
                                 <div class="orders-mobile-item">
                                     <div class="orders-mobile-label">{{ __('admin.labels.academic_class') }}</div>
-                                    <div class="orders-mobile-value">{{ $order->student?->classroom?->full_name ?: '-' }}</div>
+                                    <div class="orders-mobile-value">{{ $order->classroom?->full_name ?: $order->student?->classroom?->full_name ?: '-' }}</div>
                                 </div>
                                 <div class="orders-mobile-item">
                                     <div class="orders-mobile-label">{{ __('admin.labels.dish') }}</div>
@@ -971,6 +980,7 @@
 
                 <form method="POST" action="{{ route('orders.store') }}" class="orders-form">
                     @csrf
+                    <input type="hidden" name="school_year" value="{{ old('school_year', $selectedSchoolYear) }}">
 
                     <div class="orders-form-grid">
                         <div class="orders-form-field full">

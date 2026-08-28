@@ -316,7 +316,8 @@
 
                         <div class="student-edit-field">
                             <label for="school_year">{{ __('admin.labels.school_year') }}</label>
-                            <input id="school_year" name="school_year" type="text"
+                            <input id="school_year" name="school_year" type="text" required maxlength="9"
+                                pattern="\d{4}-\d{4}" placeholder="2026-2027"
                                 value="{{ old('school_year', $student->school_year) }}">
                         </div>
 

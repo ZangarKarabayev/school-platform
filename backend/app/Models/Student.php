@@ -22,6 +22,7 @@ class Student extends Model
         'birth_date',
         'gender',
         'classroom_id',
+        'classroom_history',
         'school_id',
         'phone',
         'address',
@@ -39,6 +40,7 @@ class Student extends Model
     {
         return [
             'birth_date' => 'date',
+            'classroom_history' => 'array',
             'photo_updated_at' => 'datetime',
             'photo_synced_at' => 'datetime',
         ];
@@ -47,6 +49,17 @@ class Student extends Model
     protected static function booted(): void
     {
         static::saving(function (self $student): void {
+            if ((! $student->exists && $student->classroom_id !== null)
+                || ($student->exists && $student->isDirty('classroom_id') && $student->classroom_id !== null)) {
+                $history = array_values($student->classroom_history ?? []);
+                $classroomId = (int) $student->classroom_id;
+
+                if ($history === [] || (int) end($history) !== $classroomId) {
+                    $history[] = $classroomId;
+                    $student->classroom_history = $history;
+                }
+            }
+
             if (! $student->isDirty('photo')) {
                 return;
             }
@@ -72,6 +85,48 @@ class Student extends Model
                 Storage::disk('public')->delete($student->photo);
             }
         });
+
+        static::saved(function (self $student): void {
+            $previous = $student->getPrevious();
+            $previousSchoolYear = $previous['school_year'] ?? null;
+
+            if (filled($previousSchoolYear) && $previousSchoolYear !== $student->school_year) {
+                $student->enrollments()
+                    ->where('school_year', $previousSchoolYear)
+                    ->where('status', StudentEnrollment::STATUS_CURRENT)
+                    ->update([
+                        'status' => StudentEnrollment::STATUS_COMPLETED,
+                        'ended_at' => now()->toDateString(),
+                    ]);
+            }
+
+            if ($student->classroom_id === null && $student->wasChanged('classroom_id') && filled($student->school_year)) {
+                $student->enrollments()
+                    ->where('school_year', $student->school_year)
+                    ->where('status', StudentEnrollment::STATUS_CURRENT)
+                    ->update([
+                        'status' => StudentEnrollment::STATUS_COMPLETED,
+                        'ended_at' => now()->toDateString(),
+                    ]);
+            }
+
+            if (blank($student->school_year) || $student->classroom_id === null) {
+                return;
+            }
+
+            StudentEnrollment::query()->updateOrCreate(
+                [
+                    'student_id' => $student->id,
+                    'school_year' => $student->school_year,
+                ],
+                [
+                    'school_id' => $student->school_id,
+                    'classroom_id' => $student->classroom_id,
+                    'status' => StudentEnrollment::STATUS_CURRENT,
+                    'ended_at' => null,
+                ],
+            );
+        });
     }
 
     public function classroom(): BelongsTo
@@ -92,6 +147,18 @@ class Student extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function enrollments(): HasMany
+    {
+        return $this->hasMany(StudentEnrollment::class);
+    }
+
+    public function currentEnrollment(): HasOne
+    {
+        return $this->hasOne(StudentEnrollment::class)
+            ->where('status', StudentEnrollment::STATUS_CURRENT)
+            ->latestOfMany();
     }
 
     public function latestMealBenefit(): HasOne

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class DashboardDataService
 {
     /**
-     * @param array<string, mixed> $inputFilters
+     * @param  array<string, mixed>  $inputFilters
      * @return array<string, mixed>
      */
     public function build(?User $user, array $inputFilters = []): array
@@ -40,7 +40,7 @@ class DashboardDataService
 
         $ordersAggregateBase = DB::table('orders as o')
             ->join('students as s', 's.id', '=', 'o.student_id')
-            ->leftJoin('classrooms as c', 'c.id', '=', 's.classroom_id')
+            ->leftJoin('classrooms as c', 'c.id', '=', 'o.classroom_id')
             ->leftJoin('schools as sch', 'sch.id', '=', 's.school_id')
             ->leftJoin('districts as d', 'd.id', '=', 'sch.district_id')
             ->whereBetween('o.order_date', [$filters['date_from'], $filters['date_to']]);
@@ -79,16 +79,17 @@ class DashboardDataService
             ->all();
 
         $classGroups = (clone $ordersAggregateBase)
-            ->selectRaw("
+            ->selectRaw('
                 SUM(CASE WHEN c.grade BETWEEN 1 AND 4 THEN 1 ELSE 0 END) as grade_1_4,
                 SUM(CASE WHEN c.grade BETWEEN 5 AND 11 THEN 1 ELSE 0 END) as grade_5_11
-            ")
+            ')
             ->first();
 
         $studentsAggregateBase = DB::table('students as s')
             ->leftJoin('classrooms as c', 'c.id', '=', 's.classroom_id')
             ->leftJoin('schools as sch', 'sch.id', '=', 's.school_id')
             ->leftJoin('districts as d', 'd.id', '=', 'sch.district_id')
+            ->where('s.status', '!=', 'graduated')
             ->leftJoinSub(
                 DB::table('meal_benefits as mb1')
                     ->selectRaw('MAX(mb1.id) as id, mb1.student_id')
@@ -156,8 +157,8 @@ class DashboardDataService
     }
 
     /**
-     * @param array<string, mixed> $filters
-     * @param array<string, mixed> $scopeConfig
+     * @param  array<string, mixed>  $filters
+     * @param  array<string, mixed>  $scopeConfig
      * @return array<string, mixed>
      */
     private function buildEmptyDashboardPayload(array $filters, array $scopeConfig): array
@@ -203,7 +204,7 @@ class DashboardDataService
     }
 
     /**
-     * @param string[] $roleCodes
+     * @param  string[]  $roleCodes
      * @return array<string, mixed>
      */
     private function resolveScopeConfig(?User $user, array $roleCodes): array
@@ -250,8 +251,8 @@ class DashboardDataService
     }
 
     /**
-     * @param array<string, mixed> $scopeConfig
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $scopeConfig
+     * @param  array<string, mixed>  $filters
      */
     private function applyScopeFilterToBuilder($query, array $scopeConfig, array $filters, string $studentAlias, string $schoolAlias, string $districtAlias): void
     {
@@ -303,8 +304,8 @@ class DashboardDataService
     }
 
     /**
-     * @param \Illuminate\Database\Query\Builder $ordersAggregateBase
-     * @param array<string, mixed> $filters
+     * @param  \Illuminate\Database\Query\Builder  $ordersAggregateBase
+     * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
     private function buildOrdersTable($ordersAggregateBase, array $filters): array

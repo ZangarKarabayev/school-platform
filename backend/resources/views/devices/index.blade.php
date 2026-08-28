@@ -17,7 +17,7 @@
                     <table style="width:100%;border-collapse:collapse;min-width:900px;">
                         <thead>
                             <tr style="background:#f7f9fc;color:#4e607d;text-align:left;">
-                                <th style="padding:14px 16px;">ID</th>
+                                <th style="padding:14px 16px;">№</th>
                                 <th style="padding:14px 16px;">{{ __('ui.devices_page.school') }}</th>
                                 <th style="padding:14px 16px;">{{ __('ui.devices_page.device') }}</th>
                                 <th style="padding:14px 16px;">IP</th>
@@ -32,7 +32,7 @@
                                     $isOnline = $terminal->time && $terminal->time->greaterThanOrEqualTo(now()->subMinutes(15));
                                 @endphp
                                 <tr style="border-top:1px solid #e4e9f1;">
-                                    <td style="padding:14px 16px;color:#1d3151;">{{ $terminal->id }}</td>
+                                    <td style="padding:14px 16px;color:#1d3151;">{{ $terminals->firstItem() + $loop->index }}</td>
                                     <td style="padding:14px 16px;color:#1d3151;">{{ $terminal->school?->display_name ?? __('ui.devices_page.not_specified') }}</td>
                                     <td style="padding:14px 16px;color:#1d3151;">{{ $terminal->device_id ?? '—' }}</td>
                                     <td style="padding:14px 16px;color:#1d3151;">{{ $terminal->ip ?? '—' }}</td>
