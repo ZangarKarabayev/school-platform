@@ -136,6 +136,14 @@
             word-break: break-word;
         }
 
+        .profile-school {
+            margin-bottom: 6px;
+            color: #71829a;
+            font-size: 14px;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
         .profile-subtitle {
             margin-top: 6px;
         }
@@ -247,6 +255,7 @@
         }
 
         .sidebar[data-collapsed="true"] .profile-name,
+        .sidebar[data-collapsed="true"] .profile-school,
         .sidebar[data-collapsed="true"] .profile-subtitle,
         .sidebar[data-collapsed="true"] .nav-label,
         .sidebar[data-collapsed="true"] .sidebar-note,

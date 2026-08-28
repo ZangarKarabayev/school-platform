@@ -152,6 +152,9 @@
     </div>
 
     <div class="profile">
+        @if ($user->school)
+            <div class="profile-school">{{ $user->school->display_name }}</div>
+        @endif
         <div class="profile-name">{{ $user->full_name ?: __('ui.dashboard.user_fallback') }}</div>
         <div class="muted profile-subtitle">{{ $profileSubtitle }}</div>
     </div>
