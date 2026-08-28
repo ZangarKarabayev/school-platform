@@ -351,19 +351,19 @@
         </div>
 
         <div class="student-qr-card">
-            <h2 class="student-qr-title">QR ученика</h2>
+            <h2 class="student-qr-title">{{ __('ui.students.qr_title') }}</h2>
             <div class="student-qr-body">
                 <div class="student-qr-meta">
-                    <div>Сканируйте этот QR или DataMatrix-эквивалент на странице кухни.</div>
-                    <div>Полезная нагрузка кода строится по ID ученика и имеет формат
+                    <div>{{ __('ui.students.qr_scan_hint') }}</div>
+                    <div>{{ __('ui.students.qr_payload_hint') }}
                         <strong>student:{{ $student->id }}</strong>.</div>
                     <div>
                         <a class="btn secondary" href="{{ route('students.qr', $student) }}" target="_blank"
-                            rel="noopener noreferrer">Открыть QR</a>
+                            rel="noopener noreferrer">{{ __('ui.students.qr_open') }}</a>
                     </div>
                 </div>
                 <img class="student-qr-image" src="{{ route('students.qr', $student) }}"
-                    alt="QR ученика {{ $student->full_name ?: $student->id }}">
+                    alt="{{ __('ui.students.qr_alt', ['name' => $student->full_name ?: $student->id]) }}">
             </div>
         </div>
 
