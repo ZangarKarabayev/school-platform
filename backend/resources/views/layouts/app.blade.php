@@ -449,7 +449,7 @@
     </div>
 
     <script>
-        (function () {
+        (function() {
             const storageKey = 'app.sidebar.collapsed';
             const toggle = document.getElementById('sidebar-toggle');
             const menuBtn = document.getElementById('mobile-menu-btn');
@@ -514,6 +514,3 @@
 </body>
 
 </html>
-
-
-

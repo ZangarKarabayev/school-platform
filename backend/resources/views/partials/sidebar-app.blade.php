@@ -22,10 +22,11 @@
             'library',
             'kitchen',
         ];
-        $primaryRoleCode = collect($rolePriority)->first(fn (string $code): bool => in_array($code, $roleCodes, true));
-        $profileSubtitle = $primaryRoleCode !== null
-            ? ($roleLabels[$primaryRoleCode] ?? __('ui.common.web_cabinet'))
-            : __('ui.common.web_cabinet');
+        $primaryRoleCode = collect($rolePriority)->first(fn(string $code): bool => in_array($code, $roleCodes, true));
+        $profileSubtitle =
+            $primaryRoleCode !== null
+                ? $roleLabels[$primaryRoleCode] ?? __('ui.common.web_cabinet')
+                : __('ui.common.web_cabinet');
         $isKitchenOnlyUser = count($roleCodes) === 1 && in_array('kitchen', $roleCodes, true);
         $enabledMenuItems = \App\Models\MenuItem::query()->pluck('enabled', 'key')->all();
         $menuItems = [
@@ -122,7 +123,12 @@
         ];
 
         $visibleMenuItems = array_values(
-            array_filter($menuItems, function (array $item) use ($roleCodes, $canManageMenu, $enabledMenuItems, $isKitchenOnlyUser): bool {
+            array_filter($menuItems, function (array $item) use (
+                $roleCodes,
+                $canManageMenu,
+                $enabledMenuItems,
+                $isKitchenOnlyUser,
+            ): bool {
                 if (($enabledMenuItems[$item['key']] ?? true) !== true) {
                     return false;
                 }
