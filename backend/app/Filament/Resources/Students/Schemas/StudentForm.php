@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Students\Schemas;
 
+use App\Models\AcademicClass;
 use App\Models\MealBenefit;
 use App\Models\Student;
 use App\Rules\ValidSchoolYear;
@@ -11,6 +12,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class StudentForm
 {
@@ -52,7 +54,18 @@ class StudentForm
                     'male' => __('admin.labels.male'),
                     'female' => __('admin.labels.female'),
                 ]),
-                Select::make('classroom_id')->label(__('admin.labels.class_full_name'))->relationship('classroom', 'full_name')->searchable()->preload(),
+                Select::make('classroom_id')
+                    ->label(__('admin.labels.class_full_name'))
+                    ->relationship(
+                        name: 'classroom',
+                        titleAttribute: 'full_name',
+                        modifyQueryUsing: fn (Builder $query): Builder => $query
+                            ->orderBy('grade')
+                            ->orderBy('letter'),
+                    )
+                    ->searchable()
+                    ->preload()
+                    ->optionsLimit(fn (): int => max(1, AcademicClass::query()->count())),
                 Select::make('school_id')
                     ->label(__('admin.labels.organization'))
                     ->relationship('school', 'name')

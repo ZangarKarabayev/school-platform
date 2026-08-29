@@ -166,21 +166,6 @@ class StudentController extends Controller
             'user' => $user,
             'students' => $students,
             'classrooms' => AcademicClass::query()
-                ->when($restrictClassroomFilter, function ($query) use ($userSchoolId): void {
-                    $studentClassrooms = Student::query()
-                        ->whereNotNull('classroom_id');
-
-                    if ($userSchoolId !== null) {
-                        $studentClassrooms->where('school_id', $userSchoolId);
-                    }
-
-                    $query->whereIn(
-                        'id',
-                        $studentClassrooms
-                            ->distinct()
-                            ->pluck('classroom_id')
-                    );
-                })
                 ->orderBy('grade')
                 ->orderBy('letter')
                 ->get(),

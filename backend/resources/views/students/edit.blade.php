@@ -270,12 +270,8 @@
 
                         <div class="student-edit-field">
                             <label for="phone">{{ __('admin.labels.phone') }}</label>
-                            <input id="phone" name="phone" type="tel"
-                                value="{{ old('phone', $student->phone) }}"
-                                placeholder="+7 777 123 45 67"
-                                inputmode="tel"
-                                autocomplete="tel"
-                                data-phone-input>
+                            <input id="phone" name="phone" type="tel" value="{{ old('phone', $student->phone) }}"
+                                placeholder="+7 777 123 45 67" inputmode="tel" autocomplete="tel" data-phone-input>
                         </div>
 
                         <div class="student-edit-field">
@@ -292,8 +288,8 @@
 
                         <div class="student-edit-field">
                             <label for="school_display">{{ __('admin.labels.organization') }}</label>
-                            <input id="school_display" type="text"
-                                value="{{ $formSchool?->display_name ?: '-' }}" disabled>
+                            <input id="school_display" type="text" value="{{ $formSchool?->display_name ?: '-' }}"
+                                disabled>
                         </div>
 
                         <div class="student-edit-field">
@@ -356,7 +352,8 @@
                 <div class="student-qr-meta">
                     <div>{{ __('ui.students.qr_scan_hint') }}</div>
                     <div>{{ __('ui.students.qr_payload_hint') }}
-                        <strong>student:{{ $student->id }}</strong>.</div>
+                        <strong>student:{{ $student->id }}</strong>.
+                    </div>
                     <div>
                         <a class="btn secondary" href="{{ route('students.qr', $student) }}" target="_blank"
                             rel="noopener noreferrer">{{ __('ui.students.qr_open') }}</a>
