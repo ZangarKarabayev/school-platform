@@ -28,7 +28,11 @@ class StudentController extends Controller
             'last_name' => ['nullable', 'string', 'max:100'],
             'first_name' => ['nullable', 'string', 'max:100'],
             'middle_name' => ['nullable', 'string', 'max:100'],
-            'classroom_id' => ['nullable', 'integer', 'exists:classrooms,id'],
+            'classroom_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('classrooms', 'id')->where(fn ($query) => $query->where('grade', '>', 0)),
+            ],
             'language' => ['nullable', Rule::in(['ru', 'kk'])],
             'shift' => ['nullable', Rule::in([1, 2, '1', '2'])],
             'school_year' => ['required', 'string', new ValidSchoolYear],
@@ -166,6 +170,12 @@ class StudentController extends Controller
             'user' => $user,
             'students' => $students,
             'classrooms' => AcademicClass::query()
+                ->where('grade', '>', 0)
+                ->orderBy('grade')
+                ->orderBy('letter')
+                ->get(),
+            'assignableClassrooms' => AcademicClass::query()
+                ->where('grade', '>', 0)
                 ->orderBy('grade')
                 ->orderBy('letter')
                 ->get(),
@@ -233,7 +243,11 @@ class StudentController extends Controller
                     ->orderByDesc('order_date')
                     ->orderByDesc('id'),
             ]),
-            'classrooms' => AcademicClass::query()->orderBy('grade')->orderBy('letter')->get(),
+            'classrooms' => AcademicClass::query()
+                ->where('grade', '>', 0)
+                ->orderBy('grade')
+                ->orderBy('letter')
+                ->get(),
             'formSchool' => $userSchoolId !== null
                 ? School::query()->find($userSchoolId)
                 : $student->school,
@@ -250,7 +264,11 @@ class StudentController extends Controller
             'middle_name' => ['nullable', 'string', 'max:100'],
             'birth_date' => ['nullable', 'date'],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
-            'classroom_id' => ['nullable', 'integer', 'exists:classrooms,id'],
+            'classroom_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('classrooms', 'id')->where(fn ($query) => $query->where('grade', '>', 0)),
+            ],
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:65535'],
             'student_number' => ['nullable', 'string', 'max:20'],

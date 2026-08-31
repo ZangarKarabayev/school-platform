@@ -16,7 +16,7 @@ class StudentClassroomOptionsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_teacher_can_select_every_classroom_when_creating_or_editing_a_student(): void
+    public function test_teacher_can_search_positive_grade_classrooms_when_creating_or_editing_a_student(): void
     {
         $region = Region::query()->create([
             'name_ru' => 'Регион',
@@ -42,22 +42,67 @@ class StudentClassroomOptionsTest extends TestCase
 
         $usedClassroom = AcademicClass::query()->create(['grade' => 1, 'letter' => 'А']);
         $unusedClassroom = AcademicClass::query()->create(['grade' => 11, 'letter' => 'Я']);
+        $zeroClassroom = AcademicClass::query()->create(['grade' => 0, 'letter' => 'Б']);
         $student = Student::query()->create([
             'school_id' => $school->id,
             'classroom_id' => $usedClassroom->id,
             'school_year' => '2026-2027',
         ]);
 
-        $this->actingAs($teacher)
+        $createResponse = $this->actingAs($teacher)
             ->get(route('students.index'))
             ->assertOk()
-            ->assertSee('value="'.$unusedClassroom->id.'"', false)
-            ->assertSee($unusedClassroom->full_name);
+            ->assertSee('data-classroom-combobox', false)
+            ->assertSee('data-classroom-id="'.$unusedClassroom->id.'"', false)
+            ->assertSee($unusedClassroom->full_name)
+            ->assertSee('value="2026-2027"', false)
+            ->assertDontSee('data-classroom-id="'.$zeroClassroom->id.'"', false);
 
-        $this->actingAs($teacher)
+        preg_match('/<div id="create_classroom_options".*?<\/div>/s', $createResponse->getContent(), $createOptions);
+
+        $this->assertNotEmpty($createOptions);
+        $this->assertStringNotContainsString('data-classroom-id="'.$zeroClassroom->id.'"', $createOptions[0]);
+
+        $editResponse = $this->actingAs($teacher)
             ->get(route('students.edit', $student))
             ->assertOk()
-            ->assertSee('value="'.$unusedClassroom->id.'"', false)
+            ->assertSee('data-classroom-combobox', false)
+            ->assertSee('data-classroom-id="'.$unusedClassroom->id.'"', false)
             ->assertSee($unusedClassroom->full_name);
+
+        preg_match('/<div id="classroom_options".*?<\/div>/s', $editResponse->getContent(), $editOptions);
+
+        $this->assertNotEmpty($editOptions);
+        $this->assertStringNotContainsString('data-classroom-id="'.$zeroClassroom->id.'"', $editOptions[0]);
+    }
+
+    public function test_zero_grade_classroom_cannot_be_assigned_to_a_student(): void
+    {
+        $zeroClassroom = AcademicClass::query()->create(['grade' => 0, 'letter' => 'А']);
+        $positiveGradeClassroom = AcademicClass::query()->create(['grade' => 1, 'letter' => 'А']);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('students.store'), [
+                'classroom_id' => $zeroClassroom->id,
+                'school_year' => '2026-2027',
+            ])
+            ->assertSessionHasErrors('classroom_id');
+
+        $this->assertDatabaseCount('students', 0);
+
+        $student = Student::query()->create([
+            'classroom_id' => $positiveGradeClassroom->id,
+            'school_year' => '2026-2027',
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('students.update', $student), [
+                'classroom_id' => $zeroClassroom->id,
+                'school_year' => '2026-2027',
+            ])
+            ->assertSessionHasErrors('classroom_id');
+
+        $this->assertSame($positiveGradeClassroom->id, $student->refresh()->classroom_id);
     }
 }

@@ -68,6 +68,52 @@
             resize: vertical;
         }
 
+        .classroom-combobox {
+            position: relative;
+            width: 100%;
+        }
+
+        .classroom-combobox-options {
+            position: absolute;
+            z-index: 100;
+            top: calc(100% + 6px);
+            left: 0;
+            width: 100%;
+            min-width: 100%;
+            max-height: 240px;
+            padding: 6px;
+            overflow-y: auto;
+            border: 1px solid #d1d8e5;
+            border-radius: 12px;
+            background: #fff !important;
+            color: #000;
+            box-shadow: 0 14px 30px rgba(17, 35, 62, 0.2);
+        }
+
+        .classroom-combobox-options[hidden],
+        .classroom-combobox-option[hidden] {
+            display: none;
+        }
+
+        .classroom-combobox-option {
+            display: block;
+            width: 100%;
+            padding: 9px 10px;
+            border: 0;
+            border-radius: 8px;
+            background: #fff;
+            color: #000;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .classroom-combobox-option:hover,
+        .classroom-combobox-option:focus {
+            outline: none;
+            background: #f1f1f1;
+            color: #000;
+        }
+
         .student-edit-actions {
             margin-top: 20px;
             display: flex;
@@ -275,15 +321,26 @@
                         </div>
 
                         <div class="student-edit-field">
-                            <label for="classroom_id">{{ __('admin.labels.class_full_name') }}</label>
-                            <select id="classroom_id" name="classroom_id">
-                                <option value="">-</option>
-                                @foreach ($classrooms as $classroom)
-                                    <option value="{{ $classroom->id }}" @selected((string) old('classroom_id', $student->classroom_id) === (string) $classroom->id)>
-                                        {{ $classroom->full_name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            @php
+                                $selectedClassroom = $classrooms->firstWhere('id', (int) old('classroom_id', $student->classroom_id));
+                            @endphp
+                            <label for="classroom_search">{{ __('admin.labels.class_full_name') }}</label>
+                            <div class="classroom-combobox">
+                                <input id="classroom_search" type="text"
+                                    value="{{ $selectedClassroom?->full_name }}"
+                                    data-classroom-combobox data-classroom-target="classroom_id"
+                                    data-classroom-options="classroom_options"
+                                    placeholder="{{ __('ui.classes.search_placeholder') }}" autocomplete="off">
+                                <input id="classroom_id" type="hidden" name="classroom_id"
+                                    value="{{ $selectedClassroom?->id }}">
+                                <div id="classroom_options" class="classroom-combobox-options" hidden>
+                                    @foreach ($classrooms as $classroom)
+                                        <button class="classroom-combobox-option" type="button"
+                                            data-classroom-id="{{ $classroom->id }}"
+                                            data-classroom-label="{{ $classroom->full_name }}">{{ $classroom->full_name }}</button>
+                                    @endforeach
+                                </div>
+                            </div>
                         </div>
 
                         <div class="student-edit-field">
@@ -423,4 +480,47 @@
             @endif
         </div>
     </section>
+
+    <script>
+        (function() {
+            document.querySelectorAll('[data-classroom-combobox]').forEach((searchInput) => {
+                const classroomIdInput = document.getElementById(searchInput.dataset.classroomTarget);
+                const optionsPanel = document.getElementById(searchInput.dataset.classroomOptions);
+                const classroomOptions = Array.from(optionsPanel?.querySelectorAll('[data-classroom-id]') ?? []);
+
+                if (!classroomIdInput || !optionsPanel) {
+                    return;
+                }
+
+                const filterOptions = () => {
+                    const search = searchInput.value.trim().toLocaleLowerCase();
+                    const selectedOption = classroomOptions.find((option) => option.dataset.classroomLabel === searchInput.value.trim());
+                    classroomIdInput.value = selectedOption?.dataset.classroomId ?? '';
+
+                    classroomOptions.forEach((option) => {
+                        option.hidden = !option.dataset.classroomLabel.toLocaleLowerCase().includes(search);
+                    });
+
+                    optionsPanel.hidden = false;
+                };
+
+                searchInput.addEventListener('focus', filterOptions);
+                searchInput.addEventListener('input', filterOptions);
+
+                classroomOptions.forEach((option) => {
+                    option.addEventListener('click', () => {
+                        searchInput.value = option.dataset.classroomLabel;
+                        classroomIdInput.value = option.dataset.classroomId;
+                        optionsPanel.hidden = true;
+                    });
+                });
+
+                document.addEventListener('click', (event) => {
+                    if (!searchInput.closest('.classroom-combobox').contains(event.target)) {
+                        optionsPanel.hidden = true;
+                    }
+                });
+            });
+        })();
+    </script>
 @endsection

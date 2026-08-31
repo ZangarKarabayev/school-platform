@@ -60,12 +60,13 @@ class StudentForm
                         name: 'classroom',
                         titleAttribute: 'full_name',
                         modifyQueryUsing: fn (Builder $query): Builder => $query
+                            ->where('grade', '>', 0)
                             ->orderBy('grade')
                             ->orderBy('letter'),
                     )
-                    ->searchable()
+                    ->searchable(['full_name'])
                     ->preload()
-                    ->optionsLimit(fn (): int => max(1, AcademicClass::query()->count())),
+                    ->optionsLimit(fn (): int => max(1, AcademicClass::query()->where('grade', '>', 0)->count())),
                 Select::make('school_id')
                     ->label(__('admin.labels.organization'))
                     ->relationship('school', 'name')
@@ -82,6 +83,7 @@ class StudentForm
                 ]),
                 TextInput::make('school_year')
                     ->label(__('admin.labels.school_year'))
+                    ->default('2026-2027')
                     ->required()
                     ->length(9)
                     ->placeholder('2026-2027')
