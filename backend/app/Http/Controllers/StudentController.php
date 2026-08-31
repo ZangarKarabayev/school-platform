@@ -6,6 +6,7 @@ use App\Jobs\ImportStudentsJob;
 use App\Models\AcademicClass;
 use App\Models\MealBenefit;
 use App\Models\Student;
+use App\Models\StudentImport;
 use App\Modules\Organizations\Models\School;
 use App\Rules\ValidSchoolYear;
 use App\Services\Students\StudentImportService;
