@@ -50,7 +50,8 @@ class CreateOrdersJob implements ShouldQueue
             $schoolYear = $this->schoolYear ?: $student->school_year;
             $eligibility = $orderEligibilityService->evaluate($student, $schoolYear, $this->orderDate);
 
-            if (! $eligibility['eligible']) {
+            if (! $eligibility['eligible']
+                || $orderCalendarService->isBlockedOrderDate($this->orderDate, $eligibility['grade'])) {
                 continue;
             }
 

@@ -151,7 +151,7 @@ class KitchenController extends Controller
 
         $today = now()->toDateString();
 
-        if ($this->orderCalendarService->isBlockedOrderDate($today)) {
+        if ($this->orderCalendarService->isBlockedOrderDate($today, $eligibility['grade'])) {
             return response()->json([
                 'message' => $this->orderCalendarService->blockedOrderDateMessage($today),
             ], 422);

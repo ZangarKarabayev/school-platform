@@ -3,6 +3,7 @@
 namespace Tests\Feature\Jobs;
 
 use App\Jobs\CreateOrdersJob;
+use App\Models\AcademicClass;
 use App\Models\MealBenefit;
 use App\Models\Order;
 use App\Models\Student;
@@ -90,6 +91,54 @@ class CreateOrdersJobTest extends TestCase
         (new CreateOrdersJob([$student->id], '2026-06-01', '12:30'))->handle();
 
         $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_it_does_not_create_orders_during_2026_2027_breaks_and_days_off(): void
+    {
+        $school = $this->makeSchool();
+        $firstGrade = AcademicClass::query()->create(['grade' => 1, 'letter' => 'A']);
+        $secondGrade = AcademicClass::query()->create(['grade' => 2, 'letter' => 'A']);
+        $firstGrader = Student::query()->create([
+            'school_id' => $school->id,
+            'classroom_id' => $firstGrade->id,
+            'school_year' => '2026-2027',
+            'first_name' => 'First',
+            'last_name' => 'Grader',
+            'iin' => '123456789015',
+            'status' => 'active',
+        ]);
+        $secondGrader = Student::query()->create([
+            'school_id' => $school->id,
+            'classroom_id' => $secondGrade->id,
+            'school_year' => '2026-2027',
+            'first_name' => 'Second',
+            'last_name' => 'Grader',
+            'iin' => '123456789016',
+            'status' => 'active',
+        ]);
+
+        (new CreateOrdersJob(
+            [$firstGrader->id, $secondGrader->id],
+            '2027-02-08',
+            '12:30',
+            schoolYear: '2026-2027',
+        ))->handle();
+        (new CreateOrdersJob(
+            [$firstGrader->id, $secondGrader->id],
+            '2027-05-03',
+            '12:30',
+            schoolYear: '2026-2027',
+        ))->handle();
+
+        $this->assertDatabaseCount('orders', 1);
+        $this->assertDatabaseHas('orders', [
+            'student_id' => $secondGrader->id,
+            'order_date' => '2027-02-08 00:00:00',
+        ]);
+        $this->assertDatabaseMissing('orders', [
+            'student_id' => $firstGrader->id,
+            'order_date' => '2027-02-08 00:00:00',
+        ]);
     }
 
     private function makeSchool(): School

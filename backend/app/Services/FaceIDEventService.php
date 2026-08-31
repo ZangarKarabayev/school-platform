@@ -133,7 +133,7 @@ class FaceIDEventService
             return;
         }
 
-        if ($orderCalendarService->isBlockedOrderDate($createTime)) {
+        if ($orderCalendarService->isBlockedOrderDate($createTime, $grade)) {
             Log::info('FaceID verify order skipped by non-working date', [
                 'verify_event_id' => $verifyEvent->id,
                 'student_id' => $student->id,
