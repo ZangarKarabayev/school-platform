@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Order;
 use App\Models\Terminal;
 use App\Models\VerifyEvent;
 use App\Services\Audit\AuditLogger;
@@ -34,6 +35,14 @@ class AuditServiceProvider extends ServiceProvider
 
                 if ($model instanceof Terminal || $model instanceof VerifyEvent) {
                     return;
+                }
+
+                if ($model instanceof Order && $event === 'updated') {
+                    $changed = array_keys($model->getChanges());
+
+                    if ($changed === [] || array_diff($changed, ['transaction_status', 'transaction_error']) === []) {
+                        return;
+                    }
                 }
 
                 $auditLogger->logModelEvent($event, $model);

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
+use App\Models\Order;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\VerifyEvent;
@@ -93,6 +94,36 @@ class AuditLoggingTest extends TestCase
 
         $this->assertDatabaseMissing('audit_logs', [
             'subject_type' => VerifyEvent::class,
+        ]);
+    }
+
+    public function test_transaction_status_updates_are_not_logged_as_model_events(): void
+    {
+        $student = Student::query()->create([
+            'first_name' => 'Transaction',
+            'last_name' => 'Tester',
+            'school_year' => '2026-2027',
+            'iin' => '123456789012',
+        ]);
+
+        $order = Order::query()->create([
+            'student_id' => $student->id,
+            'school_year' => '2026-2027',
+            'order_date' => '2026-09-01',
+            'status' => 'created',
+            'transaction_status' => null,
+            'transaction_error' => null,
+        ]);
+
+        $order->forceFill([
+            'transaction_status' => false,
+            'transaction_error' => '[404] not found',
+        ])->save();
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'subject_type' => Order::class,
+            'event' => 'model.updated',
+            'subject_id' => (string) $order->id,
         ]);
     }
 
