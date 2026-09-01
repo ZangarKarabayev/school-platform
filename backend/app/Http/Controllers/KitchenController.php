@@ -91,7 +91,7 @@ class KitchenController extends Controller
         $orders = Order::query()
             ->with('student')
             ->whereIn('id', $data['order_ids'])
-            ->whereHas('student', fn ($query) => $query->where('school_id', $school->id))
+            ->whereHas('student', fn($query) => $query->where('school_id', $school->id))
             ->get();
 
         $updatedCount = 0;
@@ -238,8 +238,8 @@ class KitchenController extends Controller
         $headers = ['Content-Type' => 'image/png'];
 
         if ($request->boolean('download')) {
-            $filename = 'student-qr-'.$student->id.'.png';
-            $headers['Content-Disposition'] = 'attachment; filename="'.$filename.'"';
+            $filename = 'student-qr-' . $student->id . '.png';
+            $headers['Content-Disposition'] = 'attachment; filename="' . $filename . '"';
         }
 
         return response($png, 200, $headers);
@@ -247,7 +247,7 @@ class KitchenController extends Controller
 
     public static function studentPayload(int $studentId): string
     {
-        return 'student:'.$studentId;
+        return 'student:' . $studentId;
     }
 
     private function parseStudentId(string $value): ?int
@@ -284,7 +284,7 @@ class KitchenController extends Controller
         }
 
         return $user?->scopes
-            ->first(fn ($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
+            ->first(fn($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
             ?->scope_id;
     }
 
@@ -326,18 +326,18 @@ class KitchenController extends Controller
             $ordersQuery = Order::query()
                 ->with(['student.classroom', 'classroom'])
                 ->whereDate('order_date', $selectedDate->toDateString())
-                ->whereHas('student', fn ($query) => $query->where('school_id', $school->id))
+                ->whereHas('student', fn($query) => $query->where('school_id', $school->id))
                 ->orderByRaw("CASE WHEN status IN ('issued', 'completed') THEN 1 ELSE 0 END");
 
             if ($studentQuery !== '') {
                 $ordersQuery->whereHas('student', function ($query) use ($studentQuery): void {
                     $query->where(function ($innerQuery) use ($studentQuery): void {
                         $innerQuery
-                            ->where('first_name', 'like', '%'.$studentQuery.'%')
-                            ->orWhere('last_name', 'like', '%'.$studentQuery.'%')
-                            ->orWhere('middle_name', 'like', '%'.$studentQuery.'%')
-                            ->orWhereRaw("CONCAT(last_name, ' ', first_name, ' ', COALESCE(middle_name, '')) like ?", ['%'.$studentQuery.'%'])
-                            ->orWhere('iin', 'like', '%'.$studentQuery.'%');
+                            ->where('first_name', 'like', '%' . $studentQuery . '%')
+                            ->orWhere('last_name', 'like', '%' . $studentQuery . '%')
+                            ->orWhere('middle_name', 'like', '%' . $studentQuery . '%')
+                            ->orWhereRaw("CONCAT(last_name, ' ', first_name, ' ', COALESCE(middle_name, '')) like ?", ['%' . $studentQuery . '%'])
+                            ->orWhere('iin', 'like', '%' . $studentQuery . '%');
                     });
                 });
             }
@@ -346,10 +346,10 @@ class KitchenController extends Controller
                 $ordersQuery->whereHas('classroom', function ($query) use ($classQuery): void {
                     $query->where(function ($innerQuery) use ($classQuery): void {
                         $innerQuery
-                            ->where('full_name', 'like', '%'.$classQuery.'%')
-                            ->orWhere('letter', 'like', '%'.$classQuery.'%')
-                            ->orWhereRaw('CONCAT(grade, letter) like ?', ['%'.$classQuery.'%'])
-                            ->orWhereRaw("CONCAT(grade, ' ', letter) like ?", ['%'.$classQuery.'%']);
+                            ->where('full_name', 'like', '%' . $classQuery . '%')
+                            ->orWhere('letter', 'like', '%' . $classQuery . '%')
+                            ->orWhereRaw('CONCAT(grade, letter) like ?', ['%' . $classQuery . '%'])
+                            ->orWhereRaw("CONCAT(grade, ' ', letter) like ?", ['%' . $classQuery . '%']);
                     });
                 });
             }

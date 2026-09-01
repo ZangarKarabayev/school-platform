@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Terminal;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -17,16 +18,24 @@ class AuditServiceProvider extends ServiceProvider
 
     public function boot(AuditLogger $auditLogger): void
     {
-        Event::listen(Login::class, fn (Login $event) => $auditLogger->logAuthEvent('login', $event->user, $event->guard));
-        Event::listen(Logout::class, fn (Logout $event) => $event->user === null
+        Event::listen(Login::class, fn(Login $event) => $auditLogger->logAuthEvent('login', $event->user, $event->guard));
+        Event::listen(Logout::class, fn(Logout $event) => $event->user === null
             ? null
             : $auditLogger->logAuthEvent('logout', $event->user, $event->guard));
 
         foreach (['created', 'updated', 'deleted'] as $event) {
             Event::listen("eloquent.{$event}: *", function (string $eventName, array $models) use ($auditLogger, $event): void {
-                if (isset($models[0])) {
-                    $auditLogger->logModelEvent($event, $models[0]);
+                if (! isset($models[0])) {
+                    return;
                 }
+
+                $model = $models[0];
+
+                if ($model instanceof Terminal) {
+                    return;
+                }
+
+                $auditLogger->logModelEvent($event, $model);
             });
         }
     }
