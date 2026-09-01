@@ -730,6 +730,7 @@
                 <div class="orders-form-field">
                     <label for="filter_school_year">{{ __('admin.labels.school_year') }}</label>
                     <select id="filter_school_year" name="school_year">
+                        <option value="" @selected($selectedSchoolYear === null)>{{ __('ui.common.all') }}</option>
                         @foreach ($schoolYears as $schoolYear)
                             <option value="{{ $schoolYear }}" @selected($selectedSchoolYear === $schoolYear)>{{ $schoolYear }}</option>
                         @endforeach
@@ -980,7 +981,7 @@
 
                 <form method="POST" action="{{ route('orders.store') }}" class="orders-form">
                     @csrf
-                    <input type="hidden" name="school_year" value="{{ old('school_year', $selectedSchoolYear) }}">
+                    <input type="hidden" name="school_year" value="{{ old('school_year', $creationSchoolYear) }}">
 
                     <div class="orders-form-grid">
                         <div class="orders-form-field full">

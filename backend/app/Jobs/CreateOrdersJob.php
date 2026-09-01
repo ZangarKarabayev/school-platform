@@ -30,6 +30,14 @@ class CreateOrdersJob implements ShouldQueue
         public ?string $schoolYear = null,
     ) {}
 
+    private function resolveDefaultSchoolYear(string $orderDate): string
+    {
+        $date = \Carbon\Carbon::parse($orderDate);
+        $startYear = $date->month >= 9 ? $date->year : $date->year - 1;
+
+        return $startYear.'-'.($startYear + 1);
+    }
+
     public function handle(
         ?OrderCalendarService $orderCalendarService = null,
         ?OrderEligibilityService $orderEligibilityService = null,
@@ -47,7 +55,7 @@ class CreateOrdersJob implements ShouldQueue
             ->get();
 
         foreach ($students as $student) {
-            $schoolYear = $this->schoolYear ?: $student->school_year;
+            $schoolYear = $this->schoolYear ?: $student->school_year ?: $this->resolveDefaultSchoolYear($this->orderDate);
             $eligibility = $orderEligibilityService->evaluate($student, $schoolYear, $this->orderDate);
 
             if (! $eligibility['eligible']
@@ -55,14 +63,17 @@ class CreateOrdersJob implements ShouldQueue
                 continue;
             }
 
+            $classroomId = $eligibility['classroom_id'] ?? $student->classroom_id;
+            $resolvedSchoolYear = $schoolYear ?: $this->resolveDefaultSchoolYear($this->orderDate);
+
             $order = Order::query()->firstOrCreate(
                 [
                     'student_id' => $student->id,
                     'order_date' => $this->orderDate,
                 ],
                 [
-                    'school_year' => $schoolYear,
-                    'classroom_id' => $eligibility['classroom_id'],
+                    'school_year' => $resolvedSchoolYear,
+                    'classroom_id' => $classroomId,
                     'dish_id' => null,
                     'created_by_user_id' => $this->createdByUserId,
                     'created_by_terminal_id' => null,

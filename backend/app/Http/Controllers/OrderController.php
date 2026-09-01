@@ -40,7 +40,8 @@ class OrderController extends Controller
         $requestedSchoolYear = trim((string) $request->string('school_year'));
         $selectedSchoolYear = ValidSchoolYear::isValid($requestedSchoolYear)
             ? $requestedSchoolYear
-            : $schoolYears->first();
+            : null;
+        $creationSchoolYear = $selectedSchoolYear ?? $schoolYears->first();
         $filters = [
             'search' => trim((string) $request->string('search')),
             'order_date' => (string) $request->string('order_date'),
@@ -99,12 +100,12 @@ class OrderController extends Controller
                 'latestMealBenefit',
                 'enrollments' => fn ($query) => $query
                     ->with('classroom')
-                    ->when($selectedSchoolYear !== null, fn ($enrollmentQuery) => $enrollmentQuery->where('school_year', $selectedSchoolYear)),
+                    ->when($creationSchoolYear !== null, fn ($enrollmentQuery) => $enrollmentQuery->where('school_year', $creationSchoolYear)),
             ])
             ->when($restrictBySchool && $userSchoolId !== null, fn ($query) => $query->where('school_id', $userSchoolId))
-            ->when($selectedSchoolYear !== null, fn ($query) => $query->whereHas(
+            ->when($creationSchoolYear !== null, fn ($query) => $query->whereHas(
                 'enrollments',
-                fn ($enrollmentQuery) => $enrollmentQuery->where('school_year', $selectedSchoolYear),
+                fn ($enrollmentQuery) => $enrollmentQuery->where('school_year', $creationSchoolYear),
             ))
             ->get()
             ->each(function (Student $student): void {
@@ -142,6 +143,7 @@ class OrderController extends Controller
             'filters' => $filters,
             'schoolYears' => $schoolYears,
             'selectedSchoolYear' => $selectedSchoolYear,
+            'creationSchoolYear' => $creationSchoolYear,
             'title' => __('ui.menu.orders'),
         ]);
     }

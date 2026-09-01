@@ -47,7 +47,7 @@ class OrderEligibilityService
                 ->where('school_year', $schoolYear)
                 ->first();
 
-        if (! $enrollment && $student->school_year === $schoolYear && $student->classroom_id !== null) {
+        if (! $enrollment && $student->classroom_id !== null && (blank($student->school_year) || $student->school_year === $schoolYear)) {
             $enrollment = new StudentEnrollment([
                 'school_id' => $student->school_id,
                 'classroom_id' => $student->classroom_id,
