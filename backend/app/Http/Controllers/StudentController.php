@@ -115,14 +115,31 @@ class StudentController extends Controller
         $restrictClassroomFilter = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
         $userSchoolId = $this->resolveSchoolIdForUser($request);
 
+        $filterKeys = ['search', 'classroom_id', 'school_id', 'status', 'photo', 'photo_sync'];
+        $filtersWereSubmitted = $request->hasAny($filterKeys);
+
+        if ($request->boolean('reset_filters')) {
+            $request->session()->forget('students.filters');
+            $storedFilters = [];
+            $filtersWereSubmitted = false;
+        } elseif ($filtersWereSubmitted) {
+            $storedFilters = $request->only($filterKeys);
+        } else {
+            $storedFilters = $request->session()->get('students.filters', []);
+        }
+
         $filters = [
-            'search' => trim((string) $request->string('search')),
-            'classroom_id' => $request->integer('classroom_id') ?: null,
-            'school_id' => $request->integer('school_id') ?: null,
-            'status' => trim((string) $request->string('status')),
-            'photo' => trim((string) $request->string('photo')),
-            'photo_sync' => trim((string) $request->string('photo_sync')),
+            'search' => trim((string) ($storedFilters['search'] ?? '')),
+            'classroom_id' => (int) ($storedFilters['classroom_id'] ?? 0) ?: null,
+            'school_id' => (int) ($storedFilters['school_id'] ?? 0) ?: null,
+            'status' => trim((string) ($storedFilters['status'] ?? '')),
+            'photo' => trim((string) ($storedFilters['photo'] ?? '')),
+            'photo_sync' => trim((string) ($storedFilters['photo_sync'] ?? '')),
         ];
+
+        if ($filtersWereSubmitted) {
+            $request->session()->put('students.filters', $filters);
+        }
 
         $students = Student::query()
             ->with(['classroom', 'school', 'latestMealBenefit'])
@@ -196,7 +213,9 @@ class StudentController extends Controller
         ]);
 
         $studentIds = array_values(array_unique(array_map('intval', $data['student_ids'])));
-        $schoolId = $this->resolveSchoolIdForUser($request);
+        $schoolId = $this->shouldRestrictStudentsToSchool($request)
+            ? $this->resolveSchoolIdForUser($request)
+            : null;
 
         $studentsQuery = Student::query()
             ->with('latestMealBenefit')
@@ -227,6 +246,34 @@ class StudentController extends Controller
         }
 
         return back()->with('student_status', __('ui.students.bulk_meal_benefit_updated', ['count' => $updatedCount]));
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'student_ids' => ['required', 'array', 'min:1'],
+            'student_ids.*' => ['integer', 'exists:students,id'],
+        ]);
+
+        $studentIds = array_values(array_unique(array_map('intval', $data['student_ids'])));
+        $schoolId = $this->shouldRestrictStudentsToSchool($request)
+            ? $this->resolveSchoolIdForUser($request)
+            : null;
+        $studentsQuery = Student::query()->whereIn('id', $studentIds);
+
+        if ($schoolId !== null) {
+            $studentsQuery->where('school_id', $schoolId);
+        }
+
+        $students = $studentsQuery->get();
+
+        if ($students->count() !== count($studentIds)) {
+            abort(403);
+        }
+
+        $students->each->delete();
+
+        return back()->with('student_status', __('ui.students.bulk_deleted', ['count' => $students->count()]));
     }
 
     public function edit(Request $request, Student $student): View
@@ -391,6 +438,13 @@ class StudentController extends Controller
         return $user?->scopes
             ->first(fn ($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
             ?->scope_id;
+    }
+
+    private function shouldRestrictStudentsToSchool(Request $request): bool
+    {
+        $roleCodes = $request->user()?->loadMissing('roles')->roles->pluck('code')->all() ?? [];
+
+        return in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
     }
 
     private function shouldAutoResolveSchoolIdForImport(Request $request): bool

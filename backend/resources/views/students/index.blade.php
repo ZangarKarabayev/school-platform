@@ -296,6 +296,15 @@
             align-items: center;
         }
 
+        .students-bulk-delete {
+            background: #d73d56;
+            box-shadow: 0 8px 18px rgba(215, 61, 86, 0.2);
+        }
+
+        .students-bulk-delete:hover {
+            background: #bd2f47;
+        }
+
         .students-table-wrap {
             overflow: auto;
             border-top: 1px solid #e4e9f1;
@@ -871,7 +880,7 @@
 
                 <div class="students-actions">
                     <button class="btn" type="submit">{{ __('ui.common.filter') }}</button>
-                    <a class="btn secondary" href="{{ route('students.index') }}">{{ __('ui.common.reset') }}</a>
+                    <a class="btn secondary" href="{{ route('students.index', ['reset_filters' => 1]) }}">{{ __('ui.common.reset') }}</a>
                 </div>
             </form>
 
@@ -880,6 +889,10 @@
                 <div class="students-bulk-controls">
                     <input class="students-select-control master" type="checkbox" id="students-select-all">
                     <div class="students-bulk-counter" id="students-selected-counter">0 {{ __('ui.orders.selected') }}</div>
+                    <button class="btn students-bulk-delete" type="submit" id="students-bulk-delete"
+                        formaction="{{ route('students.bulk-destroy') }}" formmethod="POST" formnovalidate hidden>
+                        {{ __('ui.students.bulk_delete') }}
+                    </button>
                 </div>
                 <div class="students-bulk-actions">
                     <div class="field">
@@ -1567,6 +1580,7 @@
             const bulkForm = document.getElementById('students-bulk-form');
             const bulkStatusSelect = document.getElementById('bulk_meal_benefit_type');
             const bulkSubmitButton = document.getElementById('students-bulk-submit');
+            const bulkDeleteButton = document.getElementById('students-bulk-delete');
             const bulkCounter = document.getElementById('students-selected-counter');
             bulkCounter.dataset.selectedLabel = @json(__('ui.orders.selected'));
             const bulkHiddenInputs = document.getElementById('students-bulk-hidden-inputs');
@@ -1626,6 +1640,8 @@
                     bulkSelectAll.indeterminate = selectedIds.length > 0 && !bulkSelectAll.checked;
                 }
                 bulkSubmitButton.disabled = selectedIds.length === 0 || !bulkStatusSelect.value;
+                bulkDeleteButton.hidden = selectedIds.length === 0;
+                bulkDeleteButton.disabled = selectedIds.length === 0;
             };
 
             bulkCheckboxes.forEach((input) => {
@@ -1646,8 +1662,13 @@
             });
 
             bulkStatusSelect?.addEventListener('change', syncBulkSelection);
+            bulkDeleteButton?.addEventListener('click', (event) => {
+                if (!window.confirm(@json(__('ui.students.bulk_delete_confirm')))) {
+                    event.preventDefault();
+                }
+            });
             bulkForm?.addEventListener('submit', (event) => {
-                if (bulkSubmitButton.disabled) {
+                if (event.submitter === bulkSubmitButton && bulkSubmitButton.disabled) {
                     event.preventDefault();
                 }
             });
