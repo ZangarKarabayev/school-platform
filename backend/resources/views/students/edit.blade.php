@@ -18,6 +18,38 @@
         .student-edit-header {
             padding: 24px;
             border-bottom: 1px solid #e4e9f1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+
+        .student-edit-heading {
+            min-width: 0;
+        }
+
+        .student-edit-photo,
+        .student-edit-photo-placeholder {
+            width: 128px;
+            height: 128px;
+            flex: 0 0 128px;
+            border: 1px solid #d1d8e5;
+            border-radius: 20px;
+            background: #eef4fc;
+            box-shadow: 0 8px 22px rgba(35, 64, 103, 0.12);
+        }
+
+        .student-edit-photo {
+            display: block;
+            object-fit: cover;
+        }
+
+        .student-edit-photo-placeholder {
+            display: grid;
+            place-items: center;
+            color: #315b91;
+            font-size: 42px;
+            font-weight: 800;
         }
 
         .student-edit-title {
@@ -247,19 +279,42 @@
             .student-edit-grid {
                 grid-template-columns: 1fr;
             }
+
+            .student-edit-header {
+                align-items: flex-start;
+            }
+
+            .student-edit-photo,
+            .student-edit-photo-placeholder {
+                width: 96px;
+                height: 96px;
+                flex-basis: 96px;
+                border-radius: 16px;
+            }
         }
     </style>
 
     <section class="student-edit-page">
         <div class="student-edit-card">
             <div class="student-edit-header">
-                <div class="muted">{{ __('ui.common.home') }} / <a
-                        href="{{ route('students.index') }}">{{ __('ui.menu.students') }}</a></div>
-                <h1 class="student-edit-title">{{ $student->full_name ?: __('admin.labels.student') }}</h1>
-                <div class="student-edit-note">
-                    {{ __('admin.labels.status') }}:
-                    {{ $student->latestMealBenefit?->type ? str_replace('_', ' ', ucfirst($student->latestMealBenefit->type)) : '-' }}
+                <div class="student-edit-heading">
+                    <div class="muted">{{ __('ui.common.home') }} / <a
+                            href="{{ route('students.index') }}">{{ __('ui.menu.students') }}</a></div>
+                    <h1 class="student-edit-title">{{ $student->full_name ?: __('admin.labels.student') }}</h1>
+                    <div class="student-edit-note">
+                        {{ __('admin.labels.status') }}:
+                        {{ $student->latestMealBenefit?->type ? str_replace('_', ' ', ucfirst($student->latestMealBenefit->type)) : '-' }}
+                    </div>
                 </div>
+
+                @if ($student->photo)
+                    <img class="student-edit-photo" src="{{ route('students.photo.show', $student) }}"
+                        alt="{{ $student->full_name ?: __('admin.labels.student') }}">
+                @else
+                    <div class="student-edit-photo-placeholder" aria-label="{{ __('ui.common.photo') }}">
+                        {{ mb_strtoupper(mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1)) }}
+                    </div>
+                @endif
             </div>
 
             <div class="student-edit-body">
