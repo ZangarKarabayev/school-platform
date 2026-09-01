@@ -136,9 +136,13 @@ class KitchenController extends Controller
             ], 404);
         }
 
+        $resolvedSchoolYear = filled($student->school_year)
+            ? $student->school_year
+            : $this->resolveDefaultSchoolYear(now()->toDateString());
+
         $eligibility = $this->orderEligibilityService->evaluate(
             $student,
-            $student->school_year,
+            $resolvedSchoolYear,
             now(),
             $school->id,
         );
@@ -162,13 +166,14 @@ class KitchenController extends Controller
             ->whereDate('order_date', $today)
             ->first();
 
+        $resolvedClassroomId = $eligibility['classroom_id'] ?? $student->classroom_id;
         $created = false;
 
         if (! $order) {
             $order = Order::query()->create([
                 'student_id' => $student->id,
-                'school_year' => $student->school_year,
-                'classroom_id' => $eligibility['classroom_id'],
+                'school_year' => $resolvedSchoolYear,
+                'classroom_id' => $resolvedClassroomId,
                 'order_date' => $today,
                 'order_time' => now()->format('H:i:s'),
                 'status' => 'created',
@@ -204,6 +209,14 @@ class KitchenController extends Controller
                 'transaction_error' => $order->transaction_error,
             ],
         ]);
+    }
+
+    private function resolveDefaultSchoolYear(string $orderDate): string
+    {
+        $date = Carbon::parse($orderDate);
+        $startYear = $date->month >= 9 ? $date->year : $date->year - 1;
+
+        return $startYear . '-' . ($startYear + 1);
     }
 
     public function studentQr(Request $request, Student $student): Response

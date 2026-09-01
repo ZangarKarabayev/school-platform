@@ -904,15 +904,18 @@
 
                 <div class="students-actions">
                     <button class="btn" type="submit">{{ __('ui.common.filter') }}</button>
-                    <a class="btn secondary" href="{{ route('students.index', ['reset_filters' => 1]) }}">{{ __('ui.common.reset') }}</a>
+                    <a class="btn secondary"
+                        href="{{ route('students.index', ['reset_filters' => 1]) }}">{{ __('ui.common.reset') }}</a>
                 </div>
             </form>
 
-            <form class="students-bulk-toolbar" method="POST" action="{{ route('students.bulk-meal-benefit') }}" id="students-bulk-form">
+            <form class="students-bulk-toolbar" method="POST" action="{{ route('students.bulk-meal-benefit') }}"
+                id="students-bulk-form">
                 @csrf
                 <div class="students-bulk-controls">
                     <input class="students-select-control master" type="checkbox" id="students-select-all">
-                    <div class="students-bulk-counter" id="students-selected-counter">0 {{ __('ui.orders.selected') }}</div>
+                    <div class="students-bulk-counter" id="students-selected-counter">0 {{ __('ui.orders.selected') }}
+                    </div>
                     <button class="btn students-bulk-delete" type="submit" id="students-bulk-delete"
                         formaction="{{ route('students.bulk-destroy') }}" formmethod="POST" formnovalidate hidden>
                         {{ __('ui.students.bulk_delete') }}
@@ -926,13 +929,16 @@
                                 @php
                                     $bulkStatusLabel = __('admin.meal_benefit_types.' . $statusValue);
                                 @endphp
-                                <option value="{{ $statusValue }}">{{ $bulkStatusLabel !== 'admin.meal_benefit_types.' . $statusValue ? $bulkStatusLabel : str_replace('_', ' ', ucfirst($statusValue)) }}</option>
+                                <option value="{{ $statusValue }}">
+                                    {{ $bulkStatusLabel !== 'admin.meal_benefit_types.' . $statusValue ? $bulkStatusLabel : str_replace('_', ' ', ucfirst($statusValue)) }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
                     <div class="students-actions">
                         <div id="students-bulk-hidden-inputs"></div>
-                        <button class="btn" type="submit" id="students-bulk-submit" disabled>{{ __('ui.students.bulk_apply_status') }}</button>
+                        <button class="btn" type="submit" id="students-bulk-submit"
+                            disabled>{{ __('ui.students.bulk_apply_status') }}</button>
                     </div>
                 </div>
             </form>
@@ -948,7 +954,8 @@
                             data-student-edit-url="{{ route('students.edit', $student) }}">
                             <div class="students-mobile-top">
                                 <div class="students-mobile-identity">
-                                    <input class="students-select-control" type="checkbox" value="{{ $student->id }}" data-student-bulk-checkbox>
+                                    <input class="students-select-control" type="checkbox" value="{{ $student->id }}"
+                                        data-student-bulk-checkbox>
                                     @if ($student->photo)
                                         <img class="student-photo"
                                             src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo) }}"
@@ -974,7 +981,8 @@
                                 </div>
 
                                 <div class="students-mobile-actions">
-                                    <a class="student-qr-link" href="{{ route('students.qr', ['student' => $student, 'download' => 1]) }}">
+                                    <a class="student-qr-link"
+                                        href="{{ route('students.qr', ['student' => $student, 'download' => 1]) }}">
                                         QR
                                     </a>
                                     <form class="student-delete-form" method="POST"
@@ -1055,7 +1063,8 @@
                                 <tr data-student-edit-url="{{ route('students.edit', $student) }}">
                                     <td class="student-photo-cell">
                                         <div class="student-photo-wrap">
-                                            <input class="students-select-control" type="checkbox" value="{{ $student->id }}" data-student-bulk-checkbox>
+                                            <input class="students-select-control" type="checkbox"
+                                                value="{{ $student->id }}" data-student-bulk-checkbox>
                                             <form method="POST" action="{{ route('students.photo.update', $student) }}"
                                                 enctype="multipart/form-data">
                                                 @csrf
@@ -1107,7 +1116,8 @@
                                     </td>
                                     <td class="student-actions-cell">
                                         <div class="student-actions-group">
-                                            <a class="student-qr-link" href="{{ route('students.qr', ['student' => $student, 'download' => 1]) }}">
+                                            <a class="student-qr-link"
+                                                href="{{ route('students.qr', ['student' => $student, 'download' => 1]) }}">
                                                 QR
                                             </a>
                                             <form class="student-delete-form" method="POST"
@@ -1318,13 +1328,16 @@
 
                         <div class="field">
                             @php
-                                $selectedCreateClassroom = $assignableClassrooms->firstWhere('id', (int) old('classroom_id'));
+                                $selectedCreateClassroom = $assignableClassrooms->firstWhere(
+                                    'id',
+                                    (int) old('classroom_id'),
+                                );
                             @endphp
                             <label for="create_classroom_search">{{ __('admin.labels.class_full_name') }}</label>
                             <div class="classroom-combobox">
                                 <input id="create_classroom_search" type="text"
-                                    value="{{ $selectedCreateClassroom?->full_name }}"
-                                    data-classroom-combobox data-classroom-target="create_classroom_id"
+                                    value="{{ $selectedCreateClassroom?->full_name }}" data-classroom-combobox
+                                    data-classroom-target="create_classroom_id"
                                     data-classroom-options="create_classroom_options"
                                     placeholder="{{ __('ui.classes.search_placeholder') }}" autocomplete="off">
                                 <input id="create_classroom_id" type="hidden" name="classroom_id"
@@ -1372,7 +1385,8 @@
                         <div class="field">
                             <label for="create_school_year">{{ __('admin.labels.school_year') }}</label>
                             <input id="create_school_year" name="school_year" type="text" required maxlength="9"
-                                pattern="\d{4}-\d{4}" placeholder="2026-2027" value="{{ old('school_year', '2026-2027') }}">
+                                pattern="\d{4}-\d{4}" placeholder="2026-2027"
+                                value="{{ old('school_year', '2026-2027') }}">
                         </div>
                     </div>
 
@@ -1614,7 +1628,8 @@
             document.querySelectorAll('[data-classroom-combobox]').forEach((searchInput) => {
                 const classroomIdInput = document.getElementById(searchInput.dataset.classroomTarget);
                 const optionsPanel = document.getElementById(searchInput.dataset.classroomOptions);
-                const classroomOptions = Array.from(optionsPanel?.querySelectorAll('[data-classroom-id]') ?? []);
+                const classroomOptions = Array.from(optionsPanel?.querySelectorAll('[data-classroom-id]') ??
+            []);
 
                 if (!classroomIdInput || !optionsPanel) {
                     return;
@@ -1622,11 +1637,13 @@
 
                 const filterOptions = () => {
                     const search = searchInput.value.trim().toLocaleLowerCase();
-                    const selectedOption = classroomOptions.find((option) => option.dataset.classroomLabel === searchInput.value.trim());
+                    const selectedOption = classroomOptions.find((option) => option.dataset
+                        .classroomLabel === searchInput.value.trim());
                     classroomIdInput.value = selectedOption?.dataset.classroomId ?? '';
 
                     classroomOptions.forEach((option) => {
-                        option.hidden = !option.dataset.classroomLabel.toLocaleLowerCase().includes(search);
+                        option.hidden = !option.dataset.classroomLabel.toLocaleLowerCase().includes(
+                            search);
                     });
 
                     optionsPanel.hidden = false;
@@ -1660,7 +1677,8 @@
                     .map((id) => `<input type="hidden" name="student_ids[]" value="${id}">`)
                     .join('');
                 if (bulkSelectAll) {
-                    bulkSelectAll.checked = bulkCheckboxes.length > 0 && bulkCheckboxes.every((input) => input.checked);
+                    bulkSelectAll.checked = bulkCheckboxes.length > 0 && bulkCheckboxes.every((input) => input
+                        .checked);
                     bulkSelectAll.indeterminate = selectedIds.length > 0 && !bulkSelectAll.checked;
                 }
                 bulkSubmitButton.disabled = selectedIds.length === 0 || !bulkStatusSelect.value;
@@ -1699,7 +1717,8 @@
 
             document.querySelectorAll('[data-student-edit-url]').forEach((row) => {
                 row.addEventListener('click', (event) => {
-                    if (event.target.closest('[data-photo-open], form, input, button, a, .student-qr-link')) {
+                    if (event.target.closest(
+                            '[data-photo-open], form, input, button, a, .student-qr-link')) {
                         return;
                     }
 

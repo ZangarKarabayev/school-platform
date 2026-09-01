@@ -8,6 +8,10 @@ use App\Models\MealBenefit;
 use App\Models\Order;
 use App\Models\Student;
 use App\Models\User;
+use App\Modules\Organizations\Models\District;
+use App\Modules\Organizations\Models\Region;
+use App\Modules\Organizations\Models\School;
+use App\Services\FaceIDEventService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -68,6 +72,60 @@ class OrderIndexSchoolYearFilterTest extends TestCase
         ]);
 
         (new CreateOrdersJob([$student->id], '2026-09-01', null, null, null))->handle();
+
+        $order = Order::query()->first();
+
+        $this->assertNotNull($order);
+        $this->assertSame('2026-2027', $order->school_year);
+        $this->assertSame($classroom->id, $order->classroom_id);
+    }
+
+    public function test_face_id_event_fills_current_school_year_and_classroom_when_missing(): void
+    {
+        $region = Region::query()->create([
+            'name' => 'Test Region',
+            'name_ru' => 'Test Region',
+            'code' => 'TR-01',
+        ]);
+        $district = District::query()->create([
+            'region_id' => $region->id,
+            'name' => 'Test District',
+            'name_ru' => 'Test District',
+            'code' => 'TD-01',
+        ]);
+        $school = School::query()->create([
+            'district_id' => $district->id,
+            'name' => 'Test School',
+            'name_ru' => 'Test School',
+            'code' => 'TS-01',
+            'bin' => '123456789',
+            'address' => 'Test Address',
+        ]);
+
+        $classroom = AcademicClass::query()->create(['grade' => 1, 'letter' => 'А']);
+        $student = Student::query()->create([
+            'first_name' => 'Mqtt',
+            'school_id' => $school->id,
+            'school_year' => null,
+            'classroom_id' => $classroom->id,
+        ]);
+        MealBenefit::query()->create([
+            'student_id' => $student->id,
+            'type' => 'voucher',
+            'start_date' => '2026-09-01',
+            'end_date' => '2027-05-31',
+        ]);
+
+        FaceIDEventService::handle([
+            'operator' => 'VerifyPush',
+            'info' => [
+                'DeviceID' => 42,
+                'Notes' => (string) $student->id,
+                'CreateTime' => '2026-09-01 12:00:00',
+                'Name' => 'Mqtt Student',
+                'Address' => '',
+            ],
+        ]);
 
         $order = Order::query()->first();
 

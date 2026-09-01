@@ -112,15 +112,20 @@ class FaceIDEventService
             return;
         }
 
+        $resolvedSchoolYear = filled($student->school_year)
+            ? $student->school_year
+            : self::resolveDefaultSchoolYear($createTime->toDateString());
+
         $eligibility = app(OrderEligibilityService::class)->evaluate(
             $student,
-            $student->school_year,
+            $resolvedSchoolYear,
             $createTime,
             $school?->id,
         );
         $grade = $eligibility['grade'] ?? 0;
         $benefitType = $student->latestMealBenefit?->type;
         $orderCalendarService = app(OrderCalendarService::class);
+        $resolvedClassroomId = $eligibility['classroom_id'] ?? $student->classroom_id;
 
         if (! $eligibility['eligible']) {
             Log::info('FaceID verify order skipped by eligibility', [
@@ -149,8 +154,8 @@ class FaceIDEventService
                 'order_date' => $createTime->toDateString(),
             ],
             [
-                'school_year' => $student->school_year,
-                'classroom_id' => $eligibility['classroom_id'],
+                'school_year' => $resolvedSchoolYear,
+                'classroom_id' => $resolvedClassroomId,
                 'created_by_user_id' => null,
                 'created_by_terminal_id' => $terminal?->id,
                 'order_time' => $createTime->format('H:i:s'),
@@ -244,6 +249,14 @@ class FaceIDEventService
         $normalized = preg_replace('/\D+/', '', $value);
 
         return $normalized !== '' ? $normalized : $value;
+    }
+
+    protected static function resolveDefaultSchoolYear(string $orderDate): string
+    {
+        $date = Carbon::parse($orderDate);
+        $startYear = $date->month >= 9 ? $date->year : $date->year - 1;
+
+        return $startYear . '-' . ($startYear + 1);
     }
 
     protected static function parseTimestamp(mixed $value): Carbon
