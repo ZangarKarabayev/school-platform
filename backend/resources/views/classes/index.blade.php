@@ -74,6 +74,22 @@
             border-top: none;
         }
 
+        .classes-list-row.is-clickable {
+            cursor: pointer;
+            transition: background-color 0.18s ease;
+        }
+
+        .classes-list-row.is-clickable:hover,
+        .classes-list-row.is-clickable:focus-visible {
+            outline: none;
+            background: #f7faff;
+        }
+
+        .classes-list-row.is-clickable:hover .classes-list-title,
+        .classes-list-row.is-clickable:focus-visible .classes-list-title {
+            color: #266ccc;
+        }
+
         .classes-list-main {
             display: grid;
             gap: 4px;
@@ -99,11 +115,6 @@
             line-height: 1.1;
             color: #1d3151;
             transition: color 0.18s ease;
-        }
-
-        .classes-list-meta {
-            color: #71829a;
-            font-size: 14px;
         }
 
         .classes-list-side {
@@ -215,16 +226,17 @@
         @else
             <div class="classes-card classes-list">
                 @foreach ($classes as $classroom)
-                    <div class="classes-list-row">
+                    <div class="classes-list-row {{ $canOpenStudents ? 'is-clickable' : '' }}"
+                        @if ($canOpenStudents)
+                            data-class-url="{{ route('classes.show', $classroom) }}" role="link" tabindex="0"
+                        @endif>
                         <div class="classes-list-main">
                             @if ($canOpenStudents)
                                 <a class="classes-list-link" href="{{ route('classes.show', $classroom) }}">
                                     <div class="classes-list-title">{{ $classroom->full_name }}</div>
-                                    <div class="classes-list-meta">{{ $classroom->grade }} {{ __('ui.menu.classes') }}</div>
                                 </a>
                             @else
                                 <div class="classes-list-title">{{ $classroom->full_name }}</div>
-                                <div class="classes-list-meta">{{ $classroom->grade }} {{ __('ui.menu.classes') }}</div>
                             @endif
                         </div>
                         <div class="classes-list-side">
@@ -239,4 +251,29 @@
         @endif
     </section>
     </div>
+
+    <script>
+        document.querySelectorAll('[data-class-url]').forEach((row) => {
+            const openClass = () => {
+                window.location.href = row.dataset.classUrl;
+            };
+
+            row.addEventListener('click', (event) => {
+                if (event.target.closest('a, button, input, select, textarea')) {
+                    return;
+                }
+
+                openClass();
+            });
+
+            row.addEventListener('keydown', (event) => {
+                if (event.target !== row || !['Enter', ' '].includes(event.key)) {
+                    return;
+                }
+
+                event.preventDefault();
+                openClass();
+            });
+        });
+    </script>
 @endsection

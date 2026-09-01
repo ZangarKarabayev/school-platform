@@ -17,7 +17,7 @@ class ClassroomController extends Controller
         $user = $request->user()?->loadMissing('roles', 'scopes');
         $roleCodes = $user?->roles?->pluck('code')->all() ?? [];
         $restrictBySchool = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
-        $canOpenStudents = $restrictBySchool;
+        $canOpenStudents = $user !== null;
         $userSchoolId = $this->resolveSchoolIdForUser($request);
         $filters = [
             'search' => trim((string) $request->string('search')),
@@ -40,7 +40,7 @@ class ClassroomController extends Controller
             ->when($filters['search'] !== '', function ($query) use ($filters): void {
                 $search = mb_strtoupper($filters['search']);
 
-                $query->whereRaw('UPPER(full_name) like ?', ['%' . $search . '%']);
+                $query->whereRaw('UPPER(full_name) like ?', ['%'.$search.'%']);
             })
             ->when($filters['grade'] !== '', fn ($query) => $query->where('grade', (int) $filters['grade']))
             ->when($filters['filled'] === 'with', function ($query) use ($restrictBySchool, $userSchoolId): void {
@@ -90,7 +90,7 @@ class ClassroomController extends Controller
 
         abort_if($zipPath === false, 500, 'Unable to create temporary archive file.');
 
-        $archive = new ZipArchive();
+        $archive = new ZipArchive;
         $archive->open($zipPath, ZipArchive::OVERWRITE);
 
         foreach ($students as $student) {
@@ -115,7 +115,9 @@ class ClassroomController extends Controller
 
         abort_unless($user !== null, 403);
 
-        $userSchoolId = $this->resolveSchoolIdForUser($request);
+        $roleCodes = $user->roles->pluck('code')->all();
+        $restrictBySchool = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
+        $userSchoolId = $restrictBySchool ? $this->resolveSchoolIdForUser($request) : null;
 
         if (
             $userSchoolId !== null
@@ -140,7 +142,7 @@ class ClassroomController extends Controller
     {
         $name = $student->full_name !== '' ? $student->full_name : 'student-'.$student->id;
 
-        return Str::slug($name, '-') . '-qr.png';
+        return Str::slug($name, '-').'-qr.png';
     }
 
     private function resolveSchoolIdForUser(Request $request): ?int
