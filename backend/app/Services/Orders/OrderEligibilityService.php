@@ -43,9 +43,9 @@ class OrderEligibilityService
         $enrollment = $student->relationLoaded('enrollments')
             ? $student->enrollments->firstWhere('school_year', $schoolYear)
             : $student->enrollments()
-                ->with('classroom')
-                ->where('school_year', $schoolYear)
-                ->first();
+            ->with('classroom')
+            ->where('school_year', $schoolYear)
+            ->first();
 
         if (! $enrollment && $student->classroom_id !== null && (blank($student->school_year) || $student->school_year === $schoolYear)) {
             $enrollment = new StudentEnrollment([
@@ -61,7 +61,8 @@ class OrderEligibilityService
         }
 
         if (($enrollment->started_at !== null && $date->lt($enrollment->started_at))
-            || ($enrollment->ended_at !== null && $date->gt($enrollment->ended_at))) {
+            || ($enrollment->ended_at !== null && $date->gt($enrollment->ended_at))
+        ) {
             return ['eligible' => false, 'classroom_id' => null, 'grade' => null];
         }
 

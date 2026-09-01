@@ -35,7 +35,7 @@ class CreateOrdersJob implements ShouldQueue
         $date = \Carbon\Carbon::parse($orderDate);
         $startYear = $date->month >= 9 ? $date->year : $date->year - 1;
 
-        return $startYear.'-'.($startYear + 1);
+        return $startYear . '-' . ($startYear + 1);
     }
 
     public function handle(
@@ -58,8 +58,10 @@ class CreateOrdersJob implements ShouldQueue
             $schoolYear = $this->schoolYear ?: $student->school_year ?: $this->resolveDefaultSchoolYear($this->orderDate);
             $eligibility = $orderEligibilityService->evaluate($student, $schoolYear, $this->orderDate);
 
-            if (! $eligibility['eligible']
-                || $orderCalendarService->isBlockedOrderDate($this->orderDate, $eligibility['grade'])) {
+            if (
+                ! $eligibility['eligible']
+                || $orderCalendarService->isBlockedOrderDate($this->orderDate, $eligibility['grade'])
+            ) {
                 continue;
             }
 

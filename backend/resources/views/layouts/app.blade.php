@@ -19,10 +19,10 @@
         html,
         body {
             width: 100%;
-            height: 100%;
+            min-height: 100%;
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            overflow: auto;
             background: #2876dd;
         }
 
@@ -37,6 +37,7 @@
             display: grid;
             grid-template-rows: var(--topbar-height) minmax(0, 1fr);
             background: #dfe5ef;
+            overflow: hidden;
         }
 
         .topbar {
@@ -96,6 +97,40 @@
 
         .workspace[data-collapsed="true"] {
             grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
+        }
+
+        @media (max-width: 900px) {
+            .app-shell {
+                position: static;
+                height: auto;
+                min-height: 100vh;
+                overflow: visible;
+            }
+
+            .workspace {
+                grid-template-columns: 1fr;
+                min-width: 0;
+            }
+
+            .workspace[data-collapsed="true"] {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                max-width: none;
+                width: 100%;
+                border-right: 0;
+                border-bottom: 1px solid #d1d8e5;
+            }
+
+            .sidebar[data-collapsed="true"] {
+                max-width: none;
+            }
+
+            .topbar {
+                padding: 0 12px;
+                gap: 8px;
+            }
         }
 
         .sidebar {

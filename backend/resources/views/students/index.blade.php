@@ -264,7 +264,7 @@
         .students-bulk-toolbar {
             padding: 0 24px 20px;
             display: flex;
-            align-items: end;
+            align-items: center;
             justify-content: space-between;
             gap: 12px;
             flex-wrap: wrap;
@@ -279,10 +279,24 @@
 
         .students-bulk-actions {
             display: flex;
-            align-items: end;
+            align-items: center;
             gap: 12px;
             flex-wrap: wrap;
             margin-left: auto;
+        }
+
+        .students-bulk-actions .field {
+            margin: 0;
+            min-width: 220px;
+        }
+
+        .students-bulk-actions .field select {
+            min-height: 44px;
+        }
+
+        .students-bulk-actions .students-actions {
+            align-items: center;
+            margin: 0;
         }
 
         .students-bulk-counter {
@@ -761,13 +775,23 @@
                 flex-direction: column;
             }
 
+            .students-header-actions {
+                width: 100%;
+                justify-content: space-between;
+                align-items: center;
+            }
+
             .students-filters {
                 grid-template-columns: 1fr;
             }
 
             .students-count {
-                min-width: 0;
-                width: 100%;
+                width: 52px;
+                min-width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                flex-shrink: 0;
+                margin-left: auto;
             }
 
             .student-create-grid {

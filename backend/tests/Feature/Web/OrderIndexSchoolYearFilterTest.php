@@ -42,14 +42,14 @@ class OrderIndexSchoolYearFilterTest extends TestCase
         $this->actingAs($user)
             ->get(route('orders.index'))
             ->assertOk()
-            ->assertViewHas('orders', fn ($orders): bool => $orders->total() === 2)
+            ->assertViewHas('orders', fn($orders): bool => $orders->total() === 2)
             ->assertViewHas('selectedSchoolYear', null)
             ->assertViewHas('creationSchoolYear', '2026-2027');
 
         $this->actingAs($user)
             ->get(route('orders.index', ['school_year' => '2026-2027']))
             ->assertOk()
-            ->assertViewHas('orders', fn ($orders): bool => $orders->total() === 1);
+            ->assertViewHas('orders', fn($orders): bool => $orders->total() === 1);
     }
 
     public function test_create_orders_job_fills_current_school_year_and_classroom_when_missing(): void
