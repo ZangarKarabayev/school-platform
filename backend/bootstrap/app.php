@@ -1,14 +1,15 @@
 <?php
 
+use App\Http\Middleware\AuditUserAction;
 use App\Http\Middleware\EnsureBasicAuth;
 use App\Http\Middleware\EnsureKitchenAccess;
 use App\Http\Middleware\EnsureKitchenAuthenticated;
 use App\Http\Middleware\EnsureSchoolBoundForSchoolRoles;
 use App\Http\Middleware\SetLocale;
-use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\HandleCors;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(HandleCors::class);
+        $middleware->append(AuditUserAction::class);
 
         $middleware->appendToGroup('web', [
             SetLocale::class,
