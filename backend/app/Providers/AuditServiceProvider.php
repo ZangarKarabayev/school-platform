@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Terminal;
+use App\Models\VerifyEvent;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -31,7 +32,7 @@ class AuditServiceProvider extends ServiceProvider
 
                 $model = $models[0];
 
-                if ($model instanceof Terminal) {
+                if ($model instanceof Terminal || $model instanceof VerifyEvent) {
                     return;
                 }
 

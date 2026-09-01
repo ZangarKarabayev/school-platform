@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AuditLog;
 use App\Models\Student;
 use App\Models\User;
+use App\Models\VerifyEvent;
 use App\Modules\Access\Models\Role;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -75,6 +76,23 @@ class AuditLoggingTest extends TestCase
             'user_id' => $user->id,
             'subject_type' => User::class,
             'subject_id' => (string) $user->id,
+        ]);
+    }
+
+    public function test_verify_events_are_not_logged_to_audit_log(): void
+    {
+        VerifyEvent::query()->create([
+            'person_id' => 42,
+            'name' => 'Иванов',
+            'device_id' => 'device-1',
+            'verify_status' => 'success',
+            'create_time' => now(),
+            'bin' => '010101010101',
+            'unique_qr' => 'qr-123',
+        ]);
+
+        $this->assertDatabaseMissing('audit_logs', [
+            'subject_type' => VerifyEvent::class,
         ]);
     }
 
