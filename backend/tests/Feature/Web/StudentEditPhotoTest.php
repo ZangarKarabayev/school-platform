@@ -24,7 +24,7 @@ class StudentEditPhotoTest extends TestCase
             ->get(route('students.edit', $student))
             ->assertOk()
             ->assertSee('class="student-edit-photo"', false)
-            ->assertSee('src="'.route('students.photo.show', $student).'"', false);
+            ->assertSee('src="' . route('students.photo.show', $student) . '"', false);
     }
 
     public function test_student_initial_is_shown_when_the_photo_is_missing(): void
@@ -40,5 +40,31 @@ class StudentEditPhotoTest extends TestCase
             ->assertOk()
             ->assertSee('class="student-edit-photo-placeholder"', false)
             ->assertSee('А');
+    }
+
+    public function test_student_photo_can_be_deleted_from_edit_page(): void
+    {
+        $user = User::factory()->create();
+        $student = Student::query()->create([
+            'first_name' => 'Azim',
+            'photo' => 'user/photos/azim.jpg',
+            'school_year' => '2026-2027',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('students.edit', $student))
+            ->assertOk()
+            ->assertSee('data-photo-edit-trigger', false)
+            ->assertSee('data-photo-delete-open', false)
+            ->assertDontSee('student-edit-photo-remove');
+
+        $this->actingAs($user)
+            ->delete(route('students.photo.delete', $student))
+            ->assertRedirect(route('students.edit', $student));
+
+        $this->assertDatabaseHas('students', [
+            'id' => $student->id,
+            'photo' => null,
+        ]);
     }
 }

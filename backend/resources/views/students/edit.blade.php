@@ -28,6 +28,63 @@
             min-width: 0;
         }
 
+        .student-edit-photo-wrap {
+            position: relative;
+            width: 128px;
+            height: 128px;
+            flex: 0 0 128px;
+        }
+
+        .student-edit-photo-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 8px;
+            z-index: 2;
+        }
+
+        .student-edit-photo-action {
+            width: 28px;
+            height: 28px;
+            border: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.15);
+            transition: transform 0.18s ease, opacity 0.18s ease;
+            background: rgba(15, 23, 42, 0.72);
+            color: #fff;
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+
+        .student-edit-photo-wrap:hover .student-edit-photo-action,
+        .student-edit-photo-wrap:focus-within .student-edit-photo-action {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .student-edit-photo-action svg {
+            width: 14px;
+            height: 14px;
+            display: block;
+        }
+
+        .student-edit-photo-action.delete {
+            background: rgba(220, 38, 38, 0.92);
+        }
+
+        .student-edit-photo-action.edit:hover {
+            background: rgba(37, 99, 235, 0.92);
+        }
+
+        .student-edit-photo-action.delete:hover {
+            background: rgba(185, 28, 28, 0.96);
+        }
+
         .student-edit-photo,
         .student-edit-photo-placeholder {
             width: 128px;
@@ -50,6 +107,173 @@
             color: #315b91;
             font-size: 42px;
             font-weight: 800;
+        }
+
+        .student-photo-delete-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.45);
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .student-photo-delete-modal[data-open="true"] {
+            display: flex;
+        }
+
+        .student-photo-delete-panel {
+            width: min(100%, 420px);
+            background: #fff;
+            border-radius: 18px;
+            border: 1px solid #d1d8e5;
+            box-shadow: 0 16px 42px rgba(22, 37, 61, 0.16);
+            padding: 24px;
+        }
+
+        .student-photo-delete-header {
+            margin-bottom: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #16253d;
+        }
+
+        .student-photo-delete-body {
+            margin-bottom: 20px;
+            color: #4e607d;
+            line-height: 1.5;
+        }
+
+        .student-photo-delete-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .camera-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(10, 21, 39, 0.72);
+            z-index: 1100;
+        }
+
+        .camera-modal[data-open="true"] {
+            display: flex;
+        }
+
+        .camera-panel {
+            width: min(100%, 720px);
+            background: #fff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(8, 19, 38, 0.28);
+        }
+
+        .camera-panel-header,
+        .camera-panel-footer {
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .camera-panel-body {
+            padding: 0 20px 20px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .camera-video,
+        .camera-canvas {
+            width: 100%;
+            max-height: 420px;
+            border-radius: 18px;
+            background: #0f1a2d;
+            object-fit: cover;
+        }
+
+        .camera-canvas {
+            display: none;
+        }
+
+        .photo-modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(10, 21, 39, 0.72);
+            z-index: 1000;
+        }
+
+        .photo-modal[data-open="true"] {
+            display: flex;
+        }
+
+        .photo-panel {
+            width: min(100%, 420px);
+            background: #fff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(8, 19, 38, 0.28);
+        }
+
+        .photo-panel-header,
+        .photo-panel-body {
+            padding: 20px;
+        }
+
+        .photo-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid #e8edf5;
+        }
+
+        .photo-panel-actions {
+            display: grid;
+            gap: 10px;
+        }
+
+        .photo-panel-actions .btn {
+            justify-content: center;
+        }
+
+        .photo-panel-preview {
+            padding: 0 20px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .photo-panel-preview-image,
+        .photo-panel-preview-placeholder {
+            width: 140px;
+            height: 140px;
+            border-radius: 24px;
+            border: 1px solid #d1d8e5;
+            background: linear-gradient(135deg, #d7e4f8 0%, #eef3fb 100%);
+        }
+
+        .photo-panel-preview-image {
+            object-fit: cover;
+            display: none;
+        }
+
+        .photo-panel-preview-placeholder {
+            display: grid;
+            place-items: center;
+            color: #446389;
+            font-weight: 700;
+            font-size: 44px;
         }
 
         .student-edit-title {
@@ -291,8 +515,208 @@
                 flex-basis: 96px;
                 border-radius: 16px;
             }
+
+            .student-edit-photo-wrap {
+                width: 96px;
+                height: 96px;
+                flex-basis: 96px;
+            }
         }
     </style>
+
+    <script>
+        (function() {
+            const bindPhotoActions = () => {
+                const deleteOpenButton = document.querySelector('[data-photo-delete-open]');
+                const editButtons = document.querySelectorAll('[data-photo-edit-trigger]');
+
+                const photoModal = document.getElementById('photo-modal');
+                const photoModalStudentName = document.getElementById('photo-student-name');
+                const photoPreviewImage = document.getElementById('photo-preview-image');
+                const photoPreviewPlaceholder = document.getElementById('photo-preview-placeholder');
+                const photoUploadTrigger = document.getElementById('photo-upload-trigger');
+                const photoCameraTrigger = document.getElementById('photo-camera-trigger');
+                const photoCloseButton = document.getElementById('photo-close');
+                const fileInput = document.querySelector(
+                    '.js-student-photo-file[data-student-id="{{ $student->id }}"]');
+
+                fileInput?.addEventListener('change', () => {
+                    if (fileInput.files && fileInput.files.length > 0) {
+                        fileInput.form.submit();
+                    }
+                });
+
+                const cameraModal = document.getElementById('camera-modal');
+                const cameraVideo = document.getElementById('camera-video');
+                const cameraCanvas = document.getElementById('camera-canvas');
+                const cameraCapture = document.getElementById('camera-capture');
+                const cameraRetake = document.getElementById('camera-retake');
+                const cameraSave = document.getElementById('camera-save');
+                const cameraClose = document.getElementById('camera-close');
+                const cameraForm = document.getElementById('camera-photo-form');
+                const cameraDataField = document.getElementById('camera-photo-data');
+                const cameraStudentName = document.getElementById('camera-student-name');
+                let cameraStream = null;
+
+                const stopCameraStream = () => {
+                    if (!cameraStream) {
+                        return;
+                    }
+
+                    cameraStream.getTracks().forEach((track) => track.stop());
+                    cameraStream = null;
+                };
+
+                const resetCameraState = () => {
+                    if (!cameraCanvas || !cameraVideo) {
+                        return;
+                    }
+
+                    cameraCanvas.style.display = 'none';
+                    cameraVideo.style.display = 'block';
+                    cameraRetake.style.display = 'none';
+                    cameraSave.style.display = 'none';
+                    cameraCapture.style.display = 'inline-flex';
+                    cameraDataField.value = '';
+                };
+
+                const closeCameraModal = () => {
+                    stopCameraStream();
+                    if (cameraModal) {
+                        cameraModal.dataset.open = 'false';
+                    }
+                    resetCameraState();
+                };
+
+                const openPhotoModal = () => {
+                    if (!photoModal || !photoModalStudentName || !photoPreviewImage || !
+                        photoPreviewPlaceholder) {
+                        return;
+                    }
+
+                    const studentName = @json($student->full_name ?: __('admin.labels.student'));
+                    const photoUrl = @json($student->photo ? route('students.photo.show', $student) : '');
+                    const photoInitial = @json(mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1));
+
+                    photoModalStudentName.textContent = studentName;
+
+                    if (photoUrl) {
+                        photoPreviewImage.src = photoUrl;
+                        photoPreviewImage.style.display = 'block';
+                        photoPreviewPlaceholder.style.display = 'none';
+                    } else {
+                        photoPreviewImage.removeAttribute('src');
+                        photoPreviewImage.style.display = 'none';
+                        photoPreviewPlaceholder.textContent = photoInitial;
+                        photoPreviewPlaceholder.style.display = 'grid';
+                    }
+
+                    photoModal.dataset.open = 'true';
+                };
+
+                editButtons.forEach((button) => {
+                    button.addEventListener('click', openPhotoModal);
+                });
+
+                photoUploadTrigger?.addEventListener('click', () => {
+                    if (!fileInput) {
+                        return;
+                    }
+
+                    photoModal.dataset.open = 'false';
+                    fileInput.click();
+                });
+
+                photoCameraTrigger?.addEventListener('click', async () => {
+                    if (!cameraModal || !cameraVideo || !cameraCanvas || !cameraCapture || !
+                        cameraRetake || !cameraSave) {
+                        return;
+                    }
+
+                    photoModal.dataset.open = 'false';
+                    cameraStudentName.textContent = @json($student->full_name ?: __('admin.labels.student'));
+                    cameraForm.action = @json(route('students.photo.update', $student));
+                    cameraModal.dataset.open = 'true';
+                    resetCameraState();
+
+                    try {
+                        cameraStream = await navigator.mediaDevices.getUserMedia({
+                            video: {
+                                facingMode: 'user'
+                            },
+                            audio: false,
+                        });
+                        cameraVideo.srcObject = cameraStream;
+                    } catch (error) {
+                        closeCameraModal();
+                        window.alert(@json(__('ui.messages.camera_unavailable')));
+                    }
+                });
+
+                cameraCapture?.addEventListener('click', () => {
+                    if (!cameraStream || !cameraVideo || !cameraCanvas) {
+                        return;
+                    }
+
+                    const context = cameraCanvas.getContext('2d');
+                    const width = cameraVideo.videoWidth || 640;
+                    const height = cameraVideo.videoHeight || 480;
+                    cameraCanvas.width = width;
+                    cameraCanvas.height = height;
+                    context.drawImage(cameraVideo, 0, 0, width, height);
+                    cameraDataField.value = cameraCanvas.toDataURL('image/jpeg', 0.9);
+
+                    cameraVideo.style.display = 'none';
+                    cameraCanvas.style.display = 'block';
+                    cameraCapture.style.display = 'none';
+                    cameraRetake.style.display = 'inline-flex';
+                    cameraSave.style.display = 'inline-flex';
+                });
+
+                cameraRetake?.addEventListener('click', resetCameraState);
+                cameraClose?.addEventListener('click', closeCameraModal);
+                cameraModal?.addEventListener('click', (event) => {
+                    if (event.target === cameraModal) {
+                        closeCameraModal();
+                    }
+                });
+
+                photoCloseButton?.addEventListener('click', () => {
+                    if (photoModal) {
+                        photoModal.dataset.open = 'false';
+                    }
+                });
+
+                photoModal?.addEventListener('click', (event) => {
+                    if (event.target === photoModal) {
+                        photoModal.dataset.open = 'false';
+                    }
+                });
+
+                if (!deleteOpenButton) {
+                    return;
+                }
+
+                deleteOpenButton.addEventListener('click', () => {
+                    const deleteForm = document.getElementById('student-photo-delete-form');
+
+                    if (!deleteForm) {
+                        return;
+                    }
+
+                    if (window.confirm('Удалить фото?')) {
+                        deleteForm.submit();
+                    }
+                });
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bindPhotoActions);
+            } else {
+                bindPhotoActions();
+            }
+        })();
+    </script>
 
     <section class="student-edit-page">
         <div class="student-edit-card">
@@ -307,14 +731,45 @@
                     </div>
                 </div>
 
-                @if ($student->photo)
-                    <img class="student-edit-photo" src="{{ route('students.photo.show', $student) }}"
-                        alt="{{ $student->full_name ?: __('admin.labels.student') }}">
-                @else
-                    <div class="student-edit-photo-placeholder" aria-label="{{ __('ui.common.photo') }}">
-                        {{ mb_strtoupper(mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1)) }}
-                    </div>
-                @endif
+                <div class="student-edit-photo-wrap">
+                    @if ($student->photo)
+                        <img class="student-edit-photo" src="{{ route('students.photo.show', $student) }}"
+                            alt="{{ $student->full_name ?: __('admin.labels.student') }}">
+                        <div class="student-edit-photo-actions">
+                            <button class="student-edit-photo-action edit" type="button" title="Заменить фото"
+                                aria-label="Заменить фото" data-photo-edit-trigger>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path
+                                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm14.71-9.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.12 1.12 3.75 3.75 1.12-1.12z"
+                                        fill="currentColor" />
+                                </svg>
+                            </button>
+                            <button class="student-edit-photo-action delete" type="button" title="Удалить фото"
+                                aria-label="Удалить фото" data-photo-delete-open>×</button>
+                        </div>
+                    @else
+                        <div class="student-edit-photo-placeholder" aria-label="{{ __('ui.common.photo') }}">
+                            {{ mb_strtoupper(mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1)) }}
+                        </div>
+                        <div class="student-edit-photo-actions">
+                            <button class="student-edit-photo-action edit" type="button" title="Добавить фото"
+                                aria-label="Добавить фото" data-photo-edit-trigger>
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path
+                                        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm14.71-9.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.12 1.12 3.75 3.75 1.12-1.12z"
+                                        fill="currentColor" />
+                                </svg>
+                            </button>
+                        </div>
+                    @endif
+                </div>
+
+                <form method="POST" action="{{ route('students.photo.update', $student) }}" enctype="multipart/form-data"
+                    class="student-edit-photo-form" hidden>
+                    @csrf
+                    <input class="js-student-photo-file" type="file" name="photo_file" accept="image/*"
+                        data-student-id="{{ $student->id }}">
+                </form>
             </div>
 
             <div class="student-edit-body">
@@ -377,12 +832,14 @@
 
                         <div class="student-edit-field">
                             @php
-                                $selectedClassroom = $classrooms->firstWhere('id', (int) old('classroom_id', $student->classroom_id));
+                                $selectedClassroom = $classrooms->firstWhere(
+                                    'id',
+                                    (int) old('classroom_id', $student->classroom_id),
+                                );
                             @endphp
                             <label for="classroom_search">{{ __('admin.labels.class_full_name') }}</label>
                             <div class="classroom-combobox">
-                                <input id="classroom_search" type="text"
-                                    value="{{ $selectedClassroom?->full_name }}"
+                                <input id="classroom_search" type="text" value="{{ $selectedClassroom?->full_name }}"
                                     data-classroom-combobox data-classroom-target="classroom_id"
                                     data-classroom-options="classroom_options"
                                     placeholder="{{ __('ui.classes.search_placeholder') }}" autocomplete="off">
@@ -455,6 +912,92 @@
                         <a class="btn secondary" href="{{ route('students.index') }}">{{ __('ui.common.back') }}</a>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <div class="photo-modal" id="photo-modal" data-open="false">
+            <div class="photo-panel">
+                <div class="photo-panel-header">
+                    <div>
+                        <div class="muted">{{ __('ui.common.photo') }}</div>
+                        <strong id="photo-student-name">{{ $student->full_name ?: __('admin.labels.student') }}</strong>
+                    </div>
+                    <button class="btn secondary" type="button" id="photo-close">{{ __('ui.common.close') }}</button>
+                </div>
+
+                <div class="photo-panel-body">
+                    <div class="photo-panel-preview">
+                        @if ($student->photo)
+                            <img class="photo-panel-preview-image" id="photo-preview-image"
+                                src="{{ route('students.photo.show', $student) }}"
+                                alt="{{ $student->full_name ?: __('admin.labels.student') }}">
+                        @else
+                            <img class="photo-panel-preview-image" id="photo-preview-image" alt=""
+                                style="display:none;">
+                        @endif
+                        <div class="photo-panel-preview-placeholder" id="photo-preview-placeholder"
+                            style="display: {{ $student->photo ? 'none' : 'grid' }};">
+                            {{ mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1) }}
+                        </div>
+                    </div>
+
+                    <div class="photo-panel-actions">
+                        <button class="btn secondary" type="button"
+                            id="photo-upload-trigger">{{ __('ui.common.upload') }}</button>
+                        <button class="btn" type="button"
+                            id="photo-camera-trigger">{{ __('ui.common.photo') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="camera-modal" id="camera-modal" data-open="false">
+            <div class="camera-panel">
+                <div class="camera-panel-header">
+                    <div>
+                        <div class="muted">{{ __('ui.common.camera') }}</div>
+                        <strong id="camera-student-name">{{ $student->full_name ?: __('admin.labels.student') }}</strong>
+                    </div>
+                    <button class="btn secondary" type="button" id="camera-close">{{ __('ui.common.close') }}</button>
+                </div>
+
+                <div class="camera-panel-body">
+                    <video class="camera-video" id="camera-video" autoplay playsinline></video>
+                    <canvas class="camera-canvas" id="camera-canvas"></canvas>
+                </div>
+
+                <div class="camera-panel-footer">
+                    <form method="POST" id="camera-photo-form" action="{{ route('students.photo.update', $student) }}">
+                        @csrf
+                        <input type="hidden" name="photo_data" id="camera-photo-data">
+                    </form>
+
+                    <div class="students-actions">
+                        <button class="btn secondary" type="button" id="camera-retake"
+                            style="display:none;">{{ __('ui.common.retake') }}</button>
+                        <button class="btn" type="button" id="camera-capture">{{ __('ui.common.capture') }}</button>
+                        <button class="btn" type="submit" form="camera-photo-form" id="camera-save"
+                            style="display:none;">{{ __('ui.common.save') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="student-photo-delete-modal" id="student-photo-delete-modal" data-open="false">
+            <div class="student-photo-delete-panel" role="dialog" aria-modal="true"
+                aria-labelledby="student-photo-delete-title">
+                <div class="student-photo-delete-header" id="student-photo-delete-title">Удалить фото?</div>
+                <div class="student-photo-delete-body">Фото будет удалено с карточки ученика. Это действие нельзя отменить.
+                </div>
+                <div class="student-photo-delete-actions">
+                    <button class="btn secondary" type="button" data-photo-delete-cancel>Отмена</button>
+                    <form id="student-photo-delete-form" method="POST"
+                        action="{{ route('students.photo.delete', $student) }}">
+                        @csrf
+                        @method('DELETE')
+                        <button class="btn" type="submit">Удалить</button>
+                    </form>
+                </div>
             </div>
         </div>
 
@@ -541,7 +1084,8 @@
             document.querySelectorAll('[data-classroom-combobox]').forEach((searchInput) => {
                 const classroomIdInput = document.getElementById(searchInput.dataset.classroomTarget);
                 const optionsPanel = document.getElementById(searchInput.dataset.classroomOptions);
-                const classroomOptions = Array.from(optionsPanel?.querySelectorAll('[data-classroom-id]') ?? []);
+                const classroomOptions = Array.from(optionsPanel?.querySelectorAll('[data-classroom-id]') ??
+            []);
 
                 if (!classroomIdInput || !optionsPanel) {
                     return;
@@ -549,11 +1093,13 @@
 
                 const filterOptions = () => {
                     const search = searchInput.value.trim().toLocaleLowerCase();
-                    const selectedOption = classroomOptions.find((option) => option.dataset.classroomLabel === searchInput.value.trim());
+                    const selectedOption = classroomOptions.find((option) => option.dataset
+                        .classroomLabel === searchInput.value.trim());
                     classroomIdInput.value = selectedOption?.dataset.classroomId ?? '';
 
                     classroomOptions.forEach((option) => {
-                        option.hidden = !option.dataset.classroomLabel.toLocaleLowerCase().includes(search);
+                        option.hidden = !option.dataset.classroomLabel.toLocaleLowerCase().includes(
+                            search);
                     });
 
                     optionsPanel.hidden = false;

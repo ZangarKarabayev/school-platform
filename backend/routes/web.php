@@ -58,6 +58,7 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
         Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
         Route::post('/students/{student}/photo', [StudentController::class, 'updatePhoto'])->name('students.photo.update');
+        Route::delete('/students/{student}/photo', [StudentController::class, 'deletePhoto'])->name('students.photo.delete');
         Route::get('/students/{student}/qr.png', [KitchenController::class, 'studentQr'])->name('students.qr');
         Route::get('/classes', [ClassroomController::class, 'index'])->name('classes.index');
         Route::get('/classes/{academicClass}/qrs.zip', [ClassroomController::class, 'downloadQrs'])->name('classes.qr.download');
