@@ -24,6 +24,8 @@ class ClassroomNavigationTest extends TestCase
             ->assertOk()
             ->assertSee('href="'.route('classes.show', $classroom).'"', false)
             ->assertSee('data-class-url="'.route('classes.show', $classroom).'"', false)
+            ->assertSee('action="'.route('classes.export').'"', false)
+            ->assertSee('name="classroom_ids[]"', false)
             ->assertSee('class="classes-list-row is-clickable"', false);
 
         $this->actingAs($user)

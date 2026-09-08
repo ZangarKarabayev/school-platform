@@ -183,6 +183,12 @@ return [
         'filled' => "\u{0422}\u{043E}\u{043B}\u{044B}\u{049B}\u{0442}\u{044B}\u{0493}\u{044B}",
         'with_students' => "\u{041E}\u{049B}\u{0443}\u{0448}\u{044B}\u{043B}\u{0430}\u{0440}\u{044B} \u{0431}\u{0430}\u{0440}",
         'without_students' => "\u{041E}\u{049B}\u{0443}\u{0448}\u{044B}\u{0441}\u{044B}\u{0437}",
+        'select_all' => "\u{0411}\u{0430}\u{0440}\u{043B}\u{044B}\u{0493}\u{044B}\u{043D} \u{0442}\u{0430}\u{04A3}\u{0434}\u{0430}\u{0443}",
+        'selected_count' => "\u{0422}\u{0430}\u{04A3}\u{0434}\u{0430}\u{043B}\u{0434}\u{044B}: :count",
+        'download_excel' => "Excel \u{0436}\u{04AF}\u{043A}\u{0442}\u{0435}\u{043F} \u{0430}\u{043B}\u{0443}",
+        'export_sheet_title' => "\u{0421}\u{044B}\u{043D}\u{044B}\u{043F}: :classroom",
+        'export_students_count' => "\u{041E}\u{049B}\u{0443}\u{0448}\u{044B}\u{043B}\u{0430}\u{0440}: :count",
+        'export_fallback_sheet' => "\u{0421}\u{044B}\u{043D}\u{044B}\u{043F}",
     ],
     'reports_page' => [
         'report_type' => "\u{0415}\u{0441}\u{0435}\u{043F} \u{0442}\u{04AF}\u{0440}\u{0456}",

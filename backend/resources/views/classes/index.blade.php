@@ -61,10 +61,48 @@
             overflow: hidden;
         }
 
-        .classes-list-row {
+        .classes-export-toolbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 16px;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e4e9f1;
+            background: #f8faff;
+        }
+
+        .classes-export-selection,
+        .classes-select-all {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .classes-select-all {
+            color: #234067;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .classes-select-control {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: #266ccc;
+            cursor: pointer;
+        }
+
+        .classes-selected-count {
+            color: #61728d;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .classes-list-row {
+            display: grid;
+            grid-template-columns: 24px minmax(0, 1fr) auto;
+            align-items: center;
             gap: 16px;
             padding: 18px 24px;
             border-top: 1px solid #e4e9f1;
@@ -161,12 +199,18 @@
 
             .classes-list-row {
                 align-items: flex-start;
-                flex-direction: column;
+                grid-template-columns: 24px minmax(0, 1fr);
             }
 
             .classes-list-side {
+                grid-column: 2;
                 width: 100%;
                 justify-content: space-between;
+            }
+
+            .classes-export-toolbar {
+                align-items: flex-start;
+                flex-direction: column;
             }
         }
     </style>
@@ -224,12 +268,33 @@
                 <div class="muted">{{ __('ui.orders.no_classes') }}</div>
             </div>
         @else
-            <div class="classes-card classes-list">
+            <form class="classes-card classes-list" method="post" action="{{ route('classes.export') }}" data-classes-export-form>
+                @csrf
+                <div class="classes-export-toolbar">
+                    <div class="classes-export-selection">
+                        <label class="classes-select-all" for="classes-select-all">
+                            <input class="classes-select-control" id="classes-select-all" type="checkbox" data-class-select-all>
+                            <span>{{ __('ui.classes.select_all') }}</span>
+                        </label>
+                        <span class="classes-selected-count" data-class-selected-count
+                            data-template="{{ __('ui.classes.selected_count', ['count' => ':count']) }}">
+                            {{ __('ui.classes.selected_count', ['count' => 0]) }}
+                        </span>
+                    </div>
+                    <button class="btn" type="submit" data-classes-export-button disabled>
+                        {{ __('ui.classes.download_excel') }}
+                    </button>
+                </div>
                 @foreach ($classes as $classroom)
                     <div class="classes-list-row {{ $canOpenStudents ? 'is-clickable' : '' }}"
                         @if ($canOpenStudents)
                             data-class-url="{{ route('classes.show', $classroom) }}" role="link" tabindex="0"
                         @endif>
+                        <div>
+                            <input class="classes-select-control" type="checkbox" name="classroom_ids[]"
+                                value="{{ $classroom->id }}" aria-label="{{ $classroom->full_name }}"
+                                data-class-checkbox>
+                        </div>
                         <div class="classes-list-main">
                             @if ($canOpenStudents)
                                 <a class="classes-list-link" href="{{ route('classes.show', $classroom) }}">
@@ -247,7 +312,7 @@
                         </div>
                     </div>
                 @endforeach
-            </div>
+            </form>
         @endif
     </section>
     </div>
@@ -275,5 +340,32 @@
                 openClass();
             });
         });
+
+        const exportForm = document.querySelector('[data-classes-export-form]');
+
+        if (exportForm) {
+            const selectAll = exportForm.querySelector('[data-class-select-all]');
+            const checkboxes = Array.from(exportForm.querySelectorAll('[data-class-checkbox]'));
+            const selectedCount = exportForm.querySelector('[data-class-selected-count]');
+            const exportButton = exportForm.querySelector('[data-classes-export-button]');
+
+            const renderSelection = () => {
+                const selected = checkboxes.filter((checkbox) => checkbox.checked).length;
+                selectAll.checked = selected === checkboxes.length;
+                selectAll.indeterminate = selected > 0 && selected < checkboxes.length;
+                exportButton.disabled = selected === 0;
+                selectedCount.textContent = selectedCount.dataset.template.replace(':count', selected);
+            };
+
+            selectAll.addEventListener('change', () => {
+                checkboxes.forEach((checkbox) => {
+                    checkbox.checked = selectAll.checked;
+                });
+                renderSelection();
+            });
+
+            checkboxes.forEach((checkbox) => checkbox.addEventListener('change', renderSelection));
+            renderSelection();
+        }
     </script>
 @endsection

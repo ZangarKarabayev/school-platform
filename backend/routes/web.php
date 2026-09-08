@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('/students/{student}/photo', [StudentController::class, 'deletePhoto'])->name('students.photo.delete');
         Route::get('/students/{student}/qr.png', [KitchenController::class, 'studentQr'])->name('students.qr');
         Route::get('/classes', [ClassroomController::class, 'index'])->name('classes.index');
+        Route::post('/classes/export', [ClassroomController::class, 'export'])->name('classes.export');
         Route::get('/classes/{academicClass}/qrs.zip', [ClassroomController::class, 'downloadQrs'])->name('classes.qr.download');
         Route::get('/classes/{academicClass}', [ClassroomController::class, 'show'])->name('classes.show');
         Route::get('/dishes', [DishController::class, 'index'])->name('dishes.index');
