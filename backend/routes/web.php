@@ -68,6 +68,7 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/dishes', [DishController::class, 'store'])->name('dishes.store');
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+        Route::post('/orders/bulk-delete', [OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
         Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
         Route::view('/library', 'sections.show', [
             'sectionKey' => 'library',

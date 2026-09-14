@@ -199,6 +199,49 @@
             align-items: end;
         }
 
+        .orders-bulk-toolbar {
+            margin: 0 24px 18px;
+            padding: 12px 14px;
+            border: 1px solid #dbe4f2;
+            border-radius: 14px;
+            background: #f8fbff;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .orders-select-control {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            accent-color: #2876dd;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .orders-bulk-counter {
+            color: #31507d;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .orders-bulk-delete {
+            margin-left: auto;
+            background: #d73d56;
+            box-shadow: 0 8px 18px rgba(215, 61, 86, 0.2);
+        }
+
+        .orders-bulk-delete:hover {
+            background: #bd2f47;
+        }
+
+        .orders-select-cell {
+            width: 52px;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
         .orders-pagination {
             padding: 18px 24px 24px;
             display: flex;
@@ -660,6 +703,10 @@
                 grid-template-columns: 1fr;
             }
 
+            .orders-bulk-toolbar {
+                margin: 0 16px 16px;
+            }
+
             .orders-header {
                 flex-direction: column;
             }
@@ -760,6 +807,20 @@
                 </div>
             </form>
 
+            @unless ($orders->isEmpty())
+                <form class="orders-bulk-toolbar" method="POST" action="{{ route('orders.bulk-destroy') }}"
+                    id="orders-bulk-form">
+                    @csrf
+                    <input class="orders-select-control" type="checkbox" id="orders-select-all"
+                        aria-label="{{ __('ui.orders.select_all') }}">
+                    <div class="orders-bulk-counter" id="orders-selected-counter">0 {{ __('ui.orders.selected') }}</div>
+                    <div id="orders-bulk-hidden-inputs"></div>
+                    <button class="btn orders-bulk-delete" type="submit" id="orders-bulk-delete" hidden>
+                        {{ __('ui.orders.bulk_delete') }}
+                    </button>
+                </form>
+            @endunless
+
             @if ($orders->isEmpty())
                 <div class="orders-empty">{{ __('ui.orders.empty') }}</div>
             @else
@@ -767,6 +828,10 @@
                     <table class="orders-table">
                         <thead>
                             <tr>
+                                <th class="orders-select-cell">
+                                    <input class="orders-select-control" type="checkbox" data-order-select-all
+                                        aria-label="{{ __('ui.orders.select_all') }}">
+                                </th>
                                 <th>{{ __('admin.labels.student') }}</th>
                                 <th>{{ __('admin.labels.academic_class') }}</th>
                                 <th>{{ __('admin.labels.dish') }}</th>
@@ -781,6 +846,11 @@
                         <tbody>
                             @foreach ($orders as $order)
                                 <tr>
+                                    <td class="orders-select-cell">
+                                        <input class="orders-select-control" type="checkbox" value="{{ $order->id }}"
+                                            data-order-bulk-checkbox
+                                            aria-label="{{ __('ui.orders.selected') }}: {{ $order->student?->full_name ?: '#' . $order->id }}">
+                                    </td>
                                     <td>
                                         <div>{{ $order->student?->full_name ?: '-' }}</div>
                                         <div class="muted">{{ $order->student?->iin ?: '-' }}</div>
@@ -857,6 +927,9 @@
                         @endphp
                         <article class="orders-mobile-card">
                             <div class="orders-mobile-top">
+                                <input class="orders-select-control" type="checkbox" value="{{ $order->id }}"
+                                    data-order-bulk-checkbox
+                                    aria-label="{{ __('ui.orders.selected') }}: {{ $order->student?->full_name ?: '#' . $order->id }}">
                                 <div class="orders-mobile-identity">
                                     <div class="orders-mobile-name">{{ $order->student?->full_name ?: '-' }}</div>
                                     <div class="orders-mobile-meta">{{ $order->student?->iin ?: '-' }}</div>
@@ -1160,6 +1233,66 @@
             const studentSearch = document.getElementById('student-search');
             const studentRows = document.querySelectorAll('[data-student-search]');
             const studentGroups = document.querySelectorAll('[data-student-group]');
+            const bulkForm = document.getElementById('orders-bulk-form');
+            const bulkDeleteButton = document.getElementById('orders-bulk-delete');
+            const bulkCounter = document.getElementById('orders-selected-counter');
+            const bulkHiddenInputs = document.getElementById('orders-bulk-hidden-inputs');
+            const bulkCheckboxes = Array.from(document.querySelectorAll('[data-order-bulk-checkbox]'));
+            const bulkSelectAllCheckboxes = Array.from(document.querySelectorAll(
+                '#orders-select-all, [data-order-select-all]'));
+
+            const syncBulkSelection = () => {
+                const orderIds = Array.from(new Set(
+                    bulkCheckboxes.filter((input) => input.checked).map((input) => input.value)
+                ));
+                const allOrderIds = Array.from(new Set(bulkCheckboxes.map((input) => input.value)));
+
+                if (bulkCounter) {
+                    bulkCounter.textContent = `${orderIds.length} ${translations.selected}`;
+                }
+
+                if (bulkHiddenInputs) {
+                    bulkHiddenInputs.innerHTML = orderIds
+                        .map((id) => `<input type="hidden" name="order_ids[]" value="${id}">`)
+                        .join('');
+                }
+
+                bulkSelectAllCheckboxes.forEach((input) => {
+                    input.checked = allOrderIds.length > 0 && orderIds.length === allOrderIds.length;
+                    input.indeterminate = orderIds.length > 0 && orderIds.length < allOrderIds.length;
+                });
+
+                if (bulkDeleteButton) {
+                    bulkDeleteButton.hidden = orderIds.length === 0;
+                    bulkDeleteButton.disabled = orderIds.length === 0;
+                }
+            };
+
+            bulkCheckboxes.forEach((input) => {
+                input.addEventListener('change', () => {
+                    bulkCheckboxes
+                        .filter((duplicate) => duplicate.value === input.value)
+                        .forEach((duplicate) => {
+                            duplicate.checked = input.checked;
+                        });
+                    syncBulkSelection();
+                });
+            });
+
+            bulkSelectAllCheckboxes.forEach((input) => {
+                input.addEventListener('change', () => {
+                    bulkCheckboxes.forEach((checkbox) => {
+                        checkbox.checked = input.checked;
+                    });
+                    syncBulkSelection();
+                });
+            });
+
+            bulkForm?.addEventListener('submit', (event) => {
+                if (bulkDeleteButton?.disabled || !window.confirm(@json(__('ui.orders.bulk_delete_confirm')))) {
+                    event.preventDefault();
+                }
+            });
 
             const openModal = () => {
                 modal.dataset.open = 'true';
@@ -1330,6 +1463,7 @@
 
             syncTargetSections();
             syncCounts();
+            syncBulkSelection();
 
             modal?.addEventListener('click', (event) => {
                 if (event.target === modal) {

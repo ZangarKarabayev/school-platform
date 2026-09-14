@@ -231,6 +231,39 @@ class OrderController extends Controller
         return redirect()->route('orders.index');
     }
 
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'order_ids' => ['required', 'array', 'min:1'],
+            'order_ids.*' => ['integer', 'exists:orders,id'],
+        ]);
+
+        $orderIds = array_values(array_unique(array_map('intval', $data['order_ids'])));
+        $user = $request->user()?->loadMissing('roles', 'scopes');
+        $roleCodes = $user?->roles?->pluck('code')->all() ?? [];
+        $restrictBySchool = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
+        $userSchoolId = $this->resolveSchoolId($user);
+
+        $ordersQuery = Order::query()->whereIn('id', $orderIds);
+
+        if ($restrictBySchool && $userSchoolId !== null) {
+            $ordersQuery->whereHas(
+                'student',
+                fn ($studentQuery) => $studentQuery->where('school_id', $userSchoolId),
+            );
+        }
+
+        $orders = $ordersQuery->get();
+
+        if ($orders->count() !== count($orderIds)) {
+            abort(403);
+        }
+
+        $orders->each->delete();
+
+        return back()->with('order_status', __('ui.orders.bulk_deleted', ['count' => $orders->count()]));
+    }
+
     private function resolveTargetStudentIds(Request $request, array $data): Collection
     {
         $user = $request->user()?->loadMissing('roles', 'scopes');
