@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/profile', [WebAuthController::class, 'updateProfile'])->name('profile.update');
     Route::put('/profile/password', [WebAuthController::class, 'updatePassword'])->name('profile.password.update');
     Route::middleware('school.bound')->group(function (): void {
+        Route::get('/attendance', [\App\Http\Controllers\AttendanceController::class, 'index'])->name('attendance.index');
         Route::get('/dashboard', DashboardController::class)->name('dashboard');
         Route::get('/dashboard/export-orders-table', [DashboardController::class, 'exportOrdersTable'])->name('dashboard.export-orders-table');
         Route::get('/dashboard/export-orders-table/pdf', [DashboardController::class, 'exportOrdersTablePdf'])->name('dashboard.export-orders-table-pdf');

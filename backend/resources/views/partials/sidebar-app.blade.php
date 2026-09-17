@@ -120,6 +120,14 @@
                 'active' => request()->routeIs('support.*'),
                 'allowed_roles' => ['support_admin', 'super_admin'],
             ],
+            [
+                'key' => 'attendance',
+                'label' => __('attendance.title'),
+                'href' => route('attendance.index'),
+                'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 11h16m-12 5 3 3 5-5"/></svg>',
+                'active' => request()->routeIs('attendance.*'),
+                'allowed_roles' => ['teacher', 'director', 'super_admin', 'support_admin'],
+            ],
         ];
 
         $visibleMenuItems = array_values(

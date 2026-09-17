@@ -71,6 +71,9 @@ class FaceIDEventService
                 'person_id' => self::nullableInt($info['PersonID'] ?? null),
                 'name' => self::nullableString($info['Name'] ?? null),
                 'verify_status' => self::nullableInt($info['VerifyStatus'] ?? null),
+                // Only explicit directions are accepted; verification status is not a direction.
+                'direction' => in_array($info['Direction'] ?? null, ['entry', 'exit'], true)
+                    ? $info['Direction'] : null,
                 'bin' => self::resolveBin($info['Address'] ?? null) ?? 'no data',
             ],
         );
@@ -256,7 +259,7 @@ class FaceIDEventService
         $date = Carbon::parse($orderDate);
         $startYear = $date->month >= 9 ? $date->year : $date->year - 1;
 
-        return $startYear . '-' . ($startYear + 1);
+        return $startYear.'-'.($startYear + 1);
     }
 
     protected static function parseTimestamp(mixed $value): Carbon

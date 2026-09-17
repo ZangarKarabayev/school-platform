@@ -14,7 +14,13 @@ class VerifyEvent extends Model
         'create_time',
         'bin',
         'unique_qr',
+        'direction',
     ];
+
+    public function student(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Student::class, 'unique_qr');
+    }
 
     protected function casts(): array
     {
