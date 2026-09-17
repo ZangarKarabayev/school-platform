@@ -49,7 +49,11 @@ class AttendanceController extends Controller
                 });
         });
         $states = $latestEvents->get();
-        $stats = ['total' => (clone $students)->count(), 'inside' => $states->where('direction', 'entry')->count(), 'outside' => $states->where('direction', 'exit')->count(), 'unknown' => $states->whereNull('direction')->count()];
+        $stats = [
+            'total' => (clone $students)->count(),
+            'inside' => $states->filter(fn (VerifyEvent $event) => $event->direction === 'entry' || $event->direction === null)->count(),
+            'outside' => $states->where('direction', 'exit')->count(),
+        ];
         $stats['absent'] = $stats['total'] - $states->count();
         $latest = (clone $events)->with('student.classroom')->orderByDesc('create_time')->orderByDesc('id')->first();
         $classrooms = AcademicClass::query()->whereIn('id', (clone $students)->select('classroom_id'))->orderBy('grade')->orderBy('letter')->get();

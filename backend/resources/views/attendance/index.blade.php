@@ -106,7 +106,6 @@
             <div class="att-detail"><svg class="att-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> {{ $latest->create_time->format('H:i:s') }}</div><div class="att-detail">{{ __('attendance.terminal') }} {{ $latest->device_id ?? '—' }}</div>
         @else<div class="att-empty">{{ __('attendance.empty') }}</div>@endif
     </aside></div>
-    @if($stats['unknown'])<p class="att-note">{{ __('attendance.note', ['count' => $stats['unknown']]) }}</p>@endif
 </div>
 <script>
     (() => {

@@ -22,7 +22,7 @@ class AttendancePageTest extends TestCase
         $otherSchool = School::query()->create(['district_id' => $district->id, 'name_ru' => 'Other', 'code' => 'two', 'bin' => '222']);
         $student = Student::query()->create(['school_id' => $school->id, 'first_name' => 'Alice']);
         $other = Student::query()->create(['school_id' => $otherSchool->id, 'first_name' => 'Hidden']);
-        foreach ([[$student, '111', 'exit', '12:00:00'], [$student, '111', 'entry', '08:00:00'], [$other, '222', 'entry', '13:00:00'], [$student, '222', 'entry', '14:00:00']] as [$person, $bin, $direction, $time]) {
+        foreach ([[$student, '111', 'exit', '12:00:00'], [$student, '111', 'entry', '08:00:00'], [$other, '222', null, '13:00:00'], [$student, '222', 'entry', '14:00:00']] as [$person, $bin, $direction, $time]) {
             VerifyEvent::query()->create(['unique_qr' => (string) $person->id, 'bin' => $bin, 'direction' => $direction, 'create_time' => '2026-09-17 '.$time]);
         }
         foreach (['teacher', 'director'] as $code) {
