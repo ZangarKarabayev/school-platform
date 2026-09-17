@@ -115,7 +115,7 @@
         form.addEventListener('change', () => dirty = true);
         setInterval(() => {
             if (!document.hidden && !dirty && !form.contains(document.activeElement)) window.location.reload();
-        }, 30000);
+        }, 600000);
     })();
 </script>
 @endsection

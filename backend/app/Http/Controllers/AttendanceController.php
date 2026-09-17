@@ -69,6 +69,21 @@ class AttendanceController extends Controller
         if (! empty($filters['direction'])) {
             $events->where('direction', $filters['direction']);
         }
+        // Keep the first scan per student for this day, before pagination.
+        $events->whereNotExists(function ($query) use ($date, $filters) {
+            $query->selectRaw('1')->from('verify_events as earlier')
+                ->whereColumn('earlier.unique_qr', 'verify_events.unique_qr')
+                ->whereColumn('earlier.bin', 'verify_events.bin')
+                ->where('earlier.create_time', '>=', $date->copy()->startOfDay())
+                ->when(! empty($filters['direction']), fn ($query) => $query->where('earlier.direction', $filters['direction']))
+                ->where(function ($query) {
+                    $query->whereColumn('earlier.create_time', '<', 'verify_events.create_time')
+                        ->orWhere(function ($query) {
+                            $query->whereColumn('earlier.create_time', 'verify_events.create_time')
+                                ->whereColumn('earlier.id', '<', 'verify_events.id');
+                        });
+                });
+        });
         $events = $events->with('student.classroom')->orderByDesc('create_time')->orderByDesc('id')->paginate(15)->withQueryString();
 
         return view('attendance.index', compact('user', 'date', 'stats', 'latest', 'classrooms', 'events', 'filters') + ['title' => __('attendance.title')]);

@@ -25,6 +25,9 @@ class AttendancePageTest extends TestCase
         foreach ([[$student, '111', 'exit', '12:00:00'], [$student, '111', 'entry', '08:00:00'], [$other, '222', null, '13:00:00'], [$student, '222', 'entry', '14:00:00']] as [$person, $bin, $direction, $time]) {
             VerifyEvent::query()->create(['unique_qr' => (string) $person->id, 'bin' => $bin, 'direction' => $direction, 'create_time' => '2026-09-17 '.$time]);
         }
+        foreach (['2026-09-16 07:00:00', '2026-09-17 13:00:00', '2026-09-17 14:00:00'] as $time) {
+            VerifyEvent::query()->create(['unique_qr' => (string) $other->id, 'bin' => '222', 'create_time' => $time]);
+        }
         foreach (['teacher', 'director'] as $code) {
             $user = User::factory()->create(['school_id' => $school->id]);
             $role = Role::query()->create(['code' => $code, 'name' => $code]);
@@ -32,7 +35,7 @@ class AttendancePageTest extends TestCase
             $this->actingAs($user)->get('/attendance?date=2026-09-17')->assertOk()
                 ->assertSee('Alice')->assertDontSee('Hidden')
                 ->assertViewHas('stats', fn ($stats) => $stats['total'] === 1 && $stats['outside'] === 1 && $stats['inside'] === 0)
-                ->assertViewHas('events', fn ($events) => $events->total() === 2);
+                ->assertViewHas('events', fn ($events) => $events->total() === 1 && $events->first()->create_time->format('H:i:s') === '08:00:00');
             $this->get('/attendance?date=2026-09-17&direction=entry&search=Alice')->assertOk()
                 ->assertViewHas('events', fn ($events) => $events->total() === 1);
             $this->get('/attendance?date=2026-09-18')->assertOk()
@@ -45,7 +48,7 @@ class AttendancePageTest extends TestCase
             $this->actingAs($admin)->get('/attendance?date=2026-09-17')->assertOk()
                 ->assertSee('href="'.route('attendance.index').'"', false)
                 ->assertSee('Alice')->assertSee('Hidden')
-                ->assertViewHas('events', fn ($events) => $events->total() === 3)
+                ->assertViewHas('events', fn ($events) => $events->total() === 2)
                 ->assertViewHas('stats', fn ($stats) => $stats['total'] === 2 && $stats['inside'] === 1 && $stats['outside'] === 1);
         }
     }
