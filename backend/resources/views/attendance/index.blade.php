@@ -46,6 +46,8 @@
     .att-table tbody tr:hover { background: #f7faff; }
     .att-person { display: flex; align-items: center; gap: 12px; overflow-wrap: anywhere; }
     .att-avatar { width: 40px; height: 40px; border-radius: 50%; font-size: 14px; font-weight: 700; }
+    .att-avatar { position: relative; overflow: hidden; }
+    .att-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .att-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: #eef3fb; color: #446389; font-size: 12px; font-weight: 700; white-space: nowrap; }
     .att-badge.entry { background: #eaf6ea; color: #22653a; }
     .att-badge.exit { background: #fff4dd; color: #9a6400; }
@@ -88,7 +90,7 @@
         </form>
         <div class="att-scroll"><table class="att-table"><thead><tr>@foreach(['student','class','event','time','point'] as $label)<th scope="col">{{ __('attendance.'.$label) }}</th>@endforeach</tr></thead><tbody>
         @forelse($events as $event)
-            <tr><td><div class="att-person"><span class="att-avatar">{{ mb_substr($event->student?->first_name ?? '',0,1) }}{{ mb_substr($event->student?->last_name ?? '',0,1) }}</span>{{ $event->student?->full_name ?: $event->name }}</div></td><td>{{ $event->student?->classroom?->full_name ?? '—' }}</td><td><span class="att-badge {{ $event->direction }}">{{ __('attendance.'.($event->direction ?? 'unknown')) }}</span></td><td>{{ $event->create_time->format('H:i:s') }}</td><td>{{ __('attendance.terminal') }} {{ $event->device_id ?? '—' }}</td></tr>
+            <tr><td><div class="att-person">@include('attendance.avatar', ['student' => $event->student]){{ $event->student?->full_name ?: $event->name }}</div></td><td>{{ $event->student?->classroom?->full_name ?? '—' }}</td><td><span class="att-badge {{ $event->direction }}">{{ __('attendance.'.($event->direction ?? 'unknown')) }}</span></td><td>{{ $event->create_time->format('H:i:s') }}</td><td>{{ __('attendance.terminal') }} {{ $event->device_id ?? '—' }}</td></tr>
         @empty<tr><td colspan="5" class="att-empty">{{ __('attendance.empty') }}</td></tr>@endforelse
         </tbody></table></div>
         <div class="att-footer"><span class="att-muted">{{ __('attendance.range', ['from' => $events->firstItem() ?? 0, 'to' => $events->lastItem() ?? 0, 'total' => $events->total()]) }}</span>@if($events->hasPages())
@@ -101,7 +103,7 @@
         @endif</div>
     </section><aside class="att-card att-latest"><h2>{{ __('attendance.latest') }}</h2>
         @if($latest)
-            <div class="att-person"><span class="att-avatar">{{ mb_substr($latest->student?->first_name ?? '',0,1) }}{{ mb_substr($latest->student?->last_name ?? '',0,1) }}</span><div><strong>{{ $latest->student?->full_name ?: $latest->name }}</strong><div class="att-muted">{{ $latest->student?->classroom?->full_name ?? '—' }}</div></div></div>
+            <div class="att-person">@include('attendance.avatar', ['student' => $latest->student])<div><strong>{{ $latest->student?->full_name ?: $latest->name }}</strong><div class="att-muted">{{ $latest->student?->classroom?->full_name ?? '—' }}</div></div></div>
             <div class="att-badge {{ $latest->direction }}">{{ $latest->direction ? __('attendance.'.$latest->direction) : __('attendance.recorded') }}</div>
             <div class="att-detail"><svg class="att-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> {{ $latest->create_time->format('H:i:s') }}</div><div class="att-detail">{{ __('attendance.terminal') }} {{ $latest->device_id ?? '—' }}</div>
         @else<div class="att-empty">{{ __('attendance.empty') }}</div>@endif
