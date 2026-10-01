@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\DishController;
 use App\Http\Controllers\KitchenController;
+use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\StudentController;
@@ -71,9 +72,22 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
         Route::post('/orders/bulk-delete', [OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
         Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
-        Route::view('/library', 'sections.show', [
-            'sectionKey' => 'library',
-        ])->name('library.index');
+        Route::prefix('library')->name('library.')->controller(LibraryController::class)->group(function (): void {
+            Route::get('/', 'catalog')->name('index');
+            Route::post('/books', 'storeBook')->name('books.store');
+            Route::get('/books/{book}/edit', 'editBook')->whereNumber('book')->name('books.edit');
+            Route::put('/books/{book}', 'updateBook')->whereNumber('book')->name('books.update');
+            Route::get('/stocks', 'stocks')->name('stocks');
+            Route::post('/stocks', 'storeStock')->name('stocks.store');
+            Route::get('/operations', 'operations')->name('operations');
+            Route::get('/lookup', 'lookup')->name('lookup');
+            Route::post('/operations', 'operate')->block()->name('operate');
+            Route::get('/loans', 'loans')->name('loans');
+            Route::get('/reports', 'reports')->name('reports');
+            Route::get('/export', 'export')->name('export');
+            Route::get('/import-template', 'template')->name('template');
+            Route::post('/import', 'import')->name('import');
+        });
         Route::get('/reports', [ReportsController::class, 'index'])->name('reports.index');
         Route::post('/reports', [ReportsController::class, 'store'])->name('reports.store');
         Route::get('/reports/{report}/download', [ReportsController::class, 'download'])->name('reports.download');

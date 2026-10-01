@@ -1,0 +1,6 @@
+@extends('library.layout')
+@section('library-content')
+@if(!$school)<div class="library-notice">{{ __('library.choose_school') }}</div>@endif
+<h2>{{ __('library.current_fund') }}</h2><div class="library-stats">@foreach(['total'=>'total_quantity','outstanding'=>'outstanding','available'=>'available'] as $key=>$label)<div class="library-card library-stat"><div class="library-body"><span class="library-muted">{{ __('library.'.$label) }}</span><strong>{{ $totals->$key }}</strong></div></div>@endforeach<div class="library-card library-stat"><div class="library-body"><span class="library-muted">{{ __('library.overdue_loans') }}</span><strong>{{ $overdue }}</strong></div></div></div>
+<div class="library-card"><div class="library-body"><h2>{{ __('library.reports') }}</h2><p class="library-muted">{{ __('library.period_hint') }}</p></div>@include('library.filters')<div class="library-body"><div class="library-fields"><div class="library-stat"><span class="library-muted">{{ __('library.issued') }}</span><strong>{{ $period->issued }}</strong></div><div class="library-stat"><span class="library-muted">{{ __('library.returned') }}</span><strong>{{ $period->returned }}</strong></div></div></div></div>
+@endsection
