@@ -10,5 +10,8 @@
     @include('library.import-modal')
     @include('library.create-modal')
     @include('library.catalog-edit')
+    @if(isset($editingBook))
+        @include('library.edit-modal')
+    @endif
 @endif
 @endsection

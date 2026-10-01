@@ -259,7 +259,10 @@ class LibraryPagesTest extends TestCase
     public function test_catalog_edit_preserves_stock_and_rejects_duplicate_barcodes(): void
     {
         $fixture = $this->setupLibrary();
-        $this->get(route('library.books.edit', $fixture['book']))->assertOk()->assertSee('Mathematics');
+        $this->get(route('library.books.edit', $fixture['book']))->assertOk()->assertSee('Mathematics')
+            ->assertSee('library-table', false)->assertSee('library-edit-modal', false)
+            ->assertViewHas('books', fn ($books) => $books->total() === 1)
+            ->assertViewHas('editingBook', fn ($book) => $book->id === $fixture['book']);
         $this->put(route('library.books.update', $fixture['book']), [
             'barcode' => '0012345', 'title' => 'Updated title', 'literature_type' => 'educational',
         ])->assertSessionHasNoErrors();

@@ -89,7 +89,13 @@ class LibraryController extends Controller
         $book = DB::table('library_books')->find($book);
         abort_unless($book, 404);
 
-        return view('library.edit', $context + compact('book'));
+        $editingBook = $book;
+        $books = DB::table('library_books')->when($request->filled('search'), function (Builder $query) use ($request): void {
+            $search = '%'.$request->string('search').'%';
+            $query->where(fn (Builder $q) => $q->where('title', 'like', $search)->orWhere('barcode', 'like', $search)->orWhere('author', 'like', $search));
+        })->orderBy('title')->paginate(20)->withQueryString();
+
+        return view('library.edit', $context + compact('books', 'editingBook'));
     }
 
     public function updateBook(Request $request, int $book)
