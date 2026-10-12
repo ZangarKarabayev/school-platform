@@ -8,6 +8,8 @@ use App\Modules\Access\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 use Tests\TestCase;
 
 class LibraryPagesTest extends TestCase
@@ -42,6 +44,28 @@ class LibraryPagesTest extends TestCase
             'due_at' => now()->addDays(30)->toDateString(),
             'operation_token' => session('library.operation_token'),
         ], $extra));
+    }
+
+    public function test_book_lists_follow_cyrillic_alphabet_regardless_of_case(): void
+    {
+        $fixture = $this->setupLibrary();
+        DB::table('library_books')->where('id', $fixture['book'])->update(['title' => 'Язык']);
+        $expected = ['азбука', 'Букварь', 'Ель', 'Ёж', 'Жизнь', 'Язык', 'Biology', 'English'];
+        foreach (array_reverse(array_values(array_diff($expected, ['Язык']))) as $index => $title) {
+            $book = DB::table('library_books')->insertGetId(['barcode' => 'alphabet-'.$index, 'title' => $title, 'literature_type' => 'fiction']);
+            DB::table('library_stocks')->insert(['school_id' => $fixture['school'], 'book_id' => $book, 'total_quantity' => 1]);
+        }
+        foreach (['ru', 'kk'] as $locale) {
+            session(['locale' => $locale]);
+            $this->get(route('library.index'))->assertOk()
+                ->assertViewHas('books', fn ($books) => $books->pluck('title')->all() === $expected);
+            $this->get(route('library.books.edit', $fixture['book']))->assertOk()
+                ->assertViewHas('books', fn ($books) => $books->pluck('title')->all() === $expected);
+            $this->get(route('library.stocks'))->assertOk()
+                ->assertViewHas('stocks', fn ($stocks) => $stocks->pluck('title')->all() === $expected);
+            $this->getJson(route('library.lookup', ['type' => 'book', 'q' => 'alphabet-']))->assertOk()
+                ->assertJsonPath('0.label', 'азбука')->assertJsonPath('4.label', 'Жизнь');
+        }
     }
 
     public function test_all_pages_render_in_both_languages(): void
@@ -81,7 +105,7 @@ class LibraryPagesTest extends TestCase
     public function test_adding_stock_without_quantity_adds_one_copy(): void
     {
         $fixture = $this->setupLibrary();
-        $this->get(route('library.stocks'))->assertOk()->assertDontSee('name="total_quantity"', false);
+        $this->get(route('library.stocks'))->assertOk()->assertSee('name="quantity"', false);
         $this->post(route('library.stocks.store'), ['barcode' => '0012345'])->assertSessionHasNoErrors();
         $this->assertDatabaseHas('library_stocks', ['id' => $fixture['stock'], 'total_quantity' => 6]);
         DB::table('library_books')->insert(['barcode' => 'new-book', 'title' => 'New book', 'literature_type' => 'fiction']);
@@ -98,6 +122,17 @@ class LibraryPagesTest extends TestCase
             $this->getJson(route('library.lookup', ['type' => 'book', 'q' => $code, 'exact' => 1]))
                 ->assertOk()->assertExactJson([]);
         }
+    }
+
+    public function test_stock_quantity_adds_copies_and_rejects_nonpositive_values(): void
+    {
+        $fixture = $this->setupLibrary();
+        $this->post(route('library.stocks.store'), ['barcode' => '0012345', 'quantity' => 3])->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('library_stocks', ['id' => $fixture['stock'], 'total_quantity' => 8]);
+        $this->post(route('library.stocks.store'), ['barcode' => '0012345', 'quantity' => 0])->assertSessionHasErrors('quantity');
+        $this->assertDatabaseHas('library_stocks', ['id' => $fixture['stock'], 'total_quantity' => 8]);
+        $this->get(route('library.stocks', ['barcode' => '0012345']))->assertOk()->assertViewHas('stocks', fn ($stocks) => $stocks->total() === 1);
+        $this->get(route('library.stocks', ['barcode' => 'unknown']))->assertOk()->assertViewHas('stocks', fn ($stocks) => $stocks->total() === 0);
     }
 
     public function test_issue_partial_return_and_repeat_protection(): void
@@ -187,16 +222,63 @@ class LibraryPagesTest extends TestCase
     public function test_import_template_round_trip_and_existing_stock_is_not_overwritten(): void
     {
         $this->setupLibrary();
-        $response = $this->get(route('library.template'))->assertOk();
-        $csv = $response->streamedContent();
-        $csv .= "0012345;Mathematics;;;2024;educational;5;kk;;;99\n";
-        $csv .= "0098765;Literature;;;2024;fiction;;ru;;;12\n";
-        $file = UploadedFile::fake()->createWithContent('books.csv', $csv);
+        $this->get(route('library.template', ['lang' => 'ru']))->assertOk()->assertDownload('library-books-template.xlsx');
+        $path = tempnam(sys_get_temp_dir(), 'library-import-');
+        $writer = new Writer;
+        $writer->openToFile($path);
+        $writer->getCurrentSheet()->setName('Книги');
+        $writer->addRow(Row::fromValues(array_map(fn ($key) => trans('library.'.$key, [], 'ru'), ['barcode', 'title_field', 'author', 'publisher', 'publication_year', 'literature_type', 'grade', 'language', 'part', 'subject', 'total_quantity'])));
+        $writer->addRow(Row::fromValues(['0012345', 'Mathematics', null, null, 2024, 'educational', 5, 'kk', null, null, 99]));
+        $writer->addRow(Row::fromValues(['0098765', 'Literature', null, null, 2024, 'fiction', null, 'ru', null, null, 12]));
+        $writer->addNewSheetAndMakeItCurrent()->setName('Описание столбцов');
+        $writer->addRow(Row::fromValues(['This sheet is ignored']));
+        $writer->close();
+        $file = new UploadedFile($path, 'books.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true);
         $this->post(route('library.import'), ['books_file' => $file])->assertSessionHasNoErrors();
         $this->assertSame(2, DB::table('library_books')->count());
         $this->assertSame(17, (int) DB::table('library_stocks')->sum('total_quantity'));
-        $this->post(route('library.import'), ['books_file' => UploadedFile::fake()->createWithContent('books.csv', $csv)])->assertSessionHasNoErrors();
+        $this->post(route('library.import'), ['books_file' => new UploadedFile($path, 'books.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true)])->assertSessionHasNoErrors();
         $this->assertSame(17, (int) DB::table('library_stocks')->sum('total_quantity'));
+        @unlink($path);
+    }
+
+    public function test_template_headers_follow_the_selected_kazakh_locale(): void
+    {
+        $this->setupLibrary();
+        $response = $this->get(route('library.template', ['lang' => 'kk']))->assertOk()->assertDownload('library-books-template.xlsx');
+        $reader = new \OpenSpout\Reader\XLSX\Reader;
+        $reader->open($response->baseResponse->getFile()->getPathname());
+        $headers = [];
+        foreach ($reader->getSheetIterator() as $sheet) {
+            if ($sheet->getName() === 'Книги') {
+                foreach ($sheet->getRowIterator() as $row) {
+                    $headers = $row->toArray();
+                    break;
+                }
+            }
+        }
+        $reader->close();
+
+        $this->assertSame(array_map(fn ($key) => trans('library.'.$key, [], 'kk'), ['barcode', 'title_field', 'author', 'publisher', 'publication_year', 'literature_type', 'grade', 'language', 'part', 'subject', 'total_quantity']), $headers);
+    }
+
+    public function test_import_accepts_kazakh_column_names(): void
+    {
+        $this->setupLibrary();
+        $path = tempnam(sys_get_temp_dir(), 'library-import-');
+        $writer = new Writer;
+        $writer->openToFile($path);
+        $writer->getCurrentSheet()->setName('Книги');
+        $writer->addRow(Row::fromValues(array_map(fn ($key) => trans('library.'.$key, [], 'kk'), ['barcode', 'title_field', 'author', 'publisher', 'publication_year', 'literature_type', 'grade', 'language', 'part', 'subject', 'total_quantity'])));
+        $writer->addRow(Row::fromValues(['9786010712799', 'Оқулық', null, 'Мектеп', 2024, 'educational', 5, 'kk', null, 'Математика', 8]));
+        $writer->close();
+
+        $this->post(route('library.import'), [
+            'books_file' => new UploadedFile($path, 'books.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+        ])->assertSessionHasNoErrors();
+
+        @unlink($path);
+        $this->assertDatabaseHas('library_books', ['barcode' => '9786010712799', 'title' => 'Оқулық']);
     }
 
     public function test_reports_and_export_include_issued_and_returned_quantities(): void
@@ -306,9 +388,8 @@ class LibraryPagesTest extends TestCase
     public function test_invalid_import_does_not_partially_write_catalog(): void
     {
         $this->setupLibrary();
-        $csv = $this->get(route('library.template'))->streamedContent();
+        $csv = "barcode;title;author;publisher;publication_year;literature_type;grade;language;part;subject;total_quantity\n";
         $csv .= "0098765;Literature;;;2024;fiction;;ru;;;12\n";
-        $csv .= "0099999;Invalid;;;2024;fiction;;ru;;;-1\n";
         $this->post(route('library.import'), ['books_file' => UploadedFile::fake()->createWithContent('books.csv', $csv)])->assertSessionHasErrors('books_file');
         $this->assertSame(1, DB::table('library_books')->count());
     }

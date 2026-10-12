@@ -15,8 +15,8 @@
                 @csrf
                 <input type="hidden" name="school_id" value="{{ $school->id }}">
                 <div class="library-field">
-                    <label for="books_file">CSV</label>
-                    <input type="file" id="books_file" name="books_file" accept=".csv,.txt" required>
+                    <label for="books_file">Excel (.xlsx)</label>
+                    <input type="file" id="books_file" name="books_file" accept=".xlsx" required>
                 </div>
                 <button class="btn" type="submit">{{ __('library.import') }}</button>
             </form>

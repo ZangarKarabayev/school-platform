@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 
 class LibraryController extends Controller
 {
@@ -60,13 +61,137 @@ class LibraryController extends Controller
         ];
     }
 
+    private function bookHeaderTranslationKeys(): array
+    {
+        return [
+            'barcode' => 'barcode',
+            'title' => 'title_field',
+            'author' => 'author',
+            'publisher' => 'publisher',
+            'publication_year' => 'publication_year',
+            'literature_type' => 'literature_type',
+            'grade' => 'grade',
+            'language' => 'language',
+            'part' => 'part',
+            'subject' => 'subject',
+            'total_quantity' => 'total_quantity',
+        ];
+    }
+
+    private function localizeBooksTemplate(string $source, string $locale): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'library-template-');
+        if ($path === false || ! copy($source, $path)) {
+            if ($path !== false) {
+                @unlink($path);
+            }
+            abort(500);
+        }
+
+        $zip = new \ZipArchive;
+        if ($zip->open($path) !== true) {
+            @unlink($path);
+            abort(500);
+        }
+
+        try {
+            $xml = $zip->getFromName('xl/worksheets/sheet1.xml');
+            $document = new \DOMDocument;
+            if ($xml === false || ! $document->loadXML($xml, LIBXML_NONET)) {
+                throw new \RuntimeException('Unable to read the books worksheet.');
+            }
+            $headers = array_map(
+                fn ($key) => trans('library.'.$key, [], $locale),
+                array_values($this->bookHeaderTranslationKeys()),
+            );
+            $cells = $document->getElementsByTagNameNS('http://schemas.openxmlformats.org/spreadsheetml/2006/main', 'c');
+            $updated = 0;
+            foreach ($cells as $cell) {
+                if (! preg_match('/^([A-K])1$/', $cell->getAttribute('r'), $matches)) {
+                    continue;
+                }
+                $value = $cell->getElementsByTagNameNS('http://schemas.openxmlformats.org/spreadsheetml/2006/main', 'v')->item(0);
+                if (! $value) {
+                    throw new \RuntimeException('A books header cell has no value.');
+                }
+                $value->nodeValue = $headers[ord($matches[1]) - ord('A')];
+                $updated++;
+            }
+            if ($updated !== count($headers) || ! $zip->addFromString('xl/worksheets/sheet1.xml', $document->saveXML(), \ZipArchive::FL_OVERWRITE)) {
+                throw new \RuntimeException('Unable to localize the books worksheet.');
+            }
+        } catch (\Throwable $exception) {
+            $zip->close();
+            @unlink($path);
+            throw $exception;
+        }
+
+        $zip->close();
+
+        return $path;
+    }
+
+    private function normalizeBookHeaders(array $headers): array
+    {
+        $translationKeys = $this->bookHeaderTranslationKeys();
+        $aliases = array_combine(array_keys($translationKeys), array_keys($translationKeys));
+        foreach (['ru', 'kk'] as $locale) {
+            foreach ($translationKeys as $field => $translationKey) {
+                $label = mb_strtolower(trans('library.'.$translationKey, [], $locale), 'UTF-8');
+                $aliases[$label] = $field;
+            }
+        }
+
+        return array_map(fn ($header) => $aliases[mb_strtolower(trim((string) $header), 'UTF-8')] ?? '', $headers);
+    }
+
+    private function orderBooks(Builder $query, string $column = 'b.title'): Builder
+    {
+        $connection = $query->getConnection();
+        $alphabetText = 'аәбвгғдеёжзийкқлмнңоөпрстуұүһфхцчшщъыіьэюя';
+        $wrapped = $query->getGrammar()->wrap($column);
+        $pattern = '^['.$alphabetText.mb_strtoupper($alphabetText, 'UTF-8').']';
+        if ($connection->getDriverName() === 'pgsql') {
+            $ranks = '';
+            for ($index = 0; $index < mb_strlen($alphabetText, 'UTF-8'); $index++) {
+                $ranks .= mb_chr(0x430 + $index, 'UTF-8');
+            }
+
+            return $query->orderByRaw('CASE WHEN TRIM('.$wrapped.') ~ ? THEN 0 ELSE 1 END', [$pattern])
+                ->orderByRaw('TRANSLATE(LOWER(TRIM('.$wrapped.')), ?, ?) COLLATE "C"', [$alphabetText, $ranks])
+                ->orderBy($column === 'title' ? 'id' : 'b.id');
+        }
+        if ($connection->getDriverName() === 'sqlite') {
+            $alphabet = preg_split('//u', $alphabetText, -1, PREG_SPLIT_NO_EMPTY);
+            $weights = [];
+            foreach ($alphabet as $index => $letter) {
+                $weights[$letter] = sprintf('%03d', $index + 1);
+            }
+            // SQLite's built-in collations do not handle Cyrillic case or alphabet order.
+            $connection->getPdo()->sqliteCreateCollation('library_alphabet', static function (string $left, string $right) use ($weights, $pattern): int {
+                $scriptOrder = (preg_match('/'.$pattern.'/u', trim($left)) ? 0 : 1) <=> (preg_match('/'.$pattern.'/u', trim($right)) ? 0 : 1);
+                if ($scriptOrder !== 0) {
+                    return $scriptOrder;
+                }
+
+                return strcmp(strtr(mb_strtolower(trim($left), 'UTF-8'), $weights), strtr(mb_strtolower(trim($right), 'UTF-8'), $weights));
+            });
+            $wrapped = $query->getGrammar()->wrap($column);
+
+            return $query->orderByRaw($wrapped.' COLLATE library_alphabet')->orderBy($column === 'title' ? 'id' : 'b.id');
+        }
+
+        return $query->orderByRaw('CASE WHEN TRIM('.$wrapped.') REGEXP ? THEN 0 ELSE 1 END', [$pattern])
+            ->orderBy($column)->orderBy($column === 'title' ? 'id' : 'b.id');
+    }
+
     public function catalog(Request $request)
     {
         $context = $this->context($request);
         $books = DB::table('library_books')->when($request->filled('search'), function (Builder $query) use ($request): void {
             $search = '%'.$request->string('search').'%';
             $query->where(fn (Builder $q) => $q->where('title', 'like', $search)->orWhere('barcode', 'like', $search)->orWhere('author', 'like', $search));
-        })->orderBy('title')->paginate(20)->withQueryString();
+        })->tap(fn (Builder $query) => $this->orderBooks($query, 'title'))->paginate(20)->withQueryString();
 
         return view('library.catalog', $context + compact('books'));
     }
@@ -93,7 +218,7 @@ class LibraryController extends Controller
         $books = DB::table('library_books')->when($request->filled('search'), function (Builder $query) use ($request): void {
             $search = '%'.$request->string('search').'%';
             $query->where(fn (Builder $q) => $q->where('title', 'like', $search)->orWhere('barcode', 'like', $search)->orWhere('author', 'like', $search));
-        })->orderBy('title')->paginate(20)->withQueryString();
+        })->tap(fn (Builder $query) => $this->orderBooks($query, 'title'))->paginate(20)->withQueryString();
 
         return view('library.edit', $context + compact('books', 'editingBook'));
     }
@@ -148,21 +273,25 @@ class LibraryController extends Controller
     {
         $context = $this->context($request);
         $stocks = $this->stockQuery($context['school']?->id)
+            ->when($request->filled('barcode'), fn (Builder $q) => $q->where('b.barcode', $request->string('barcode')->toString()))
             ->when($request->filled('search'), fn (Builder $q) => $q->where(fn (Builder $q) => $q
                 ->where('b.title', 'like', '%'.$request->string('search').'%')->orWhere('b.barcode', $request->string('search')->toString())))
-            ->orderBy('b.title')->paginate(20)->withQueryString();
+            ->tap(fn (Builder $query) => $this->orderBooks($query))->paginate(20)->withQueryString();
 
-        return view('library.stocks', $context + compact('stocks'));
+        return view('library.stocks', $context + compact('stocks') + ['filterBook' => $this->filterBook($request, $context['school']?->id)]);
     }
 
     public function storeStock(Request $request)
     {
         $schoolId = $this->school($request, true);
-        $data = $request->validate(['barcode' => ['required', 'string', 'exists:library_books,barcode'], 'total_quantity' => ['sometimes', 'integer', 'between:0,1000000']]);
+        $data = $request->validate(['barcode' => ['required', 'string', 'max:64', 'exists:library_books,barcode'], 'quantity' => ['sometimes', 'integer', 'between:1,1000000'], 'total_quantity' => ['sometimes', 'integer', 'between:0,1000000', 'prohibits:quantity']]);
         DB::transaction(function () use ($schoolId, $data): void {
             $book = DB::table('library_books')->where('barcode', $data['barcode'])->lockForUpdate()->first();
             $stock = DB::table('library_stocks')->where('school_id', $schoolId)->where('book_id', $book->id)->lockForUpdate()->first();
-            $data['total_quantity'] ??= ($stock?->total_quantity ?? 0) + 1;
+            $data['total_quantity'] ??= ($stock?->total_quantity ?? 0) + ($data['quantity'] ?? 1);
+            if ($data['total_quantity'] > 1000000) {
+                throw ValidationException::withMessages(['quantity' => __('validation.max.numeric', ['attribute' => __('library.total_quantity'), 'max' => 1000000])]);
+            }
             if ($stock) {
                 $outstanding = $this->stockQuery($schoolId)->where('s.id', $stock->id)->first()->outstanding;
                 if ($data['total_quantity'] < $outstanding) {
@@ -233,7 +362,7 @@ class LibraryController extends Controller
             ->when($request->boolean('exact'),
                 fn ($q) => $q->where('b.barcode', $data['q']),
                 fn ($q) => $q->where(fn ($q) => $q->where('b.title', 'like', '%'.$data['q'].'%')->orWhere('b.barcode', 'like', '%'.$data['q'].'%')))
-            ->orderBy('b.title')->limit(20)->get()
+            ->tap(fn (Builder $query) => $this->orderBooks($query))->limit(20)->get()
             ->map(function ($stock): array {
                 $detailParts = [$stock->barcode];
                 if ($stock->grade !== null) {
@@ -250,7 +379,7 @@ class LibraryController extends Controller
         $request->validate(['student_code' => ['nullable', 'string', 'max:1000'], 'barcode' => ['nullable', 'string', 'max:64'], 'barcodes' => ['nullable', 'array'], 'mode' => ['nullable', Rule::in(['issue', 'return'])]]);
         $student = $context['school'] ? $this->student($request, $context['school']->id) : null;
         $barcodes = $this->selectedBookBarcodes($request);
-        $stocks = $barcodes === [] ? collect() : $this->stockQuery($context['school']?->id)->whereIn('b.barcode', $barcodes)->orderBy('b.title')->get()->keyBy('barcode');
+        $stocks = $barcodes === [] ? collect() : $this->stockQuery($context['school']?->id)->whereIn('b.barcode', $barcodes)->tap(fn (Builder $query) => $this->orderBooks($query))->get()->keyBy('barcode');
         $stock = $stocks->first();
         $loans = $student ? $this->loanQuery($context['school']->id)->where('l.student_id', $student->id)->whereRaw('l.quantity > COALESCE(r.returned, 0)')->orderBy('l.issued_at')->get() : collect();
         $token = (string) Str::uuid();
@@ -289,7 +418,7 @@ class LibraryController extends Controller
                     throw ValidationException::withMessages(['barcode' => __('library.book_missing')]);
                 }
                 if ($data['mode'] === 'issue') {
-                    if ($student->status !== 'active' || 1 > $this->stockQuery($schoolId)->where('s.id', $stock->id)->first()->available) {
+                    if ($student->status !== 'active' || $this->stockQuery($schoolId)->where('s.id', $stock->id)->first()->available < 1) {
                         throw ValidationException::withMessages(['barcode' => __('library.not_available')]);
                     }
                     DB::table('library_loans')->insert(['stock_id' => $stock->id, 'student_id' => $student->id, 'quantity' => 1, 'issued_at' => now(), 'due_at' => $data['due_at'], 'issued_by' => $request->user()->id, 'created_at' => now(), 'updated_at' => now()]);
@@ -349,7 +478,7 @@ class LibraryController extends Controller
         $context = $this->context($request);
         $schoolId = $context['school']?->id;
         $reportBooks = DB::table('library_books as b')->join('library_stocks as s', 's.book_id', '=', 'b.id')
-            ->where('s.school_id', $schoolId ?? 0)->orderBy('b.title')->get(['b.title', 'b.barcode']);
+            ->where('s.school_id', $schoolId ?? 0)->tap(fn (Builder $query) => $this->orderBooks($query))->get(['b.title', 'b.barcode']);
         $totals = DB::query()->fromSub($this->stockQuery($schoolId), 'stock_totals')->selectRaw('COALESCE(SUM(total_quantity), 0) as total, COALESCE(SUM(outstanding), 0) as outstanding, COALESCE(SUM(available), 0) as available')->first();
         $query = $this->filteredLoans($request, $schoolId);
         $period = DB::query()->fromSub($query, 'period_loans')->selectRaw('COALESCE(SUM(quantity), 0) as issued, COALESCE(SUM(returned), 0) as returned')->first();
@@ -387,42 +516,70 @@ class LibraryController extends Controller
     public function template(Request $request)
     {
         $this->context($request);
+        $path = base_path('outputs/library-guide/library-books-template.xlsx');
+        abort_unless(is_file($path), 404);
+        $locale = in_array(app()->getLocale(), ['ru', 'kk'], true) ? app()->getLocale() : 'ru';
 
-        return $this->csv('library-books-template.csv', [array_merge(array_keys($this->bookRules()), ['total_quantity'])]);
+        return response()->download($this->localizeBooksTemplate($path, $locale), 'library-books-template.xlsx')->deleteFileAfterSend(true);
     }
 
     public function import(Request $request)
     {
         $schoolId = $this->school($request, true);
-        $request->validate(['books_file' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
-        $handle = fopen($request->file('books_file')->getRealPath(), 'r');
-        $headers = fgetcsv($handle, 0, ';', '"', '');
-        if ($headers) {
-            $headers[0] = preg_replace('/^\xEF\xBB\xBF/', '', $headers[0]);
-        }
-        $expected = array_merge(array_keys($this->bookRules()), ['total_quantity']);
-        if ($headers !== $expected) {
-            fclose($handle);
-            throw ValidationException::withMessages(['books_file' => __('library.invalid_template')]);
-        }
-        $rows = [];
+        $request->validate(['books_file' => ['required', 'file', 'mimes:xlsx', 'max:2048']]);
+        $reader = new XlsxReader;
+        $headers = null;
+        $rawRows = [];
+        $rowNumber = 0;
         try {
-            while (($values = fgetcsv($handle, 0, ';', '"', '')) !== false) {
-                if ($values === [null]) {
+            $reader->open($request->file('books_file')->getRealPath());
+            foreach ($reader->getSheetIterator() as $sheet) {
+                if ($sheet->getName() !== 'Книги') {
                     continue;
                 }
-                if (count($values) !== count($headers) || count($rows) >= 2000) {
-                    throw ValidationException::withMessages(['books_file' => __('library.invalid_template')]);
+                foreach ($sheet->getRowIterator() as $row) {
+                    $rowNumber++;
+                    $values = $row->toArray();
+                    if ($headers === null) {
+                        $headers = array_map(fn ($value) => trim((string) $value), $values);
+                        continue;
+                    }
+                    if (! array_filter($values, fn ($value) => $value !== null && trim((string) $value) !== '')) {
+                        continue;
+                    }
+                    $rawRows[] = [$rowNumber, $values];
+                    if (count($rawRows) > 2000) {
+                        throw ValidationException::withMessages(['books_file' => __('library.invalid_template')]);
+                    }
                 }
-                $row = array_combine($headers, array_map(fn ($v) => trim($v ?? '') === '' ? null : trim($v), $values));
-                $validator = Validator::make($row, $this->bookRules() + ['total_quantity' => ['required', 'integer', 'between:0,1000000']]);
-                if ($validator->fails()) {
-                    throw ValidationException::withMessages(['books_file' => (count($rows) + 2).': '.$validator->errors()->first()]);
-                }
-                $rows[] = $validator->validated();
+                break;
             }
+        } catch (\Throwable) {
+            throw ValidationException::withMessages(['books_file' => __('library.invalid_template')]);
         } finally {
-            fclose($handle);
+            $reader->close();
+        }
+
+        $headers = $headers === null ? null : $this->normalizeBookHeaders($headers);
+        $expected = array_merge(array_keys($this->bookRules()), ['total_quantity']);
+        if ($headers !== $expected) {
+            throw ValidationException::withMessages(['books_file' => __('library.invalid_template')]);
+        }
+        if (count($rawRows) > 2000) {
+            throw ValidationException::withMessages(['books_file' => __('library.invalid_template')]);
+        }
+
+        $rows = [];
+        foreach ($rawRows as [$rowNumber, $values]) {
+            if (count($values) !== count($headers)) {
+                throw ValidationException::withMessages(['books_file' => __('library.invalid_template')]);
+            }
+            $row = array_combine($headers, array_map(fn ($value) => trim((string) ($value ?? '')) === '' ? null : trim((string) $value), $values));
+            $validator = Validator::make($row, $this->bookRules() + ['total_quantity' => ['required', 'integer', 'between:0,1000000']]);
+            if ($validator->fails()) {
+                throw ValidationException::withMessages(['books_file' => $rowNumber.': '.$validator->errors()->first()]);
+            }
+            $rows[] = $validator->validated();
         }
         DB::transaction(function () use ($rows, $schoolId): void {
             foreach ($rows as $row) {
