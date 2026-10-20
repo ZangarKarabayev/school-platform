@@ -19,6 +19,8 @@ class AuditLogger
     private const REDACTED = '[REDACTED]';
 
     private const SENSITIVE_KEYS = [
+        'code',
+        'debug_code',
         'authorization',
         'certificate',
         'client_secret',

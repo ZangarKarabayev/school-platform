@@ -10,6 +10,9 @@ class StartPhoneLoginAction
 {
     public function execute(PhoneLoginData $data): array
     {
+        // A delivery provider must be connected before enabling OTP outside development.
+        abort_unless(app()->environment(['local', 'testing']), 503, 'SMS delivery is not configured.');
+
         $otpLength = (int) config('services.phone_auth.otp_length', 6);
         $code = str_pad((string) random_int(0, (10 ** $otpLength) - 1), $otpLength, '0', STR_PAD_LEFT);
         $expiresAt = now()->addMinutes((int) config('services.phone_auth.otp_ttl_minutes', 5));

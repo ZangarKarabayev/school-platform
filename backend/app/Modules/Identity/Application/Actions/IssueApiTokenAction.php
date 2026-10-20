@@ -10,6 +10,8 @@ class IssueApiTokenAction
 {
     public function execute(User $user, string $deviceName = 'mobile'): array
     {
+        abort_unless($user->status === 'active', 403, 'Account is not active.');
+
         $plainTextToken = Str::random(80);
         $expiresAt = now()->addMinutes((int) config('services.phone_auth.token_ttl_minutes', 43200));
 

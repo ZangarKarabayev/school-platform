@@ -13,7 +13,7 @@ class EdsAuthTest extends TestCase
 
     public function test_it_creates_eds_challenge(): void
     {
-        $response = $this->postJson('/api/v1/auth/eds/challenge', [
+        $response = $this->postJson('/api/mobile/v1/auth/eds/challenge', [
             'device_name' => 'web',
         ]);
 
@@ -30,14 +30,14 @@ class EdsAuthTest extends TestCase
 
     public function test_it_verifies_eds_and_returns_token(): void
     {
-        $challengeResponse = $this->postJson('/api/v1/auth/eds/challenge', [
+        $challengeResponse = $this->postJson('/api/mobile/v1/auth/eds/challenge', [
             'device_name' => 'web',
         ]);
 
         $challengeId = $challengeResponse->json('challenge_id');
         $challenge = $challengeResponse->json('challenge');
 
-        $response = $this->postJson('/api/v1/auth/eds/verify', [
+        $response = $this->postJson('/api/mobile/v1/auth/eds/verify', [
             'challenge_id' => $challengeId,
             'signature' => hash('sha256', implode('|', [
                 $challenge,
@@ -80,10 +80,10 @@ class EdsAuthTest extends TestCase
             'certificate_thumbprint' => $thumbprint,
         ]);
 
-        $challengeResponse = $this->postJson('/api/v1/auth/eds/challenge');
+        $challengeResponse = $this->postJson('/api/mobile/v1/auth/eds/challenge');
         $challenge = $challengeResponse->json('challenge');
 
-        $this->postJson('/api/v1/auth/eds/verify', [
+        $this->postJson('/api/mobile/v1/auth/eds/verify', [
             'challenge_id' => $challengeResponse->json('challenge_id'),
             'signature' => hash('sha256', implode('|', [
                 $challenge,
@@ -103,9 +103,9 @@ class EdsAuthTest extends TestCase
 
     public function test_it_rejects_invalid_eds_signature(): void
     {
-        $challengeResponse = $this->postJson('/api/v1/auth/eds/challenge');
+        $challengeResponse = $this->postJson('/api/mobile/v1/auth/eds/challenge');
 
-        $this->postJson('/api/v1/auth/eds/verify', [
+        $this->postJson('/api/mobile/v1/auth/eds/verify', [
             'challenge_id' => $challengeResponse->json('challenge_id'),
             'signature' => 'invalid-signature',
             'last_name' => 'Bad',

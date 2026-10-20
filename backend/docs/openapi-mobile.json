@@ -1,0 +1,1297 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "School Platform Mobile API",
+    "version": "1.0.0",
+    "description": "Current implemented mobile routes. Send Accept: application/json. Separate mobile registration, password recovery and refresh tokens are not implemented. OTP delivery is development-only until an SMS provider is connected."
+  },
+  "servers": [
+    {
+      "url": "/api/mobile/v1",
+      "description": "Current server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication"
+    },
+    {
+      "name": "Students"
+    },
+    {
+      "name": "Dashboard"
+    }
+  ],
+  "paths": {
+    "/auth/phone/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "loginByPassword",
+        "summary": "Sign in using phone and password",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "description": "Normalized to international format; punctuation removed; leading 8 in an 11-digit number becomes +7.",
+                    "example": "+77016667788"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password",
+                    "minLength": 1
+                  },
+                  "device_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "iPhone",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "phone",
+                  "password"
+                ]
+              },
+              "example": {
+                "phone": "+77016667788",
+                "password": "your-password",
+                "device_name": "iPhone"
+              }
+            }
+          }
+        },
+        "description": "Existing active accounts only. Default device name: mobile. Token lifetime defaults to 43200 minutes; no refresh endpoint exists."
+      }
+    },
+    "/auth/phone/request-otp": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "requestPhoneOtp",
+        "summary": "Request a development OTP",
+        "security": [],
+        "responses": {
+          "202": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpPending"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "description": "Normalized to international format; punctuation removed; leading 8 in an 11-digit number becomes +7.",
+                    "example": "+77016667788"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "login"
+                    ],
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "phone"
+                ]
+              },
+              "example": {
+                "phone": "+77016667788",
+                "purpose": "login"
+              }
+            }
+          }
+        },
+        "description": "SMS provider is not connected. Available only in local/testing; other environments return 503 without creating a code. Default validity: 5 minutes. Requesting another code replaces the previous code."
+      }
+    },
+    "/auth/phone/verify-otp": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "verifyPhoneOtp",
+        "summary": "Sign in using a one-time code",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "description": "Normalized to international format; punctuation removed; leading 8 in an 11-digit number becomes +7.",
+                    "example": "+77016667788"
+                  },
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[0-9]{6}$",
+                    "example": "123456"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "login"
+                    ],
+                    "nullable": true
+                  },
+                  "device_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "iPhone",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "phone",
+                  "code"
+                ]
+              },
+              "example": {
+                "phone": "+77016667788",
+                "code": "123456",
+                "purpose": "login",
+                "device_name": "iPhone"
+              }
+            }
+          }
+        },
+        "description": "Consumes the code once. An unknown phone creates an active profile without roles or scopes. Does not activate an existing inactive account. This is not a school registration or approval workflow."
+      }
+    },
+    "/auth/eds/challenge": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "createEdsChallenge",
+        "summary": "Create an EDS sign-in challenge",
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdsChallenge"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "device_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "iPhone",
+                    "nullable": true
+                  }
+                }
+              },
+              "example": {
+                "device_name": "iPhone"
+              }
+            }
+          }
+        },
+        "description": "Default device name: web. Requires configured EDS verifier for subsequent verification; this endpoint alone does not implement a mobile signing SDK."
+      }
+    },
+    "/auth/eds/verify": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "verifyEdsChallenge",
+        "summary": "Verify EDS signature and issue a token",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EdsAuthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/Unprocessable"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "challenge_id": {
+                    "type": "integer"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "description": "Signature over the challenge in the format supported by the configured EDS verifier."
+                  },
+                  "first_name": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "middle_name": {
+                    "type": "string",
+                    "maxLength": 255,
+                    "nullable": true
+                  },
+                  "device_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "example": "iPhone",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "challenge_id",
+                  "signature",
+                  "first_name",
+                  "last_name"
+                ]
+              },
+              "example": {
+                "challenge_id": 1,
+                "signature": "<signed-challenge>",
+                "first_name": "Dana",
+                "last_name": "Example",
+                "device_name": "iPhone"
+              }
+            }
+          }
+        },
+        "description": "Returns a smaller user payload than phone sign-in. Unknown certificates may create a profile without school roles. EDS does not assign access permissions."
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "getCurrentUser",
+        "summary": "Get current profile and access map",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  },
+                  "required": [
+                    "user"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "logoutDevice",
+        "summary": "Revoke current device token",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success; no response body."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/auth/logout-all": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "operationId": "logoutAllDevices",
+        "summary": "Revoke all API tokens for current user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success; no response body."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "description": "Includes tokens issued by EDS. Browser sessions are not revoked."
+      }
+    },
+    "/students": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "listStudents",
+        "summary": "List students",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "students": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Student"
+                      }
+                    }
+                  },
+                  "required": [
+                    "students"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing students.manage permission or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires students.manage permission and an assigned school (user.school_id or first school scope). Missing permission or school returns 403. Always filtered by the assigned school; query parameters cannot override it. Returns up to 100 records ordered by last and first name, without pagination. Parent/child and student self-service access are not implemented.",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search name, IIN or student number."
+          }
+        ]
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "getDashboard",
+        "summary": "Get dashboard summary",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dashboard"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        },
+        "description": "Existing dashboard output. Scope configuration is excluded from the response. Defaults to current month through today.",
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "scope_kind",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "school_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "nullable": true
+            }
+          },
+          {
+            "name": "district_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "nullable": true
+            }
+          },
+          {
+            "name": "region_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "nullable": true
+            }
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Use token.token returned by login. This is an opaque token, not JWT."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "Token": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Opaque token, not JWT. Returned only when issued."
+          },
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "token",
+          "token_type",
+          "expires_at"
+        ]
+      },
+      "Scope": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "middle_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "preferred_locale": {
+            "type": "string",
+            "enum": [
+              "ru",
+              "kk"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Scope"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "first_name",
+          "last_name",
+          "middle_name",
+          "phone",
+          "status",
+          "preferred_locale",
+          "roles",
+          "permissions",
+          "scopes"
+        ]
+      },
+      "EdsUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Scope"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "phone",
+          "roles",
+          "scopes"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Normalized to international format; punctuation removed; leading 8 in an 11-digit number becomes +7.",
+            "example": "+77016667788"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "minLength": 1
+          },
+          "device_name": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "iPhone",
+            "nullable": true
+          }
+        },
+        "required": [
+          "phone",
+          "password"
+        ]
+      },
+      "OtpRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Normalized to international format; punctuation removed; leading 8 in an 11-digit number becomes +7.",
+            "example": "+77016667788"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "login"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "OtpVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "description": "Normalized to international format; punctuation removed; leading 8 in an 11-digit number becomes +7.",
+            "example": "+77016667788"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$",
+            "example": "123456"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "login"
+            ],
+            "nullable": true
+          },
+          "device_name": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "iPhone",
+            "nullable": true
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "OtpPending": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "login"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_otp"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "debug_code": {
+            "type": "string",
+            "description": "Available only in local/testing environments.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "phone",
+          "purpose",
+          "status",
+          "expires_at",
+          "debug_code"
+        ]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "$ref": "#/components/schemas/Token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "token",
+          "user"
+        ]
+      },
+      "EdsAuthResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "$ref": "#/components/schemas/Token"
+          },
+          "user": {
+            "$ref": "#/components/schemas/EdsUser"
+          }
+        },
+        "required": [
+          "token",
+          "user"
+        ]
+      },
+      "EdsChallengeRequest": {
+        "type": "object",
+        "properties": {
+          "device_name": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "iPhone",
+            "nullable": true
+          }
+        }
+      },
+      "EdsChallenge": {
+        "type": "object",
+        "properties": {
+          "challenge_id": {
+            "type": "integer"
+          },
+          "challenge": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "challenge_id",
+          "challenge",
+          "expires_at"
+        ]
+      },
+      "EdsVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "challenge_id": {
+            "type": "integer"
+          },
+          "signature": {
+            "type": "string",
+            "description": "Signature over the challenge in the format supported by the configured EDS verifier."
+          },
+          "first_name": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "middle_name": {
+            "type": "string",
+            "maxLength": 255,
+            "nullable": true
+          },
+          "device_name": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "iPhone",
+            "nullable": true
+          }
+        },
+        "required": [
+          "challenge_id",
+          "signature",
+          "first_name",
+          "last_name"
+        ]
+      },
+      "Student": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "iin": {
+            "type": "string",
+            "nullable": true
+          },
+          "classroom": {
+            "type": "string",
+            "nullable": true
+          },
+          "school": {
+            "type": "string",
+            "nullable": true
+          },
+          "benefit": {
+            "type": "string",
+            "nullable": true
+          },
+          "photo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "iin",
+          "classroom",
+          "school",
+          "benefit",
+          "photo"
+        ]
+      },
+      "ChartItem": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer"
+          },
+          "color": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ]
+      },
+      "DashboardFilters": {
+        "type": "object",
+        "properties": {
+          "date_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "date_to": {
+            "type": "string",
+            "format": "date"
+          },
+          "scope_kind": {
+            "type": "string"
+          },
+          "school_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "district_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "region_id": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "date_from",
+          "date_to",
+          "scope_kind",
+          "school_id",
+          "district_id",
+          "region_id"
+        ]
+      },
+      "OrdersTable": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "label",
+                "title"
+              ]
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "integer"
+                },
+                "student_id": {
+                  "type": "integer"
+                },
+                "full_name": {
+                  "type": "string"
+                },
+                "classroom_name": {
+                  "type": "string"
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "integer"
+                  }
+                },
+                "total": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "number",
+                "student_id",
+                "full_name",
+                "classroom_name",
+                "values",
+                "total"
+              ]
+            }
+          },
+          "column_totals": {
+            "description": "Map keyed by date; an empty result is serialized as an empty array.",
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 0
+              }
+            ]
+          },
+          "grand_total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "days",
+          "rows",
+          "column_totals",
+          "grand_total"
+        ]
+      },
+      "Dashboard": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/DashboardFilters"
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "orders_count": {
+                "type": "integer"
+              },
+              "error_count": {
+                "type": "integer"
+              },
+              "success_count": {
+                "type": "integer"
+              },
+              "failed_count": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "orders_count",
+              "error_count",
+              "success_count",
+              "failed_count"
+            ]
+          },
+          "charts": {
+            "type": "object",
+            "properties": {
+              "transactions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChartItem"
+                }
+              },
+              "orders_by_school": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChartItem"
+                }
+              },
+              "orders_by_district": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChartItem"
+                }
+              },
+              "class_groups": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChartItem"
+                }
+              },
+              "benefits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChartItem"
+                }
+              },
+              "coverage": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ChartItem"
+                }
+              }
+            },
+            "required": [
+              "transactions",
+              "orders_by_school",
+              "orders_by_district",
+              "class_groups",
+              "benefits",
+              "coverage"
+            ]
+          },
+          "ordersTable": {
+            "$ref": "#/components/schemas/OrdersTable"
+          }
+        },
+        "required": [
+          "filters",
+          "stats",
+          "charts",
+          "ordersTable"
+        ]
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Missing, invalid, expired or revoked token, or inactive account.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Account is not active.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unprocessable": {
+        "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unavailable": {
+        "description": "SMS delivery is not configured (OTP request outside local/testing).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Shared phone authentication limit: 5/minute per normalized phone, 30/minute per IP.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds before retrying.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    }
+  }
+}

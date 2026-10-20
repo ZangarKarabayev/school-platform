@@ -13,14 +13,12 @@ class VerifyPhoneOtpAction
     public function __construct(
         private readonly ValidatePhoneOtpAction $validatePhoneOtpAction,
         private readonly IssueApiTokenAction $issueApiTokenAction,
-    ) {
-    }
+    ) {}
 
     public function execute(VerifyPhoneOtpData $data): array
     {
-        $otp = $this->validatePhoneOtpAction->execute($data);
-
-        return DB::transaction(function () use ($data, $otp): array {
+        return DB::transaction(function () use ($data): array {
+            $otp = $this->validatePhoneOtpAction->execute($data);
             $user = User::query()->firstOrCreate(
                 ['phone' => $data->phone],
                 [

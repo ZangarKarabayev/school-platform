@@ -2,9 +2,7 @@
 
 namespace App\Modules\Identity\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class VerifyPhoneOtpRequest extends FormRequest
+class VerifyPhoneOtpRequest extends LoginByPasswordRequest
 {
     public function authorize(): bool
     {
@@ -16,9 +14,8 @@ class VerifyPhoneOtpRequest extends FormRequest
         return [
             'phone' => ['required', 'string', 'regex:/^\+?[0-9]{11,15}$/'],
             'code' => ['required', 'digits:6'],
-            'purpose' => ['nullable', 'string', 'max:50'],
+            'purpose' => ['nullable', 'string', 'in:login'],
             'device_name' => ['nullable', 'string', 'max:100'],
         ];
     }
-
 }

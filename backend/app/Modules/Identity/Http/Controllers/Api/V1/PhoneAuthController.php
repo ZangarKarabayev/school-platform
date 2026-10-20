@@ -28,7 +28,7 @@ class PhoneAuthController extends Controller
             ->where('phone', $request->string('phone')->toString())
             ->first();
 
-        if (! $user || ! Hash::check($request->string('password')->toString(), (string) $user->password)) {
+        if (! $user || $user->status !== 'active' || ! Hash::check($request->string('password')->toString(), (string) $user->password)) {
             return response()->json([
                 'message' => 'Неверный номер телефона или пароль.',
             ], 422);
@@ -84,6 +84,22 @@ class PhoneAuthController extends Controller
         return response()->json([
             'user' => $this->userPayload($user->loadMissing('roles', 'scopes'), $accessMap),
         ]);
+    }
+
+    public function logout(Request $request): \Illuminate\Http\Response
+    {
+        $request->user()->apiTokens()
+            ->where('token', hash('sha256', $request->bearerToken()))
+            ->delete();
+
+        return response()->noContent();
+    }
+
+    public function logoutAll(Request $request): \Illuminate\Http\Response
+    {
+        $request->user()->apiTokens()->delete();
+
+        return response()->noContent();
     }
 
     private function userPayload(User $user, ?AccessMap $accessMap = null): array

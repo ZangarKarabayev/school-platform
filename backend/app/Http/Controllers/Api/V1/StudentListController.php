@@ -13,13 +13,16 @@ class StudentListController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         /** @var User $user */
-        $user = $request->user()->loadMissing('scopes');
+        $user = $request->user()->loadMissing('scopes', 'roles.permissions');
+        abort_unless($user->hasPermission('students.manage'), 403, 'Student list access is not permitted.');
+
         $search = trim($request->string('search')->toString());
         $schoolId = $this->resolveSchoolIdForUser($user);
+        abort_if($schoolId === null, 403, 'A school assignment is required.');
 
         $students = Student::query()
             ->with(['classroom', 'school', 'latestMealBenefit'])
-            ->when($schoolId !== null, fn ($query) => $query->where('school_id', $schoolId))
+            ->where('school_id', $schoolId)
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($subQuery) use ($search): void {
                     $subQuery

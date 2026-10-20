@@ -20,7 +20,7 @@ class PhoneAuthTest extends TestCase
             'last_name' => 'Director',
         ]);
 
-        $response = $this->postJson('/api/v1/auth/phone/login', [
+        $response = $this->postJson('/api/mobile/v1/auth/phone/login', [
             'phone' => '+7 (701) 666-77-88',
             'password' => 'secret123',
             'device_name' => 'android',
@@ -36,7 +36,7 @@ class PhoneAuthTest extends TestCase
 
     public function test_it_requests_phone_otp(): void
     {
-        $response = $this->postJson('/api/v1/auth/phone/request-otp', [
+        $response = $this->postJson('/api/mobile/v1/auth/phone/request-otp', [
             'phone' => '+77015554433',
         ]);
 
@@ -53,13 +53,13 @@ class PhoneAuthTest extends TestCase
 
     public function test_it_verifies_phone_otp_and_returns_token(): void
     {
-        $otpResponse = $this->postJson('/api/v1/auth/phone/request-otp', [
+        $otpResponse = $this->postJson('/api/mobile/v1/auth/phone/request-otp', [
             'phone' => '+77015554433',
         ]);
 
         $code = $otpResponse->json('debug_code');
 
-        $verifyResponse = $this->postJson('/api/v1/auth/phone/verify-otp', [
+        $verifyResponse = $this->postJson('/api/mobile/v1/auth/phone/verify-otp', [
             'phone' => '+77015554433',
             'code' => $code,
             'device_name' => 'iphone',
@@ -83,11 +83,11 @@ class PhoneAuthTest extends TestCase
 
     public function test_it_returns_authenticated_user_profile(): void
     {
-        $otpResponse = $this->postJson('/api/v1/auth/phone/request-otp', [
+        $otpResponse = $this->postJson('/api/mobile/v1/auth/phone/request-otp', [
             'phone' => '+77019990011',
         ]);
 
-        $verifyResponse = $this->postJson('/api/v1/auth/phone/verify-otp', [
+        $verifyResponse = $this->postJson('/api/mobile/v1/auth/phone/verify-otp', [
             'phone' => '+77019990011',
             'code' => $otpResponse->json('debug_code'),
         ]);
@@ -95,7 +95,7 @@ class PhoneAuthTest extends TestCase
         $token = $verifyResponse->json('token.token');
 
         $this->withToken($token)
-            ->getJson('/api/v1/auth/me')
+            ->getJson('/api/mobile/v1/auth/me')
             ->assertOk()
             ->assertJsonPath('user.phone', '+77019990011')
             ->assertJsonStructure([

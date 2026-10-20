@@ -8,8 +8,10 @@ use App\Modules\Identity\Infrastructure\Security\KalkanExtensionEdsSignatureVeri
 use App\Modules\Identity\Infrastructure\Security\KalkanHttpEdsSignatureVerifier;
 use App\Modules\Identity\Models\ApiToken;
 use App\Services\Student\VoucherService;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -24,8 +26,8 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind(EdsSignatureVerifier::class, function () {
             return match ($this->resolveEdsVerifierDriver()) {
-                'kalkan-extension' => new KalkanExtensionEdsSignatureVerifier(),
-                'http' => new KalkanHttpEdsSignatureVerifier(),
+                'kalkan-extension' => new KalkanExtensionEdsSignatureVerifier,
+                'http' => new KalkanHttpEdsSignatureVerifier,
                 default => throw new \RuntimeException('Unsupported EDS verifier driver.'),
             };
         });
@@ -36,6 +38,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('mobile-login', static function (Request $request): array {
+            $phone = preg_replace('/\D+/', '', (string) $request->input('phone', ''));
+            if (strlen($phone) === 11 && str_starts_with($phone, '8')) {
+                $phone = '7'.substr($phone, 1);
+            }
+
+            return [
+                Limit::perMinute(30)->by('mobile-ip:'.$request->ip()),
+                Limit::perMinute(5)->by('mobile-phone:'.hash('sha256', $phone)),
+            ];
+        });
+
         URL::forceRootUrl(config('app.url'));
 
         if (str_starts_with((string) config('app.url'), 'https://')) {
@@ -57,7 +71,7 @@ class AppServiceProvider extends ServiceProvider
                 })
                 ->first();
 
-            if (! $token) {
+            if (! $token || $token->user?->status !== 'active') {
                 return null;
             }
 
