@@ -16,7 +16,7 @@ class DashboardDataService
      * @param  array<string, mixed>  $inputFilters
      * @return array<string, mixed>
      */
-    public function build(?User $user, array $inputFilters = []): array
+    public function build(?User $user, array $inputFilters = [], bool $schoolOnly = false): array
     {
         $user = $user?->loadMissing('roles', 'scopes', 'school', 'district', 'region');
         $roleCodes = $user?->roles?->pluck('code')->all() ?? [];
@@ -31,14 +31,21 @@ class DashboardDataService
             'region_id' => isset($inputFilters['region_id']) ? (int) $inputFilters['region_id'] ?: null : null,
         ];
 
-        $scopeConfig = $this->resolveScopeConfig($user, $roleCodes);
+        $scopeConfig = $this->resolveScopeConfig($user, $schoolOnly ? [] : $roleCodes);
         $filters['scope_kind'] = $filters['scope_kind'] !== '' ? $filters['scope_kind'] : $scopeConfig['default_scope_kind'];
 
-        if (in_array('super_admin', $roleCodes, true)) {
+        if (! $schoolOnly && in_array('super_admin', $roleCodes, true)) {
             return $this->buildEmptyDashboardPayload($filters, $scopeConfig);
         }
 
-        $ordersAggregateBase = DB::table('orders as o')
+        $scopeKey = match ($scopeConfig['mode']) {
+            'region' => 'regions',
+            'district' => 'districts',
+            default => 'schools',
+        };
+        abort_if($scopeConfig[$scopeKey]->isEmpty(), 403, 'A dashboard scope assignment is required.');
+
+        $ordersAggregateBase = DB::table('orders as o')->whereNull('o.deleted_at')
             ->join('students as s', 's.id', '=', 'o.student_id')
             ->leftJoin('classrooms as c', 'c.id', '=', 'o.classroom_id')
             ->leftJoin('schools as sch', 'sch.id', '=', 's.school_id')
@@ -90,6 +97,7 @@ class DashboardDataService
             ->leftJoin('schools as sch', 'sch.id', '=', 's.school_id')
             ->leftJoin('districts as d', 'd.id', '=', 'sch.district_id')
             ->where('s.status', '!=', 'graduated')
+            ->whereNull('s.deleted_at')
             ->leftJoinSub(
                 DB::table('meal_benefits as mb1')
                     ->selectRaw('MAX(mb1.id) as id, mb1.student_id')
@@ -271,6 +279,8 @@ class DashboardDataService
 
             if ($allowedRegionId !== null) {
                 $query->where($districtAlias.'.region_id', $allowedRegionId);
+            } else {
+                $query->whereRaw('1 = 0');
             }
 
             return;
@@ -291,6 +301,8 @@ class DashboardDataService
 
             if ($allowedDistrictId !== null) {
                 $query->where($schoolAlias.'.district_id', $allowedDistrictId);
+            } else {
+                $query->whereRaw('1 = 0');
             }
 
             return;
@@ -300,6 +312,8 @@ class DashboardDataService
 
         if ($allowedSchoolId !== null) {
             $query->where($studentAlias.'.school_id', $allowedSchoolId);
+        } else {
+            $query->whereRaw('1 = 0');
         }
     }
 

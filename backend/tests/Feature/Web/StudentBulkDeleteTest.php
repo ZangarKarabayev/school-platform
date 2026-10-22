@@ -29,8 +29,8 @@ class StudentBulkDeleteTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('student_status', __('ui.students.bulk_deleted', ['count' => 2]));
 
-        $this->assertDatabaseMissing('students', ['id' => $firstStudent->id]);
-        $this->assertDatabaseMissing('students', ['id' => $secondStudent->id]);
+        $this->assertSoftDeleted('students', ['id' => $firstStudent->id]);
+        $this->assertSoftDeleted('students', ['id' => $secondStudent->id]);
         $this->assertDatabaseHas('students', ['id' => $untouchedStudent->id]);
     }
 
@@ -68,6 +68,6 @@ class StudentBulkDeleteTest extends TestCase
             ->post(route('students.bulk-destroy'), ['student_ids' => [$student->id]])
             ->assertRedirect();
 
-        $this->assertDatabaseMissing('students', ['id' => $student->id]);
+        $this->assertSoftDeleted('students', ['id' => $student->id]);
     }
 }

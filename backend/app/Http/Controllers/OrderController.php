@@ -9,21 +9,17 @@ use App\Models\Order;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Rules\ValidSchoolYear;
-use App\Services\OrderCalendarService;
-use App\Services\Orders\OrderEligibilityService;
-use Carbon\Carbon;
+use App\Services\Orders\OrderCreationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
     public function __construct(
-        private readonly OrderCalendarService $orderCalendarService,
-        private readonly OrderEligibilityService $orderEligibilityService,
+        private readonly OrderCreationService $orderCreation,
     ) {}
 
     public function index(Request $request): View
@@ -161,36 +157,16 @@ class OrderController extends Controller
             'school_year' => ['required', 'string', new ValidSchoolYear],
         ]);
 
-        if (! $this->orderEligibilityService->dateBelongsToSchoolYear($data['order_date'], $data['school_year'])) {
-            throw ValidationException::withMessages([
-                'order_date' => __('validation.school_year_date'),
-            ]);
+        try {
+            $this->orderCreation->validateRequestDate($data);
+        } catch (ValidationException $exception) {
+            return redirect()->route('orders.index')->withErrors($exception->errors())->withInput();
         }
-
-        $now = now(config('app.timezone'));
-        $orderDate = Carbon::parse($data['order_date'], config('app.timezone'));
-        $selectedDateTime = $data['order_time']
-            ? Carbon::parse($data['order_date'].' '.$data['order_time'], config('app.timezone'))
-            : $orderDate->copy()->startOfDay();
-
-        if (
-            $orderDate->copy()->startOfDay()->isAfter($now->copy()->startOfDay())
-            || ($data['order_time'] && $selectedDateTime->isAfter($now))
-        ) {
-            return redirect()
-                ->route('orders.index')
-                ->withErrors(['order_date' => __('ui.orders.future_date_not_allowed')])
-                ->withInput();
-        }
-
-        if ($this->orderCalendarService->isBlockedOrderDate($orderDate)) {
-            return redirect()
-                ->route('orders.index')
-                ->withErrors(['order_date' => $this->orderCalendarService->blockedOrderDateMessage($orderDate)])
-                ->withInput();
-        }
-
-        $studentIds = $this->resolveTargetStudentIds($request, $data);
+        $user = $request->user()?->loadMissing('roles', 'scopes');
+        $restricted = $user && ($user->hasRole('teacher') || $user->hasRole('director'));
+        $schoolId = $restricted ? $this->resolveSchoolId($user) : null;
+        abort_if($restricted && $schoolId === null, 403, 'A school assignment is required.');
+        $studentIds = $this->orderCreation->eligibleTargetIds($data, $schoolId);
 
         if ($studentIds->isEmpty()) {
             return redirect()->route('orders.index')
@@ -203,6 +179,7 @@ class OrderController extends Controller
             $data['order_time'] ?? null,
             $request->user()?->id,
             $data['school_year'],
+            $schoolId,
         );
 
         return redirect()
@@ -262,43 +239,6 @@ class OrderController extends Controller
         $orders->each->delete();
 
         return back()->with('order_status', __('ui.orders.bulk_deleted', ['count' => $orders->count()]));
-    }
-
-    private function resolveTargetStudentIds(Request $request, array $data): Collection
-    {
-        $user = $request->user()?->loadMissing('roles', 'scopes');
-        $roleCodes = $user?->roles?->pluck('code')->all() ?? [];
-        $restrictBySchool = in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
-        $userSchoolId = $this->resolveSchoolId($user);
-
-        $query = Student::query()
-            ->with([
-                'classroom',
-                'latestMealBenefit',
-                'enrollments' => fn ($query) => $query
-                    ->with('classroom')
-                    ->where('school_year', $data['school_year']),
-            ])
-            ->whereHas('enrollments', fn ($query) => $query->where('school_year', $data['school_year']))
-            ->when($restrictBySchool && $userSchoolId !== null, fn ($studentQuery) => $studentQuery->where('school_id', $userSchoolId));
-
-        match ($data['target_type']) {
-            'classes' => $query->whereHas('enrollments', fn ($enrollmentQuery) => $enrollmentQuery
-                ->where('school_year', $data['school_year'])
-                ->whereIn('classroom_id', $data['classroom_ids'] ?? [])),
-            'students' => $query->whereIn('id', $data['student_ids'] ?? []),
-            'all' => null,
-            default => $query->whereRaw('1 = 0'),
-        };
-
-        return $query->get()
-            ->filter(fn (Student $student): bool => $this->orderEligibilityService->isEligible(
-                $student,
-                $data['school_year'],
-                $data['order_date'],
-                $restrictBySchool ? $userSchoolId : null,
-            ))
-            ->pluck('id');
     }
 
     private function resolveSchoolId($user): ?int

@@ -16,52 +16,61 @@ class StudentListController extends Controller
         $user = $request->user()->loadMissing('scopes', 'roles.permissions');
         abort_unless($user->hasPermission('students.manage'), 403, 'Student list access is not permitted.');
 
-        $search = trim($request->string('search')->toString());
-        $schoolId = $this->resolveSchoolIdForUser($user);
+        $schoolId = $user->assignedSchoolId();
         abort_if($schoolId === null, 403, 'A school assignment is required.');
 
+        $validated = $request->validate([
+            'order_date' => ['sometimes', 'date_format:Y-m-d'],
+            'search' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'archived' => ['sometimes', 'boolean'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'classroom_id' => ['sometimes', 'integer', 'min:1'],
+        ]);
+
+        $orderDate = $validated['order_date'] ?? now(config('app.timezone'))->toDateString();
         $students = Student::query()
-            ->with(['classroom', 'school', 'latestMealBenefit'])
+            ->when($request->boolean('archived'), fn ($query) => $query->onlyTrashed())
+            ->with(['classroom', 'school', 'orders' => fn ($query) => $query->whereDate('order_date', $orderDate)->select('id', 'student_id', 'status')])
             ->where('school_id', $schoolId)
-            ->when($search !== '', function ($query) use ($search): void {
-                $query->where(function ($subQuery) use ($search): void {
-                    $subQuery
-                        ->where('iin', 'like', "%{$search}%")
-                        ->orWhere('student_number', 'like', "%{$search}%")
-                        ->orWhere('first_name', 'like', "%{$search}%")
-                        ->orWhere('last_name', 'like', "%{$search}%")
-                        ->orWhere('middle_name', 'like', "%{$search}%");
-                });
+            ->when(isset($validated['classroom_id']), fn ($query) => $query->where('classroom_id', $validated['classroom_id']))
+            ->when(filled($validated['search'] ?? null), function ($query) use ($validated): void {
+                foreach (preg_split('/\s+/u', trim($validated['search']), flags: PREG_SPLIT_NO_EMPTY) as $term) {
+                    $query->where(function ($query) use ($term): void {
+                        $query->where('student_number', 'like', '%'.$term.'%')
+                            ->orWhere('first_name', 'like', '%'.$term.'%')
+                            ->orWhere('last_name', 'like', '%'.$term.'%')
+                            ->orWhere('middle_name', 'like', '%'.$term.'%');
+                    });
+                }
             })
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->limit(100)
-            ->get()
-            ->map(fn (Student $student): array => [
+            ->orderBy('id')
+            ->paginate($validated['per_page'] ?? 50)
+            ->through(fn (Student $student): array => [
                 'id' => $student->id,
+                'has_order' => $student->orders->isNotEmpty(),
+                'order_id' => $student->orders->first()?->id,
+                'order_status' => $student->orders->first()?->status,
+                'archived_at' => $student->deleted_at?->toIso8601String(),
                 'full_name' => $student->full_name,
-                'iin' => $student->iin,
+                'classroom_id' => $student->classroom_id,
                 'classroom' => $student->classroom?->full_name,
                 'school' => $student->school?->display_name,
-                'benefit' => $student->latestMealBenefit?->type,
                 'photo' => filled($student->photo),
-            ])
-            ->values()
-            ->all();
+                'photo_url' => $student->photo_url,
+            ]);
 
         return response()->json([
-            'students' => $students,
+            'order_date' => $orderDate,
+            'students' => $students->items(),
+            'meta' => [
+                'current_page' => $students->currentPage(),
+                'per_page' => $students->perPage(),
+                'last_page' => $students->lastPage(),
+                'total' => $students->total(),
+            ],
         ]);
-    }
-
-    private function resolveSchoolIdForUser(User $user): ?int
-    {
-        if ($user->school_id) {
-            return $user->school_id;
-        }
-
-        return $user->scopes
-            ->first(fn ($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
-            ?->scope_id;
     }
 }

@@ -793,13 +793,13 @@
                         <div class="student-edit-field">
                             <label for="last_name">{{ __('admin.labels.last_name') }}</label>
                             <input id="last_name" name="last_name" type="text"
-                                value="{{ old('last_name', $student->last_name) }}">
+                                value="{{ old('last_name', $student->last_name) }}" required>
                         </div>
 
                         <div class="student-edit-field">
                             <label for="first_name">{{ __('admin.labels.first_name') }}</label>
                             <input id="first_name" name="first_name" type="text"
-                                value="{{ old('first_name', $student->first_name) }}">
+                                value="{{ old('first_name', $student->first_name) }}" required>
                         </div>
 
                         <div class="student-edit-field">

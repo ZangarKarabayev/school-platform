@@ -29,6 +29,7 @@ class AuditLoggingTest extends TestCase
         $this->actingAs($user)
             ->post(route('students.store'), [
                 'first_name' => 'Created',
+                'last_name' => 'Student',
                 'school_year' => '2026-2027',
             ])
             ->assertRedirect();
@@ -38,6 +39,7 @@ class AuditLoggingTest extends TestCase
         $this->actingAs($user)
             ->put(route('students.update', $student), [
                 'first_name' => 'Updated',
+                'last_name' => 'Student',
                 'school_year' => '2026-2027',
             ])
             ->assertRedirect();

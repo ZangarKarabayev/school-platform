@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "School Platform Mobile API",
-    "version": "1.0.0",
-    "description": "Current implemented mobile routes. Send Accept: application/json. Separate mobile registration, password recovery and refresh tokens are not implemented. OTP delivery is development-only until an SMS provider is connected."
+    "version": "1.1.0",
+    "description": "Current implemented mobile routes. Send Accept: application/json. Separate mobile registration, password recovery and refresh tokens are not implemented. OTP delivery is development-only until an SMS provider is connected. Every non-204 documented response includes a JSON schema and example. Examples use synthetic data; translated labels/messages and timestamps vary. 204 responses have no body. Error schemas describe production responses with APP_DEBUG disabled."
   },
   "servers": [
     {
@@ -20,6 +20,9 @@
     },
     {
       "name": "Dashboard"
+    },
+    {
+      "name": "Orders"
     }
   ],
   "paths": {
@@ -38,12 +41,74 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuthResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "token": {
+                        "token": "example-only-opaque-bearer-token",
+                        "token_type": "Bearer",
+                        "expires_at": "2026-11-21T12:00:00+05:00"
+                      },
+                      "user": {
+                        "id": 43,
+                        "full_name": "Teacher Test",
+                        "first_name": "Test",
+                        "last_name": "Teacher",
+                        "middle_name": null,
+                        "phone": "+77010000001",
+                        "status": "active",
+                        "preferred_locale": "ru",
+                        "roles": [
+                          "teacher"
+                        ],
+                        "permissions": [
+                          "students.manage"
+                        ],
+                        "scopes": [
+                          {
+                            "type": "school",
+                            "id": 26
+                          }
+                        ],
+                        "school_id": 26,
+                        "school_name": "Test school"
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "422": {
-            "$ref": "#/components/responses/Unprocessable"
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The phone field is invalid.",
+                      "errors": {
+                        "phone": [
+                          "The phone field is invalid."
+                        ]
+                      }
+                    }
+                  },
+                  "credentials": {
+                    "summary": "Invalid credentials; only message is returned",
+                    "value": {
+                      "message": "Неверный номер телефона или пароль."
+                    }
+                  }
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -104,12 +169,44 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OtpPending"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "phone": "+77010000001",
+                      "purpose": "login",
+                      "status": "pending_otp",
+                      "expires_at": "2026-10-22T12:05:00+05:00",
+                      "debug_code": "123456"
+                    }
+                  }
                 }
               }
             }
           },
           "422": {
-            "$ref": "#/components/responses/Unprocessable"
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The phone field is invalid.",
+                      "errors": {
+                        "phone": [
+                          "The phone field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -167,12 +264,74 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuthResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "token": {
+                        "token": "example-only-opaque-bearer-token",
+                        "token_type": "Bearer",
+                        "expires_at": "2026-11-21T12:00:00+05:00"
+                      },
+                      "user": {
+                        "id": 43,
+                        "full_name": "Teacher Test",
+                        "first_name": "Test",
+                        "last_name": "Teacher",
+                        "middle_name": null,
+                        "phone": "+77010000001",
+                        "status": "active",
+                        "preferred_locale": "ru",
+                        "roles": [
+                          "teacher"
+                        ],
+                        "permissions": [
+                          "students.manage"
+                        ],
+                        "scopes": [
+                          {
+                            "type": "school",
+                            "id": 26
+                          }
+                        ],
+                        "school_id": 26,
+                        "school_name": "Test school"
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "422": {
-            "$ref": "#/components/responses/Unprocessable"
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The phone field is invalid.",
+                      "errors": {
+                        "phone": [
+                          "The phone field is invalid."
+                        ]
+                      }
+                    }
+                  },
+                  "expiredOtp": {
+                    "summary": "Invalid/expired OTP",
+                    "value": {
+                      "message": "Invalid or expired OTP code."
+                    }
+                  }
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -244,12 +403,42 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EdsChallenge"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "challenge_id": 100,
+                      "challenge": "example-uuid|example-challenge-nonce",
+                      "expires_at": "2026-10-22T12:05:00+05:00"
+                    }
+                  }
                 }
               }
             }
           },
           "422": {
-            "$ref": "#/components/responses/Unprocessable"
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The device name field is invalid.",
+                      "errors": {
+                        "device_name": [
+                          "The device name field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "requestBody": {
@@ -291,12 +480,58 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EdsAuthResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "token": {
+                        "token": "example-only-opaque-bearer-token",
+                        "token_type": "Bearer",
+                        "expires_at": "2026-11-21T12:00:00+05:00"
+                      },
+                      "user": {
+                        "id": 43,
+                        "full_name": "Teacher Test",
+                        "phone": "+77010000001",
+                        "roles": [
+                          "teacher"
+                        ],
+                        "scopes": [
+                          {
+                            "type": "school",
+                            "id": 26
+                          }
+                        ]
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "422": {
-            "$ref": "#/components/responses/Unprocessable"
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The challenge id field is invalid.",
+                      "errors": {
+                        "challenge_id": [
+                          "The challenge id field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -374,15 +609,62 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "user": {
-                      "$ref": "#/components/schemas/User"
+                  "$ref": "#/components/schemas/GetCurrentUserResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "user": {
+                        "id": 43,
+                        "full_name": "Teacher Test",
+                        "first_name": "Test",
+                        "last_name": "Teacher",
+                        "middle_name": null,
+                        "phone": "+77010000001",
+                        "status": "active",
+                        "preferred_locale": "ru",
+                        "roles": [
+                          "teacher"
+                        ],
+                        "permissions": [
+                          "students.manage"
+                        ],
+                        "scopes": [
+                          {
+                            "type": "school",
+                            "id": 26
+                          }
+                        ],
+                        "school_id": 26,
+                        "school_name": "Test school"
+                      }
                     }
                   },
-                  "required": [
-                    "user"
-                  ]
+                  "unassigned": {
+                    "summary": "Awaiting school assignment",
+                    "value": {
+                      "user": {
+                        "id": 43,
+                        "full_name": "Teacher Test",
+                        "first_name": "Test",
+                        "last_name": "Teacher",
+                        "middle_name": null,
+                        "phone": "+77010000001",
+                        "status": "active",
+                        "preferred_locale": "ru",
+                        "roles": [
+                          "teacher"
+                        ],
+                        "permissions": [
+                          "students.manage"
+                        ],
+                        "scopes": [],
+                        "school_id": null,
+                        "school_name": null
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -407,7 +689,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Success; no response body."
+            "description": "Success. No response body."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -429,7 +711,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Success; no response body."
+            "description": "Success. No response body."
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -456,18 +738,103 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "students": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Student"
+                  "$ref": "#/components/schemas/ListStudentsResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "order_date": "2026-10-22",
+                      "students": [
+                        {
+                          "id": 123,
+                          "archived_at": null,
+                          "full_name": "Student Dana",
+                          "classroom_id": 12,
+                          "classroom": "3A",
+                          "school": "Test school",
+                          "photo": true,
+                          "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+                          "has_order": true,
+                          "order_id": 501,
+                          "order_status": "created"
+                        }
+                      ],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 50,
+                        "last_page": 1,
+                        "total": 1
                       }
                     }
                   },
-                  "required": [
-                    "students"
-                  ]
+                  "empty": {
+                    "summary": "No matching students",
+                    "value": {
+                      "order_date": "2026-10-22",
+                      "students": [],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 50,
+                        "last_page": 1,
+                        "total": 0
+                      }
+                    }
+                  },
+                  "withoutOrder": {
+                    "summary": "Student selectable on this date",
+                    "value": {
+                      "order_date": "2026-10-22",
+                      "students": [
+                        {
+                          "id": 123,
+                          "archived_at": null,
+                          "full_name": "Student Dana",
+                          "classroom_id": 12,
+                          "classroom": "3A",
+                          "school": "Test school",
+                          "photo": true,
+                          "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+                          "has_order": false,
+                          "order_id": null,
+                          "order_status": null
+                        }
+                      ],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 50,
+                        "last_page": 1,
+                        "total": 1
+                      }
+                    }
+                  },
+                  "archived": {
+                    "summary": "Response to archived=1",
+                    "value": {
+                      "order_date": "2026-10-22",
+                      "students": [
+                        {
+                          "id": 123,
+                          "archived_at": "2026-10-22T12:00:00+05:00",
+                          "full_name": "Student Dana",
+                          "classroom_id": 12,
+                          "classroom": "3A",
+                          "school": "Test school",
+                          "photo": true,
+                          "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+                          "has_order": true,
+                          "order_id": 501,
+                          "order_status": "created"
+                        }
+                      ],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 50,
+                        "last_page": 1,
+                        "total": 1
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -481,12 +848,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
                 }
               }
             }
           }
         },
-        "description": "Requires students.manage permission and an assigned school (user.school_id or first school scope). Missing permission or school returns 403. Always filtered by the assigned school; query parameters cannot override it. Returns up to 100 records ordered by last and first name, without pagination. Parent/child and student self-service access are not implemented.",
+        "description": "Requires students.manage and an assigned school (user.school_id or first school scope); otherwise 403. School is always enforced. Paginated, ordered by last name, first name and ID. IIN and benefit are omitted for all mobile callers; IIN search is not supported. Teacher class/subject assignments are not implemented. Full-name search matches all whitespace-separated tokens in any order. Archived students are excluded by default.",
         "parameters": [
           {
             "name": "search",
@@ -494,9 +898,169 @@
             "schema": {
               "type": "string"
             },
-            "description": "Search name, IIN or student number."
+            "description": "Search name or student number."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "classroom_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "0 (default): non-archived students; 1: archived students only."
+          },
+          {
+            "name": "order_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Date used for has_order/order_id/order_status. Defaults to today in application timezone. Refresh after changing selected date."
           }
         ]
+      },
+      "post": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "createStudent",
+        "summary": "Create a student in the teacher school",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Restricted to teacher with students.manage and an assigned school (profile or first school scope). Scope covers the whole school. School cannot be chosen or changed via the request. Create/update accept the website form fields, including IIN and meal_benefit_type. Detail responses include these fields. First and last names are required on create and cannot be cleared on update. On create, missing birth_date and gender are derived from IIN when possible. School is always assigned by the server. Upload photos separately using POST /students/{student}/photo.",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateStudentResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "student": {
+                        "id": 123,
+                        "archived_at": null,
+                        "full_name": "Student Dana",
+                        "classroom_id": 12,
+                        "classroom": "3A",
+                        "school": "Test school",
+                        "photo": true,
+                        "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+                        "first_name": "Dana",
+                        "last_name": "Student",
+                        "middle_name": null,
+                        "student_number": "S-123",
+                        "language": "kk",
+                        "shift": 1,
+                        "school_year": "2026-2027",
+                        "iin": "160315512345",
+                        "birth_date": "2016-03-15",
+                        "gender": "male",
+                        "phone": null,
+                        "address": null,
+                        "meal_benefit_type": "susn"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The first name field is invalid.",
+                      "errors": {
+                        "first_name": [
+                          "The first name field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires teacher role, students.manage permission and assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentCreate"
+              }
+            }
+          }
+        }
       }
     },
     "/dashboard": {
@@ -518,16 +1082,722 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Dashboard"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "filters": {
+                        "date_from": "2026-10-22",
+                        "date_to": "2026-10-22",
+                        "scope_kind": "school",
+                        "school_id": 26,
+                        "district_id": null,
+                        "region_id": null
+                      },
+                      "stats": {
+                        "orders_count": 1,
+                        "error_count": 0,
+                        "success_count": 0,
+                        "failed_count": 0
+                      },
+                      "charts": {
+                        "transactions": [
+                          {
+                            "label": "Successful",
+                            "value": 0,
+                            "color": "#2f9e44"
+                          },
+                          {
+                            "label": "Failed",
+                            "value": 0,
+                            "color": "#d9485f"
+                          }
+                        ],
+                        "orders_by_school": [
+                          {
+                            "label": "Test school",
+                            "value": 1
+                          }
+                        ],
+                        "orders_by_district": [
+                          {
+                            "label": "Test district",
+                            "value": 1
+                          }
+                        ],
+                        "class_groups": [
+                          {
+                            "label": "1-4",
+                            "value": 1,
+                            "color": "#2876dd"
+                          },
+                          {
+                            "label": "5-11",
+                            "value": 0,
+                            "color": "#f59f00"
+                          }
+                        ],
+                        "benefits": [
+                          {
+                            "label": "SUSN",
+                            "value": 1,
+                            "color": "#f59f00"
+                          },
+                          {
+                            "label": "Voucher",
+                            "value": 0,
+                            "color": "#3b82f6"
+                          },
+                          {
+                            "label": "Other",
+                            "value": 0,
+                            "color": "#94a3b8"
+                          }
+                        ],
+                        "coverage": [
+                          {
+                            "label": "Total students",
+                            "value": 1
+                          },
+                          {
+                            "label": "With orders",
+                            "value": 1
+                          },
+                          {
+                            "label": "Without orders",
+                            "value": 0
+                          }
+                        ]
+                      },
+                      "ordersTable": {
+                        "days": [
+                          {
+                            "key": "2026-10-22",
+                            "label": "22.10",
+                            "title": "22.10.2026"
+                          }
+                        ],
+                        "rows": [
+                          {
+                            "number": 1,
+                            "student_id": 123,
+                            "full_name": "Student Dana",
+                            "classroom_name": "3A",
+                            "values": {
+                              "2026-10-22": 1
+                            },
+                            "total": 1
+                          }
+                        ],
+                        "column_totals": {
+                          "2026-10-22": 1
+                        },
+                        "grand_total": 1
+                      }
+                    }
+                  }
                 }
               }
             }
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or valid school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher dashboard access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A dashboard scope assignment is required."
+                    }
+                  }
+                }
+              }
+            }
           }
         },
-        "description": "Existing dashboard output. Scope configuration is excluded from the response. Defaults to current month through today.",
+        "description": "Teacher school dashboard. Requires teacher role, students.manage and a resolvable assigned school (profile or first school scope); otherwise 403. Only that school is queried even with additional region/district/super-admin roles. Client scope/school/district/region parameters are ignored. Date range defaults to month start through today. Returns school summary, charts and student daily-order table.",
         "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ]
+      }
+    },
+    "/students/{student}": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "getStudent",
+        "summary": "Get a student for editing",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Restricted to teacher with students.manage and an assigned school (profile or first school scope). Scope covers the whole school. School cannot be chosen or changed via the request. Create/update accept the website form fields, including IIN and meal_benefit_type. Detail responses include these fields. First and last names are required on create and cannot be cleared on update. On create, missing birth_date and gender are derived from IIN when possible. School is always assigned by the server. Photo upload is not supported by these methods. Includes archived students of the assigned school; archived_at indicates archive state.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetStudentResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "student": {
+                        "id": 123,
+                        "archived_at": null,
+                        "full_name": "Student Dana",
+                        "classroom_id": 12,
+                        "classroom": "3A",
+                        "school": "Test school",
+                        "photo": true,
+                        "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+                        "first_name": "Dana",
+                        "last_name": "Student",
+                        "middle_name": null,
+                        "student_number": "S-123",
+                        "language": "kk",
+                        "shift": 1,
+                        "school_year": "2026-2027",
+                        "iin": "160315512345",
+                        "birth_date": "2016-03-15",
+                        "gender": "male",
+                        "phone": null,
+                        "address": null,
+                        "meal_benefit_type": "susn"
+                      }
+                    }
+                  },
+                  "archived": {
+                    "summary": "Archived student remains readable within the assigned school",
+                    "value": {
+                      "student": {
+                        "id": 123,
+                        "archived_at": "2026-10-22T12:00:00+05:00",
+                        "full_name": "Student Dana",
+                        "classroom_id": 12,
+                        "classroom": "3A",
+                        "school": "Test school",
+                        "photo": true,
+                        "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+                        "first_name": "Dana",
+                        "last_name": "Student",
+                        "middle_name": null,
+                        "student_number": "S-123",
+                        "language": "kk",
+                        "shift": 1,
+                        "school_year": "2026-2027",
+                        "iin": "160315512345",
+                        "birth_date": "2016-03-15",
+                        "gender": "male",
+                        "phone": null,
+                        "address": null,
+                        "meal_benefit_type": "susn"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Requires teacher role, students.manage permission and assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found within the assigned school (includes students of other schools).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "updateStudent",
+        "summary": "Partially update a student",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Restricted to teacher with students.manage and an assigned school (profile or first school scope). Scope covers the whole school. School cannot be chosen or changed via the request. Create/update accept the website form fields, including IIN and meal_benefit_type. Detail responses include these fields. First and last names are required on create and cannot be cleared on update. On create, missing birth_date and gender are derived from IIN when possible. School is always assigned by the server. Upload photos separately using POST /students/{student}/photo. Archived records return 404; restore before editing.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateStudentResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "student": {
+                        "id": 123,
+                        "archived_at": null,
+                        "full_name": "Student Dana",
+                        "classroom_id": 12,
+                        "classroom": "3A",
+                        "school": "Test school",
+                        "photo": true,
+                        "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+                        "first_name": "Dana",
+                        "last_name": "Student",
+                        "middle_name": null,
+                        "student_number": "S-123",
+                        "language": "kk",
+                        "shift": 1,
+                        "school_year": "2026-2027",
+                        "iin": "160315512345",
+                        "birth_date": "2016-03-15",
+                        "gender": "male",
+                        "phone": null,
+                        "address": null,
+                        "meal_benefit_type": "susn"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The first name field is invalid.",
+                      "errors": {
+                        "first_name": [
+                          "The first name field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires teacher role, students.manage permission and assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found within the assigned school (includes students of other schools).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentUpdate"
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "putStudent",
+        "summary": "Update supplied student fields",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Restricted to teacher with students.manage and an assigned school (profile or first school scope). Scope covers the whole school. School cannot be chosen or changed via the request. Create/update accept the website form fields, including IIN and meal_benefit_type. Detail responses include these fields. First and last names are required on create and cannot be cleared on update. On create, missing birth_date and gender are derived from IIN when possible. School is always assigned by the server. Upload photos separately using POST /students/{student}/photo. Archived records return 404; restore before editing.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PutStudentResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "student": {
+                        "id": 123,
+                        "archived_at": null,
+                        "full_name": "Student Dana",
+                        "classroom_id": 12,
+                        "classroom": "3A",
+                        "school": "Test school",
+                        "photo": true,
+                        "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+                        "first_name": "Dana",
+                        "last_name": "Student",
+                        "middle_name": null,
+                        "student_number": "S-123",
+                        "language": "kk",
+                        "shift": 1,
+                        "school_year": "2026-2027",
+                        "iin": "160315512345",
+                        "birth_date": "2016-03-15",
+                        "gender": "male",
+                        "phone": null,
+                        "address": null,
+                        "meal_benefit_type": "susn"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The first name field is invalid.",
+                      "errors": {
+                        "first_name": [
+                          "The first name field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires teacher role, students.manage permission and assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found within the assigned school (includes students of other schools).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentUpdate"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "deleteStudent",
+        "summary": "Archive a student",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Requires teacher, students.manage and assigned school. Soft-deletes the record; preserves photos, benefits, enrollment and order history. Repeated archive requests succeed. Restore using POST /students/{student}/restore.",
+        "responses": {
+          "204": {
+            "description": "Success. No response body."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Requires teacher role, students.manage permission and assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found within the assigned school (includes students of other schools).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ]
+      }
+    },
+    "/orders": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "operationId": "listOrders",
+        "summary": "List orders in the teacher school",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Requires teacher role, students.manage and school assignment (profile or first school scope). Always constrained to that school. Ordered by order_date and ID descending. Classroom and school_year refer to the order history. Search matches student name tokens; no IIN search. Filters are combined with AND. No student IIN, benefit or upstream transaction_error is returned. Dates are inclusive; date_to must be >= date_from when both are supplied. Includes order history of archived students.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "student_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "classroom_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "order_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
           {
             "name": "date_from",
             "in": "query",
@@ -545,37 +1815,1203 @@
             }
           },
           {
-            "name": "scope_kind",
+            "name": "school_year",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "example": "2026-2027"
             }
           },
           {
-            "name": "school_id",
+            "name": "status",
             "in": "query",
             "schema": {
-              "type": "integer",
-              "nullable": true
+              "type": "string",
+              "enum": [
+                "created",
+                "issued",
+                "completed",
+                "failed"
+              ]
             }
           },
           {
-            "name": "district_id",
+            "name": "transaction_status",
             "in": "query",
             "schema": {
+              "type": "boolean",
+              "description": "Use query values 0 or 1."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListOrdersResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "orders": [
+                        {
+                          "id": 501,
+                          "student": {
+                            "id": 123,
+                            "full_name": "Student Dana"
+                          },
+                          "classroom_id": 12,
+                          "classroom": "3A",
+                          "school_year": "2026-2027",
+                          "dish": null,
+                          "order_date": "2026-10-22",
+                          "order_time": "12:30:00",
+                          "status": "created",
+                          "completed_at": null,
+                          "transaction_status": null
+                        }
+                      ],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 50,
+                        "last_page": 1,
+                        "total": 1
+                      }
+                    }
+                  },
+                  "empty": {
+                    "summary": "No matching orders",
+                    "value": {
+                      "orders": [],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 50,
+                        "last_page": 1,
+                        "total": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "operationId": "createStudentOrders",
+        "summary": "Create orders for selected students",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Requires teacher, students.manage and school assignment. Submit student_ids only; classroom selection is handled by the client by collecting IDs from all pages. Every nonempty ID must be distinct. No 100-student limit; all IDs are processed. target_type/classroom_ids are rejected with 422. Foreign, missing or archived students reject the whole batch with 403. Creates one active order per student/date using shared school-calendar, school-year and eligibility rules. Existing active orders are skipped without transaction redispatch. Deleted orders do not block new creation. Results report created/already_exists/skipped per student; processing is synchronous, social-wallet processing is queued after commit. school_year is optional; derived from order_date (September boundary) when omitted, independently of the student current school year.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCreateRequest"
+              },
+              "examples": {
+                "selectedStudents": {
+                  "summary": "All or some students selected in the UI",
+                  "value": {
+                    "student_ids": [
+                      123,
+                      124
+                    ],
+                    "order_date": "2026-10-22"
+                  }
+                },
+                "explicitYear": {
+                  "summary": "Existing clients can still supply a matching school_year",
+                  "value": {
+                    "student_ids": [
+                      123,
+                      124
+                    ],
+                    "order_date": "2026-10-22",
+                    "school_year": "2026-2027"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-student creation results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateStudentOrdersResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Mixed batch: created, already exists and not eligible",
+                    "value": {
+                      "order_date": "2026-10-22",
+                      "created_count": 1,
+                      "already_exists_count": 1,
+                      "skipped_count": 1,
+                      "results": [
+                        {
+                          "student_id": 123,
+                          "result": "created",
+                          "order_id": 501,
+                          "reason": null
+                        },
+                        {
+                          "student_id": 124,
+                          "result": "already_exists",
+                          "order_id": 500,
+                          "reason": null
+                        },
+                        {
+                          "student_id": 125,
+                          "result": "skipped",
+                          "order_id": null,
+                          "reason": "not_eligible"
+                        }
+                      ]
+                    }
+                  },
+                  "created": {
+                    "summary": "All selected orders created",
+                    "value": {
+                      "order_date": "2026-10-22",
+                      "created_count": 1,
+                      "already_exists_count": 0,
+                      "skipped_count": 0,
+                      "results": [
+                        {
+                          "student_id": 123,
+                          "result": "created",
+                          "order_id": 501,
+                          "reason": null
+                        }
+                      ]
+                    }
+                  },
+                  "alreadyExists": {
+                    "summary": "Repeat submission: no new orders or transactions",
+                    "value": {
+                      "order_date": "2026-10-22",
+                      "created_count": 0,
+                      "already_exists_count": 1,
+                      "skipped_count": 0,
+                      "results": [
+                        {
+                          "student_id": 123,
+                          "result": "already_exists",
+                          "order_id": 501,
+                          "reason": null
+                        }
+                      ]
+                    }
+                  },
+                  "skipped": {
+                    "summary": "Selected student is not eligible",
+                    "value": {
+                      "order_date": "2026-10-22",
+                      "created_count": 0,
+                      "already_exists_count": 0,
+                      "skipped_count": 1,
+                      "results": [
+                        {
+                          "student_id": 123,
+                          "result": "skipped",
+                          "order_id": null,
+                          "reason": "not_eligible"
+                        }
+                      ]
+                    }
+                  },
+                  "blockedGradeDay": {
+                    "summary": "Grade-specific school break",
+                    "value": {
+                      "order_date": "2026-10-22",
+                      "created_count": 0,
+                      "already_exists_count": 0,
+                      "skipped_count": 1,
+                      "results": [
+                        {
+                          "student_id": 123,
+                          "result": "skipped",
+                          "order_id": null,
+                          "reason": "blocked_school_day"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing role, permission, school assignment or at least one student outside active assigned-school records.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The student ids field is invalid.",
+                      "errors": {
+                        "student_ids": [
+                          "The student ids field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students/{student}/orders": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "operationId": "listStudentOrders",
+        "summary": "List orders of a student in the teacher school",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Requires teacher role, students.manage and school assignment (profile or first school scope). Always constrained to that school. Ordered by order_date and ID descending. Classroom and school_year refer to the order history. Search matches student name tokens; no IIN search. Filters are combined with AND. No student IIN, benefit or upstream transaction_error is returned. Dates are inclusive; date_to must be >= date_from when both are supplied. The path student ID is always enforced; student_id query cannot override it. An existing student with no orders returns an empty list. Includes order history of archived students.",
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
               "type": "integer",
-              "nullable": true
+              "minimum": 1
             }
           },
           {
-            "name": "region_id",
+            "name": "page",
             "in": "query",
             "schema": {
               "type": "integer",
-              "nullable": true
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "student_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "classroom_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "order_date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "school_year",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "2026-2027"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "created",
+                "issued",
+                "completed",
+                "failed"
+              ]
+            }
+          },
+          {
+            "name": "transaction_status",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "description": "Use query values 0 or 1."
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated orders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListStudentOrdersResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "orders": [
+                        {
+                          "id": 501,
+                          "student": {
+                            "id": 123,
+                            "full_name": "Student Dana"
+                          },
+                          "classroom_id": 12,
+                          "classroom": "3A",
+                          "school_year": "2026-2027",
+                          "dish": null,
+                          "order_date": "2026-10-22",
+                          "order_time": "12:30:00",
+                          "status": "created",
+                          "completed_at": null,
+                          "transaction_status": null
+                        }
+                      ],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 50,
+                        "last_page": 1,
+                        "total": 1
+                      }
+                    }
+                  },
+                  "empty": {
+                    "summary": "No matching orders",
+                    "value": {
+                      "orders": [],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 50,
+                        "last_page": 1,
+                        "total": 0
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student missing or outside the assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students/{student}/photo": {
+      "post": {
+        "tags": [
+          "Students"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photo updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadStudentPhotoResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "student": {
+                        "id": 123,
+                        "photo": true,
+                        "photo_url": "https://api.example.com/storage/user/photos/student.jpg"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student missing or outside assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The photo file field is invalid.",
+                      "errors": {
+                        "photo_file": [
+                          "The photo file field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        },
+        "description": "Requires teacher role, students.manage and school assignment. Restricted to assigned school. Replacement/removal resets photo sync state.",
+        "operationId": "uploadStudentPhoto",
+        "summary": "Upload or replace a student photo",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "photo_file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Image, maximum 2048 KiB. SVG is not accepted."
+                  }
+                },
+                "required": [
+                  "photo_file"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Students"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photo updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteStudentPhotoResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "student": {
+                        "id": 123,
+                        "photo": false,
+                        "photo_url": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student missing or outside assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires teacher role, students.manage and school assignment. Restricted to assigned school. Replacement/removal resets photo sync state. Idempotent: returns photo=false and photo_url=null even when no photo was assigned.",
+        "operationId": "deleteStudentPhoto",
+        "summary": "Remove a student photo"
+      }
+    },
+    "/students/{student}/restore": {
+      "post": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "restoreStudent",
+        "summary": "Restore an archived student",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Requires teacher, students.manage and assigned school. Restores archived student without altering prior status, orders or photo. Already active student succeeds.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestoreStudentResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "student": {
+                        "id": 123,
+                        "archived_at": null,
+                        "full_name": "Student Dana",
+                        "classroom_id": 12,
+                        "classroom": "3A",
+                        "school": "Test school",
+                        "photo": true,
+                        "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+                        "first_name": "Dana",
+                        "last_name": "Student",
+                        "middle_name": null,
+                        "student_number": "S-123",
+                        "language": "kk",
+                        "shift": 1,
+                        "school_year": "2026-2027",
+                        "iin": "160315512345",
+                        "birth_date": "2016-03-15",
+                        "gender": "male",
+                        "phone": null,
+                        "address": null,
+                        "meal_benefit_type": "susn"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Requires teacher role, students.manage permission and assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found within the assigned school (includes students of other schools).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
             }
           }
         ]
+      }
+    },
+    "/classrooms": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "listClassrooms",
+        "summary": "List classroom choices",
+        "description": "Shared grade/letter catalog with grade > 0, sorted by grade and letter. Requires teacher, students.manage and assigned school. These are form choices, not teacher-to-class assignments.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListClassroomsResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "classrooms": [
+                        {
+                          "id": 12,
+                          "grade": 3,
+                          "letter": "A",
+                          "full_name": "3A"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing role, permission or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/students/options": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "studentFormOptions",
+        "summary": "Get student form options",
+        "description": "Requires teacher, students.manage and assigned school. Labels include ru and kk. School years combine the current school year (September boundary) with stored years from the assigned school, sorted descending. These are suggestions; validation accepts any consecutive YYYY-YYYY years.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentFormOptionsResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "default_school_year": "2026-2027",
+                      "school_years": [
+                        "2026-2027",
+                        "2025-2026"
+                      ],
+                      "school_years_are_suggestions": true,
+                      "languages": [
+                        {
+                          "value": "ru",
+                          "label": {
+                            "ru": "Русский",
+                            "kk": "Орысша"
+                          }
+                        },
+                        {
+                          "value": "kk",
+                          "label": {
+                            "ru": "Казахский",
+                            "kk": "Қазақша"
+                          }
+                        }
+                      ],
+                      "genders": [
+                        {
+                          "value": "male",
+                          "label": {
+                            "ru": "Мужской",
+                            "kk": "Ер"
+                          }
+                        },
+                        {
+                          "value": "female",
+                          "label": {
+                            "ru": "Женский",
+                            "kk": "Әйел"
+                          }
+                        }
+                      ],
+                      "meal_benefit_types": [
+                        {
+                          "value": "susn",
+                          "label": {
+                            "ru": "СУСН",
+                            "kk": "СУСН"
+                          }
+                        },
+                        {
+                          "value": "voucher",
+                          "label": {
+                            "ru": "Ваучер",
+                            "kk": "Ваучер"
+                          }
+                        },
+                        {
+                          "value": "paid",
+                          "label": {
+                            "ru": "Платно",
+                            "kk": "Ақылы"
+                          }
+                        }
+                      ],
+                      "shifts": [
+                        {
+                          "value": 1,
+                          "label": {
+                            "ru": "1",
+                            "kk": "1"
+                          }
+                        },
+                        {
+                          "value": 2,
+                          "label": {
+                            "ru": "2",
+                            "kk": "2"
+                          }
+                        }
+                      ],
+                      "required_fields": [
+                        "first_name",
+                        "last_name",
+                        "school_year"
+                      ],
+                      "photo_max_kb": 2048
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing role, permission or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{order}": {
+      "delete": {
+        "tags": [
+          "Orders"
+        ],
+        "operationId": "deleteOrder",
+        "summary": "Soft-delete an order",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "description": "Requires teacher, students.manage and assigned school. Sets deleted_at; preserves database row and transaction fields. Repeated deletion returns 204. Deleted orders are excluded from lists, dashboard and student has_order flags. A new active order for the same student/date is allowed. Does not reverse external social-wallet transactions. A queued job that has not started will skip the deleted record; already in-flight external requests are not cancelled. Also supports orders of archived students in the assigned school.",
+        "responses": {
+          "204": {
+            "description": "Success. No response body."
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing role, permission or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order missing or outside the assigned school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Order] 999999"
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -606,7 +3042,10 @@
         },
         "required": [
           "message"
-        ]
+        ],
+        "example": {
+          "message": "Unauthenticated."
+        }
       },
       "Token": {
         "type": "object",
@@ -630,7 +3069,12 @@
           "token",
           "token_type",
           "expires_at"
-        ]
+        ],
+        "example": {
+          "token": "example-only-opaque-bearer-token",
+          "token_type": "Bearer",
+          "expires_at": "2026-11-21T12:00:00+05:00"
+        }
       },
       "Scope": {
         "type": "object",
@@ -698,6 +3142,14 @@
             "items": {
               "$ref": "#/components/schemas/Scope"
             }
+          },
+          "school_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "school_name": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -711,8 +3163,34 @@
           "preferred_locale",
           "roles",
           "permissions",
-          "scopes"
-        ]
+          "scopes",
+          "school_id",
+          "school_name"
+        ],
+        "example": {
+          "id": 43,
+          "full_name": "Teacher Test",
+          "first_name": "Test",
+          "last_name": "Teacher",
+          "middle_name": null,
+          "phone": "+77010000001",
+          "status": "active",
+          "preferred_locale": "ru",
+          "roles": [
+            "teacher"
+          ],
+          "permissions": [
+            "students.manage"
+          ],
+          "scopes": [
+            {
+              "type": "school",
+              "id": 26
+            }
+          ],
+          "school_id": 26,
+          "school_name": "Test school"
+        }
       },
       "EdsUser": {
         "type": "object",
@@ -968,10 +3446,6 @@
           "full_name": {
             "type": "string"
           },
-          "iin": {
-            "type": "string",
-            "nullable": true
-          },
           "classroom": {
             "type": "string",
             "nullable": true
@@ -980,23 +3454,70 @@
             "type": "string",
             "nullable": true
           },
-          "benefit": {
-            "type": "string",
-            "nullable": true
-          },
           "photo": {
             "type": "boolean"
+          },
+          "classroom_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "photo_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "Public photo URL from the configured public storage disk; null when no photo is assigned."
+          },
+          "archived_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Archive timestamp; null for an active record."
+          },
+          "has_order": {
+            "type": "boolean",
+            "description": "True when any order exists for this student on the response order_date, regardless of order status. UI must display checked and disable selection."
+          },
+          "order_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "order_status": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "created",
+              "issued",
+              "completed",
+              "failed"
+            ]
           }
         },
         "required": [
           "id",
           "full_name",
-          "iin",
           "classroom",
           "school",
-          "benefit",
-          "photo"
-        ]
+          "photo",
+          "classroom_id",
+          "photo_url",
+          "archived_at",
+          "has_order",
+          "order_id",
+          "order_status"
+        ],
+        "example": {
+          "id": 123,
+          "archived_at": null,
+          "full_name": "Student Dana",
+          "classroom_id": 12,
+          "classroom": "3A",
+          "school": "Test school",
+          "photo": true,
+          "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+          "has_order": true,
+          "order_id": 501,
+          "order_status": "created"
+        }
       },
       "ChartItem": {
         "type": "object",
@@ -1230,7 +3751,1070 @@
           "stats",
           "charts",
           "ordersTable"
+        ],
+        "example": {
+          "filters": {
+            "date_from": "2026-10-22",
+            "date_to": "2026-10-22",
+            "scope_kind": "school",
+            "school_id": 26,
+            "district_id": null,
+            "region_id": null
+          },
+          "stats": {
+            "orders_count": 1,
+            "error_count": 0,
+            "success_count": 0,
+            "failed_count": 0
+          },
+          "charts": {
+            "transactions": [
+              {
+                "label": "Successful",
+                "value": 0,
+                "color": "#2f9e44"
+              },
+              {
+                "label": "Failed",
+                "value": 0,
+                "color": "#d9485f"
+              }
+            ],
+            "orders_by_school": [
+              {
+                "label": "Test school",
+                "value": 1
+              }
+            ],
+            "orders_by_district": [
+              {
+                "label": "Test district",
+                "value": 1
+              }
+            ],
+            "class_groups": [
+              {
+                "label": "1-4",
+                "value": 1,
+                "color": "#2876dd"
+              },
+              {
+                "label": "5-11",
+                "value": 0,
+                "color": "#f59f00"
+              }
+            ],
+            "benefits": [
+              {
+                "label": "SUSN",
+                "value": 1,
+                "color": "#f59f00"
+              },
+              {
+                "label": "Voucher",
+                "value": 0,
+                "color": "#3b82f6"
+              },
+              {
+                "label": "Other",
+                "value": 0,
+                "color": "#94a3b8"
+              }
+            ],
+            "coverage": [
+              {
+                "label": "Total students",
+                "value": 1
+              },
+              {
+                "label": "With orders",
+                "value": 1
+              },
+              {
+                "label": "Without orders",
+                "value": 0
+              }
+            ]
+          },
+          "ordersTable": {
+            "days": [
+              {
+                "key": "2026-10-22",
+                "label": "22.10",
+                "title": "22.10.2026"
+              }
+            ],
+            "rows": [
+              {
+                "number": 1,
+                "student_id": 123,
+                "full_name": "Student Dana",
+                "classroom_name": "3A",
+                "values": {
+                  "2026-10-22": 1
+                },
+                "total": 1
+              }
+            ],
+            "column_totals": {
+              "2026-10-22": 1
+            },
+            "grand_total": 1
+          }
+        }
+      },
+      "StudentCreate": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": false,
+            "minLength": 1
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": false,
+            "minLength": 1
+          },
+          "middle_name": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "classroom_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Existing classroom with grade > 0. Classrooms are a shared grade/letter catalog; school is enforced separately."
+          },
+          "student_number": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "language": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ru",
+              "kk"
+            ]
+          },
+          "shift": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "school_year": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{4}$",
+            "example": "2026-2027",
+            "description": "Consecutive years only."
+          },
+          "iin": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 12,
+            "description": "Unique when supplied, same validation as the website."
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ],
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 65535,
+            "nullable": true
+          },
+          "meal_benefit_type": {
+            "type": "string",
+            "enum": [
+              "susn",
+              "voucher",
+              "paid"
+            ],
+            "nullable": true,
+            "description": "Null/omitted preserves the current benefit on update. A changed non-null type appends history."
+          }
+        },
+        "required": [
+          "first_name",
+          "last_name",
+          "school_year"
         ]
+      },
+      "StudentUpdate": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": false,
+            "minLength": 1
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": false,
+            "minLength": 1
+          },
+          "middle_name": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "classroom_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Existing classroom with grade > 0. Classrooms are a shared grade/letter catalog; school is enforced separately."
+          },
+          "student_number": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "language": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ru",
+              "kk"
+            ]
+          },
+          "shift": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "school_year": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{4}$",
+            "example": "2026-2027",
+            "description": "Consecutive years only."
+          },
+          "iin": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 12,
+            "description": "Unique when supplied, same validation as the website."
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ],
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 65535,
+            "nullable": true
+          },
+          "meal_benefit_type": {
+            "type": "string",
+            "enum": [
+              "susn",
+              "voucher",
+              "paid"
+            ],
+            "nullable": true,
+            "description": "Null/omitted preserves the current benefit on update. A changed non-null type appends history."
+          }
+        },
+        "description": "Partial update; omitted fields are preserved. Supplied first_name, last_name and school_year cannot be empty or null."
+      },
+      "StudentDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "classroom": {
+            "type": "string",
+            "nullable": true
+          },
+          "school": {
+            "type": "string",
+            "nullable": true
+          },
+          "photo": {
+            "type": "boolean"
+          },
+          "classroom_id": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Existing classroom with grade > 0. Classrooms are a shared grade/letter catalog; school is enforced separately."
+          },
+          "photo_url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "Public photo URL from the configured public storage disk; null when no photo is assigned."
+          },
+          "first_name": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "last_name": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "middle_name": {
+            "type": "string",
+            "maxLength": 100,
+            "nullable": true
+          },
+          "student_number": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "language": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ru",
+              "kk"
+            ]
+          },
+          "shift": {
+            "type": "integer",
+            "nullable": true,
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "school_year": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{4}$",
+            "example": "2026-2027",
+            "description": "Consecutive years only.",
+            "nullable": true
+          },
+          "iin": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 12,
+            "description": "Unique when supplied, same validation as the website."
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ],
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 20,
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 65535,
+            "nullable": true
+          },
+          "meal_benefit_type": {
+            "type": "string",
+            "enum": [
+              "susn",
+              "voucher",
+              "paid"
+            ],
+            "nullable": true,
+            "description": "Null/omitted preserves the current benefit on update. A changed non-null type appends history."
+          },
+          "archived_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Archive timestamp; null for an active record."
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "classroom",
+          "school",
+          "photo",
+          "classroom_id",
+          "photo_url",
+          "first_name",
+          "last_name",
+          "middle_name",
+          "student_number",
+          "language",
+          "shift",
+          "school_year",
+          "iin",
+          "birth_date",
+          "gender",
+          "phone",
+          "address",
+          "meal_benefit_type",
+          "archived_at"
+        ],
+        "example": {
+          "id": 123,
+          "archived_at": null,
+          "full_name": "Student Dana",
+          "classroom_id": 12,
+          "classroom": "3A",
+          "school": "Test school",
+          "photo": true,
+          "photo_url": "https://api.example.com/storage/user/photos/student.jpg",
+          "first_name": "Dana",
+          "last_name": "Student",
+          "middle_name": null,
+          "student_number": "S-123",
+          "language": "kk",
+          "shift": 1,
+          "school_year": "2026-2027",
+          "iin": "160315512345",
+          "birth_date": "2016-03-15",
+          "gender": "male",
+          "phone": null,
+          "address": null,
+          "meal_benefit_type": "susn"
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "full_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "full_name"
+            ]
+          },
+          "classroom_id": {
+            "type": "integer",
+            "nullable": true
+          },
+          "classroom": {
+            "type": "string",
+            "nullable": true
+          },
+          "school_year": {
+            "type": "string",
+            "nullable": true
+          },
+          "dish": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "order_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "order_time": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "created",
+              "issued",
+              "completed",
+              "failed"
+            ]
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "transaction_status": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "student",
+          "classroom_id",
+          "classroom",
+          "school_year",
+          "dish",
+          "order_date",
+          "order_time",
+          "status",
+          "completed_at",
+          "transaction_status"
+        ],
+        "example": {
+          "id": 501,
+          "student": {
+            "id": 123,
+            "full_name": "Student Dana"
+          },
+          "classroom_id": 12,
+          "classroom": "3A",
+          "school_year": "2026-2027",
+          "dish": null,
+          "order_date": "2026-10-22",
+          "order_time": "12:30:00",
+          "status": "created",
+          "completed_at": null,
+          "transaction_status": null
+        }
+      },
+      "StudentFormOption": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "object",
+            "properties": {
+              "ru": {
+                "type": "string"
+              },
+              "kk": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "ru",
+              "kk"
+            ]
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ]
+      },
+      "Classroom": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "grade": {
+            "type": "integer"
+          },
+          "letter": {
+            "type": "string"
+          },
+          "full_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "grade",
+          "letter",
+          "full_name"
+        ]
+      },
+      "GetCurrentUserResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "user"
+        ]
+      },
+      "ListStudentsResponse": {
+        "type": "object",
+        "properties": {
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Student"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "integer"
+              },
+              "per_page": {
+                "type": "integer"
+              },
+              "last_page": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "current_page",
+              "per_page",
+              "last_page",
+              "total"
+            ]
+          },
+          "order_date": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "students",
+          "meta",
+          "order_date"
+        ]
+      },
+      "CreateStudentResponse": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "$ref": "#/components/schemas/StudentDetail"
+          }
+        },
+        "required": [
+          "student"
+        ]
+      },
+      "GetStudentResponse": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "$ref": "#/components/schemas/StudentDetail"
+          }
+        },
+        "required": [
+          "student"
+        ]
+      },
+      "UpdateStudentResponse": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "$ref": "#/components/schemas/StudentDetail"
+          }
+        },
+        "required": [
+          "student"
+        ]
+      },
+      "PutStudentResponse": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "$ref": "#/components/schemas/StudentDetail"
+          }
+        },
+        "required": [
+          "student"
+        ]
+      },
+      "ListOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "integer"
+              },
+              "per_page": {
+                "type": "integer"
+              },
+              "last_page": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "current_page",
+              "per_page",
+              "last_page",
+              "total"
+            ]
+          }
+        },
+        "required": [
+          "orders",
+          "meta"
+        ]
+      },
+      "CreateStudentOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "order_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "created_count": {
+            "type": "integer"
+          },
+          "already_exists_count": {
+            "type": "integer"
+          },
+          "skipped_count": {
+            "type": "integer"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "student_id": {
+                  "type": "integer"
+                },
+                "order_id": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "result": {
+                  "type": "string",
+                  "enum": [
+                    "created",
+                    "already_exists",
+                    "skipped"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    "not_eligible",
+                    "blocked_school_day"
+                  ]
+                }
+              },
+              "required": [
+                "student_id",
+                "order_id",
+                "result",
+                "reason"
+              ]
+            }
+          }
+        },
+        "required": [
+          "order_date",
+          "created_count",
+          "already_exists_count",
+          "skipped_count",
+          "results"
+        ]
+      },
+      "ListStudentOrdersResponse": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Order"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "integer"
+              },
+              "per_page": {
+                "type": "integer"
+              },
+              "last_page": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "current_page",
+              "per_page",
+              "last_page",
+              "total"
+            ]
+          }
+        },
+        "required": [
+          "orders",
+          "meta"
+        ]
+      },
+      "UploadStudentPhotoResponse": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "photo": {
+                "type": "boolean"
+              },
+              "photo_url": {
+                "type": "string",
+                "format": "uri",
+                "nullable": true
+              }
+            },
+            "required": [
+              "id",
+              "photo",
+              "photo_url"
+            ]
+          }
+        },
+        "required": [
+          "student"
+        ]
+      },
+      "DeleteStudentPhotoResponse": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "photo": {
+                "type": "boolean"
+              },
+              "photo_url": {
+                "type": "string",
+                "format": "uri",
+                "nullable": true
+              }
+            },
+            "required": [
+              "id",
+              "photo",
+              "photo_url"
+            ]
+          }
+        },
+        "required": [
+          "student"
+        ]
+      },
+      "RestoreStudentResponse": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "$ref": "#/components/schemas/StudentDetail"
+          }
+        },
+        "required": [
+          "student"
+        ]
+      },
+      "ListClassroomsResponse": {
+        "type": "object",
+        "properties": {
+          "classrooms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Classroom"
+            }
+          }
+        },
+        "required": [
+          "classrooms"
+        ]
+      },
+      "StudentFormOptionsResponse": {
+        "type": "object",
+        "properties": {
+          "default_school_year": {
+            "type": "string"
+          },
+          "school_years": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "school_years_are_suggestions": {
+            "type": "boolean"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentFormOption"
+            }
+          },
+          "genders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentFormOption"
+            }
+          },
+          "meal_benefit_types": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentFormOption"
+            }
+          },
+          "shifts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "integer"
+                },
+                "label": {
+                  "type": "object",
+                  "properties": {
+                    "ru": {
+                      "type": "string"
+                    },
+                    "kk": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "ru",
+                    "kk"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          },
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "photo_max_kb": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "default_school_year",
+          "school_years",
+          "school_years_are_suggestions",
+          "languages",
+          "genders",
+          "meal_benefit_types",
+          "shifts",
+          "required_fields",
+          "photo_max_kb"
+        ]
+      },
+      "OrderCreateRequest": {
+        "type": "object",
+        "properties": {
+          "student_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "order_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "order_time": {
+            "type": "string",
+            "nullable": true,
+            "example": "12:30",
+            "pattern": "^\\d{2}:\\d{2}$"
+          },
+          "school_year": {
+            "type": "string",
+            "example": "2026-2027",
+            "description": "Optional compatibility field. If omitted, derived from order_date using the September academic-year boundary. If supplied, must be valid and contain order_date in the school period."
+          }
+        },
+        "required": [
+          "student_ids",
+          "order_date"
+        ],
+        "description": "Submit all selected student IDs, whether selected individually or via classroom checkboxes. No 100-student limit. target_type and classroom_ids are not accepted."
       }
     },
     "responses": {
@@ -1240,16 +4824,22 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "Unauthenticated."
             }
           }
         }
       },
       "Forbidden": {
-        "description": "Account is not active.",
+        "description": "Authenticated account lacks the required role/permission or assignment, or is inactive during token issuance.",
         "content": {
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "Teacher student management access is required."
             }
           }
         }
@@ -1260,6 +4850,25 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "validation": {
+                "summary": "Field validation failed (translated to the active locale)",
+                "value": {
+                  "message": "The first name field is required.",
+                  "errors": {
+                    "first_name": [
+                      "The first name field is required."
+                    ]
+                  }
+                }
+              },
+              "invalidOtp": {
+                "summary": "OTP rejected without field errors",
+                "value": {
+                  "message": "Invalid or expired OTP code."
+                }
+              }
             }
           }
         }
@@ -1270,6 +4879,9 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "SMS delivery is not configured."
             }
           }
         }
@@ -1280,6 +4892,9 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "Too Many Attempts."
             }
           }
         },
@@ -1287,7 +4902,34 @@
           "Retry-After": {
             "description": "Seconds before retrying.",
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "example": 60
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Record does not exist or is outside the assigned school.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "No query results for model [App\\Models\\Student] 999999"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Unable to store the student photo.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "message": "Unable to store the student photo."
             }
           }
         }

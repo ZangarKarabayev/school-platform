@@ -1311,13 +1311,13 @@
                         <div class="field">
                             <label for="create_last_name">{{ __('admin.labels.last_name') }}</label>
                             <input id="create_last_name" name="last_name" type="text"
-                                value="{{ old('last_name') }}">
+                                value="{{ old('last_name') }}" required>
                         </div>
 
                         <div class="field">
                             <label for="create_first_name">{{ __('admin.labels.first_name') }}</label>
                             <input id="create_first_name" name="first_name" type="text"
-                                value="{{ old('first_name') }}">
+                                value="{{ old('first_name') }}" required>
                         </div>
 
                         <div class="field">

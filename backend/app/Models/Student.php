@@ -8,10 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 class Student extends Model
 {
+    use SoftDeletes;
+
     public const ORDER_ELIGIBLE_BENEFIT_TYPES = ['susn', 'voucher'];
 
     protected $fillable = [
@@ -80,7 +83,7 @@ class Student extends Model
             }
         });
 
-        static::deleted(function (self $student): void {
+        static::forceDeleted(function (self $student): void {
             if (filled($student->photo)) {
                 Storage::disk('public')->delete($student->photo);
             }
@@ -175,7 +178,7 @@ class Student extends Model
 
     public function canCreateOrder(): bool
     {
-        return in_array($this->latestMealBenefit?->type, self::ORDER_ELIGIBLE_BENEFIT_TYPES, true);
+        return ! $this->trashed() && in_array($this->latestMealBenefit?->type, self::ORDER_ELIGIBLE_BENEFIT_TYPES, true);
     }
 
     public function getFullNameAttribute(): string

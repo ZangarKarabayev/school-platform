@@ -77,6 +77,47 @@ class StudentListTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'students')->assertJsonPath('students.0.id', $own->id);
     }
 
+    public function test_pagination_and_sensitive_fields(): void
+    {
+        $school = $this->school('Paginated');
+        foreach (range(1, 101) as $number) {
+            Student::query()->create(['school_id' => $school->id, 'last_name' => 'Student '.$number]);
+        }
+        $this->authorizeUser(User::factory()->create(['school_id' => $school->id]));
+        $this->getJson('/api/mobile/v1/students?per_page=100&page=2')
+            ->assertOk()->assertJsonCount(1, 'students')->assertJsonPath('meta.total', 101)
+            ->assertJsonMissingPath('students.0.iin')->assertJsonMissingPath('students.0.benefit');
+        $this->getJson('/api/mobile/v1/students?per_page=101')->assertUnprocessable();
+        $this->getJson('/api/mobile/v1/students?classroom_id=999999')->assertOk()->assertJsonCount(0, 'students');
+    }
+
+    public function test_me_reports_effective_school_and_missing_assignment(): void
+    {
+        $user = User::factory()->create(['school_id' => null]);
+        $this->authorizeUser($user);
+        $this->getJson('/api/mobile/v1/auth/me')->assertOk()->assertJsonPath('user.school_id', null)
+            ->assertJsonPath('user.school_name', null);
+        $school = $this->school('Profile school');
+        $user->scopes()->create(['scope_type' => 'school', 'scope_id' => $school->id]);
+        app('auth')->forgetGuards();
+        $this->getJson('/api/mobile/v1/auth/me')->assertOk()->assertJsonPath('user.school_id', $school->id);
+    }
+
+    public function test_search_matches_full_name_in_any_order_with_extra_spaces(): void
+    {
+        $school = $this->school('Own');
+        $other = $this->school('Other');
+        $own = Student::query()->create(['school_id' => $school->id, 'last_name' => 'Student', 'first_name' => 'Dana', 'middle_name' => 'Middle']);
+        Student::query()->create(['school_id' => $other->id, 'last_name' => 'Student', 'first_name' => 'Dana']);
+        Student::query()->create(['school_id' => $school->id, 'last_name' => 'Student', 'first_name' => 'Other']);
+        $this->authorizeUser(User::factory()->create(['school_id' => $school->id]));
+        foreach (['Student Dana', ' Dana   Middle Student '] as $search) {
+            $this->getJson('/api/mobile/v1/students?search='.urlencode($search))->assertOk()
+                ->assertJsonCount(1, 'students')->assertJsonPath('students.0.id', $own->id);
+        }
+        $this->getJson('/api/mobile/v1/students?archived=wrong')->assertUnprocessable();
+    }
+
     public function test_guests_cannot_list_students(): void
     {
         $this->getJson('/api/mobile/v1/students')->assertUnauthorized();

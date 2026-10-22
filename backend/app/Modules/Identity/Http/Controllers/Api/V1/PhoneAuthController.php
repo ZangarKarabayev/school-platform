@@ -106,7 +106,11 @@ class PhoneAuthController extends Controller
     {
         $accessMap ??= app(AccessMap::class);
 
+        $school = \App\Modules\Organizations\Models\School::query()->find($user->assignedSchoolId());
+
         return [
+            'school_id' => $school?->id,
+            'school_name' => $school?->display_name,
             'id' => $user->id,
             'full_name' => $user->full_name,
             'first_name' => $user->first_name,

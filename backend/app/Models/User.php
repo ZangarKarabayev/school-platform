@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
-use App\Modules\Organizations\Models\City;
-use App\Modules\Organizations\Models\District;
-use App\Modules\Organizations\Models\Region;
-use App\Modules\Organizations\Models\School;
 use App\Modules\Access\Models\Role;
 use App\Modules\Access\Models\UserScope;
 use App\Modules\Identity\Models\ApiToken;
 use App\Modules\Identity\Models\AuthIdentity;
+use App\Modules\Organizations\Models\City;
+use App\Modules\Organizations\Models\District;
+use App\Modules\Organizations\Models\Region;
+use App\Modules\Organizations\Models\School;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasName;
 use Filament\Panel;
@@ -91,6 +91,15 @@ class User extends Authenticatable implements FilamentUser, HasName
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function assignedSchoolId(): ?int
+    {
+        $this->loadMissing('scopes');
+
+        return $this->school_id ?: $this->scopes
+            ->first(fn ($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
+            ?->scope_id;
     }
 
     public function city(): BelongsTo

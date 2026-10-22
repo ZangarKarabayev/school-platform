@@ -98,3 +98,258 @@ phone and 30 per minute per IP. Use a shared cache store for multi-instance depl
 Validation errors use Laravel's JSON `message` / `errors` format; other errors include `message`.
 Password recovery, mobile registration with school approval, phone changes and mobile EDS integration
 are separate follow-up work.
+
+
+## Teacher cabinet API
+
+- `GET /api/mobile/v1/auth/me`: `user.school_id` and `user.school_name`
+  resolve the profile school or first school scope. Both are null when unassigned.
+- `GET /api/mobile/v1/students?search=Name&classroom_id=123&page=1&per_page=50`:
+  requires `students.manage` and school assignment. `students` remains an array;
+  `meta` contains `current_page`, `per_page`, `last_page`, `total`.
+  Page size defaults to 50, maximum 100; invalid pagination/filter values return 422.
+  A classroom from another school returns no students. IIN and meal benefit are
+  omitted for every mobile caller; IIN search is removed.
+- `GET /api/mobile/v1/dashboard`: requires teacher, students.manage and a valid
+  assigned school (403 otherwise). Returns data only for that school.
+
+Current mobile routes do not expose schedules, grades, homework or attendance.
+Teacher-to-class and subject assignments are not implemented. Delivery dates and
+production deployment branch are not established by this repository; confirm them
+with the deployment owner before mobile release.
+
+Student list items include `photo_url` (public storage URL, or null without a photo).
+The existing boolean `photo` is preserved. The URL uses the public disk URL
+configured from `APP_URL`; local public storage requires `php artisan storage:link`.
+
+
+## Teacher student management
+
+All paths below are relative to `/api/mobile/v1`. Send a Bearer token and
+`Accept: application/json`. These methods require both role `teacher` and
+permission `students.manage`, plus a school assignment (profile or first school
+scope). Missing access/assignment returns 403. The whole assigned school is
+available; there is no teacher-to-class restriction yet.
+
+- `POST /students` creates a student, returns 201 with `student`.
+- `GET /students/{student}` returns 200 with editable fields in `student`.
+- `PATCH /students/{student}` and `PUT /students/{student}` update supplied fields,
+  preserve omitted fields, return 200 with `student`.
+- `DELETE /students/{student}` archives the student, preserving related records
+  and photo; returns 204 without a body.
+
+Creation requires `first_name`, `last_name`, `school_year` (e.g. `2026-2027`).
+Optional fields: `middle_name`, `iin`, `birth_date`,
+`gender`, `phone`, `address`, `meal_benefit_type`, `classroom_id`, `student_number`, `language`
+(`ru`/`kk`), `shift` (1/2). Optional fields may be cleared with null; first/last name and school year cannot be cleared. Validation errors return 422.
+School is assigned by the server. Sending `school_id`, `benefit`, `photo` or `photo_url` with a value returns 422.
+These methods do not upload photos. Other unrecognized fields are ignored.
+Classrooms use the existing shared grade/letter catalog (grade > 0).
+
+A missing student or a student outside the teacher's school returns 404, before
+update validation. Detail/create/update responses include `iin` and `meal_benefit_type` for the edit form; the general student list omits them. Detail
+responses include separate name fields and editable fields alongside the list
+fields, including `photo_url`.
+
+Example create body:
+
+```json
+{
+  "first_name": "Dana",
+  "last_name": "Student",
+  "classroom_id": 12,
+  "school_year": "2026-2027"
+}
+```
+
+
+## Teacher order lists
+
+- `GET /api/mobile/v1/orders` lists orders of students in the assigned school.
+- `GET /api/mobile/v1/students/{student}/orders` lists orders of one student
+  in the assigned school. Foreign/missing student: 404; no orders: empty list.
+
+Both require role `teacher`, permission `students.manage` and school assignment
+(profile or first school scope). Otherwise 403; unauthenticated requests: 401.
+No class restriction is applied. These are read-only endpoints.
+
+Response: `orders` array and `meta` (`current_page`, `per_page`, `last_page`,
+`total`). Page size defaults to 50, maximum 100; ordering is order date descending,
+then ID descending. Filters combine with AND:
+`student_id`, `classroom_id`, `school_year`, `status` (`created`, `issued`,
+`completed`, `failed`), `transaction_status` (`0`/`1`), `search` (name tokens),
+`order_date`, `date_from`, `date_to` (inclusive, `YYYY-MM-DD`). Invalid filters
+return 422. The path student ID cannot be overridden by query parameters.
+Classroom/year come from the historical order, not the student's current class.
+
+Each order includes `id`, `student: {id, full_name}`, `classroom_id`, `classroom`,
+`school_year`, `dish: {id, name}` (or null), `order_date`, `order_time`, `status`,
+`completed_at`, `transaction_status` (boolean or null). Student IIN, benefit,
+creator details and upstream transaction error text are not included.
+
+Examples:
+
+```text
+GET /api/mobile/v1/orders?date_from=2026-10-01&date_to=2026-10-22&page=1&per_page=50
+GET /api/mobile/v1/students/123/orders?school_year=2026-2027
+```
+
+
+Teacher create/edit fields now match the website form. `iin` is optional, unique,
+max 12 characters. `meal_benefit_type`: `susn`, `voucher`, `paid`; a non-null changed
+type appends benefit history, null/omitted preserves it (same as the website).
+`gender`: `male`/`female`; phone whitespace is removed. On create, birth date and
+gender are derived from IIN if not supplied and derivation is possible. On update,
+these fields are edited independently, as on the website. No schema migration is
+needed. Photo upload is a separate mobile endpoint, documented below.
+
+First and last name are required for website create/update and mobile create.
+Mobile partial updates may omit names but cannot clear them. Middle name is optional.
+
+
+## Student photos
+
+`POST /api/mobile/v1/students/{student}/photo`: upload/replace using
+`multipart/form-data`, required file field `photo_file`, image up to 2 MiB
+(SVG rejected). For a new student, create the record first and use its ID.
+Send Bearer token and `Accept: application/json`; let the HTTP client set the
+multipart boundary. No base64 payload is needed.
+
+`DELETE /api/mobile/v1/students/{student}/photo`: removes the photo; repeated
+requests succeed. Both endpoints require `teacher`, `students.manage` and school
+assignment. Other schools/missing student: 404; missing access: 403; invalid or
+missing upload: 422. Replacement removes the old file, and resets FaceID photo
+sync state. Responses are 200 with `student: {id, photo, photo_url}`; removal
+returns `photo: false, photo_url: null`. The list/detail photo URL updates too.
+
+
+## Student references, search and archive
+
+- `GET /api/mobile/v1/classrooms`: `classrooms: [{id, grade, letter, full_name}]`.
+  Shared catalog of grades > 0 sorted by grade/letter, usable for forms and filters.
+- `GET /api/mobile/v1/students/options`: `default_school_year`, `school_years`,
+  `school_years_are_suggestions`, `languages`, `shifts`, `genders`,
+  `meal_benefit_types`, `required_fields`, `photo_max_kb`.
+  Choices contain `value` and `label: {ru, kk}`. Shift values are integers.
+  School years include current academic year (September boundary) and stored
+  years for the assigned school. They are suggestions, not a validation whitelist.
+  Both reference endpoints require teacher, students.manage and school assignment.
+- `GET /students?search=Last%20First`: matches all name/number tokens, ignoring
+  repeated whitespace and token order, within the assigned school.
+- `DELETE /students/{student}`: soft archive, repeated requests return 204.
+  `GET /students` excludes archived records; `?archived=1` lists only archived
+  records with the same pagination, search and school boundary.
+- `POST /students/{student}/restore`: restore, returns 200 with `student`.
+  Previous status, photo, benefit and order history are preserved. Restore of an
+  already active record succeeds. Foreign-school/missing records return 404.
+- `GET /students/{student}` includes archived students and `archived_at`.
+  Editing and photo changes on archived records return 404 until restored.
+  Order-list endpoints retain archived student history; new orders are blocked.
+
+Deploy requires migration `2026_10_22_100000_add_deleted_at_to_students_table`
+(`php artisan migrate --force` in the deployment workflow). The Student model now
+uses soft deletes, so website deletions also archive records. Hard deletion is not
+exposed by the mobile API. An archived IIN remains reserved for that student;
+restore the record instead of creating a duplicate.
+
+
+## Select students and create orders
+
+1. When the mobile date changes, fetch
+   `GET /api/mobile/v1/students?order_date=2026-10-22` (plus normal search,
+   classroom and pagination). Response echoes `order_date`; every student contains
+   `has_order`, `order_id`, `order_status`. If `has_order` is true, show the student
+   checked and disabled. An order of ANY status counts, including failed orders.
+   Without `order_date`, today in the application timezone is used. Ignore stale
+   responses for an older selected date. StudentDetail schema is unchanged.
+2. Submit only newly selected IDs using `POST /api/mobile/v1/orders`:
+
+```json
+{
+  "student_ids": [123, 124],
+  "order_date": "2026-10-22",
+  "order_time": "12:30",
+  "school_year": "2026-2027"
+}
+```
+
+`student_ids` must be a nonempty array of distinct IDs. `order_time` is optional. Requires
+teacher, students.manage and school assignment. At least one foreign, missing or
+archived student rejects the WHOLE batch with 403 and creates nothing. Invalid
+fields, future date/time, dates outside school year and general blocked school
+days return 422. Existing calendar and eligibility services are reused; historical
+enrollment must belong to the assigned school. Grades 1?4 follow existing free
+meal rules; older pupils require a qualifying benefit for the selected date.
+
+Response 200: `order_date`, `created_count`, `already_exists_count`, `skipped_count`,
+`results: [{student_id, result, order_id, reason}]`. `result` is `created`,
+`already_exists` or `skipped`; `reason` is null, `not_eligible` or
+`blocked_school_day`. Creation is synchronous; social-wallet processing is queued
+only for newly created orders after commit. An existing order is never changed
+or re-dispatched by this API. Results are sorted by student ID.
+
+3. Refresh the date's student list after submitting; newly ordered pupils become
+   checked/disabled too. Server row locks and the unique student/date constraint
+   protect against repeat/concurrent submissions even if the UI sends checked IDs.
+   Do not treat `skipped` as success; leave those students unmarked.
+
+
+## Soft-delete an order
+
+`DELETE /api/mobile/v1/orders/{order}` requires teacher, students.manage and
+school assignment; foreign/missing order: 404, missing access: 403. Returns 204,
+including on repeat deletion. The row is preserved with `deleted_at`; transaction
+status and other data remain unchanged. This also applies to website deletion
+through the shared Order model. No mobile hard-delete endpoint is exposed.
+
+Deleted orders are hidden from normal lists/dashboard and do not set `has_order`.
+Refresh `/students?order_date=...` after deleting to uncheck/unlock the student.
+A new active order for the same date is allowed; uniqueness applies to active
+orders only. It creates a new record and follows the normal transaction flow.
+Deleting does not reverse an external social-wallet transaction. Queued jobs
+skip deleted orders when starting; external requests already in flight cannot
+be cancelled by this endpoint.
+
+Deploy requires migration `2026_10_22_110000_add_soft_deletes_to_orders_table`.
+PostgreSQL/SQLite use a partial unique index; MySQL/MariaDB use a generated active
+key. Migration rollback refuses duplicate student/date history to avoid data loss.
+
+
+## Teacher school dashboard
+
+`GET /api/mobile/v1/dashboard?date_from=2026-10-01&date_to=2026-10-22`
+requires `teacher` and `students.manage`, with a resolvable assigned school
+(profile or first school scope). The standard teacher role can now access it.
+Query scope/school/district/region parameters are ignored. Additional operator or
+super-admin roles never broaden this mobile endpoint. Only the teacher's school
+is used for summaries, charts and daily order rows. Missing school: 403.
+The web dashboard retains its existing role-based scope behavior.
+
+
+## One format for mobile order creation
+
+`POST /api/mobile/v1/orders` always accepts `student_ids`, `order_date`,
+optional `school_year` and optional `order_time`. There is no target_type/classroom_ids
+mode in the mobile API; nonempty values for these fields return 422. Website
+class-selection behavior remains supported through the shared service.
+
+The mobile class checkbox selects every available student ID in that class.
+Fetch ALL pages of `/students?classroom_id=12&order_date=2026-10-22` before
+submitting a whole class, not just its loaded page. Individually selected students
+and whole-class selections are combined into one unique student_ids array.
+Students with has_order=true remain checked/disabled and need not be submitted.
+There is no 100-student creation limit; list pagination still has per_page <= 100.
+Server school, archive, enrollment, eligibility and duplicate checks still apply.
+
+
+For mobile `POST /orders`, `school_year` is now optional. When omitted, the
+server derives it from order_date using September 1 as the boundary, independently
+of the student's current school year. Explicit valid school_year is still accepted
+for compatibility, but mismatching date/year is rejected. Website fields are unchanged.
+
+```json
+{
+  "student_ids": [123, 124],
+  "order_date": "2026-10-22"
+}
+```

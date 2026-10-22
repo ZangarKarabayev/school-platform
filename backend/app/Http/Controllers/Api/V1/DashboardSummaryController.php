@@ -13,16 +13,15 @@ class DashboardSummaryController extends Controller
     public function __invoke(Request $request, DashboardDataService $dashboardData): JsonResponse
     {
         /** @var User $user */
-        $user = $request->user();
+        $user = $request->user()->loadMissing('roles.permissions');
+        abort_unless($user->hasRole('teacher') && $user->hasPermission('students.manage'), 403, 'Teacher dashboard access is required.');
 
         $data = $dashboardData->build($user, [
             'date_from' => $request->string('date_from')->toString(),
             'date_to' => $request->string('date_to')->toString(),
-            'scope_kind' => $request->string('scope_kind')->toString(),
-            'school_id' => $request->integer('school_id') ?: null,
-            'district_id' => $request->integer('district_id') ?: null,
-            'region_id' => $request->integer('region_id') ?: null,
-        ]);
+            'scope_kind' => 'school',
+            'school_id' => $user->assignedSchoolId(),
+        ], schoolOnly: true);
 
         unset($data['scopeConfig']);
 

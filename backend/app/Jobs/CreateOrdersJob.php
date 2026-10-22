@@ -2,8 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Models\Order;
-use App\Models\Student;
 use App\Services\OrderCalendarService;
 use App\Services\Orders\OrderEligibilityService;
 use Illuminate\Bus\Queueable;
@@ -28,67 +26,37 @@ class CreateOrdersJob implements ShouldQueue
         public ?string $orderTime,
         public ?int $createdByUserId = null,
         public ?string $schoolYear = null,
+        public ?int $schoolId = null,
     ) {}
-
-    private function resolveDefaultSchoolYear(string $orderDate): string
-    {
-        $date = \Carbon\Carbon::parse($orderDate);
-        $startYear = $date->month >= 9 ? $date->year : $date->year - 1;
-
-        return $startYear . '-' . ($startYear + 1);
-    }
 
     public function handle(
         ?OrderCalendarService $orderCalendarService = null,
         ?OrderEligibilityService $orderEligibilityService = null,
     ): void {
-        $orderCalendarService ??= app(OrderCalendarService::class);
-        $orderEligibilityService ??= app(OrderEligibilityService::class);
-
-        if ($orderCalendarService->isBlockedOrderDate($this->orderDate)) {
-            return;
-        }
-
-        $students = Student::query()
-            ->with(['classroom', 'latestMealBenefit', 'enrollments.classroom'])
-            ->whereIn('id', $this->studentIds)
-            ->get();
-
-        foreach ($students as $student) {
-            $schoolYear = $this->schoolYear ?: $student->school_year ?: $this->resolveDefaultSchoolYear($this->orderDate);
-            $eligibility = $orderEligibilityService->evaluate($student, $schoolYear, $this->orderDate);
-
-            if (
-                ! $eligibility['eligible']
-                || $orderCalendarService->isBlockedOrderDate($this->orderDate, $eligibility['grade'])
-            ) {
-                continue;
+        $schoolId = $this->schoolId ?? null;
+        if ($this->createdByUserId !== null) {
+            $creator = \App\Models\User::query()->with('roles', 'scopes')->find($this->createdByUserId);
+            if (! $creator) {
+                return;
             }
-
-            $classroomId = $eligibility['classroom_id'] ?? $student->classroom_id;
-            $resolvedSchoolYear = $schoolYear ?: $this->resolveDefaultSchoolYear($this->orderDate);
-
-            $order = Order::query()->firstOrCreate(
-                [
-                    'student_id' => $student->id,
-                    'order_date' => $this->orderDate,
-                ],
-                [
-                    'school_year' => $resolvedSchoolYear,
-                    'classroom_id' => $classroomId,
-                    'dish_id' => null,
-                    'created_by_user_id' => $this->createdByUserId,
-                    'created_by_terminal_id' => null,
-                    'order_time' => $this->orderTime,
-                    'status' => 'created',
-                    'transaction_status' => null,
-                    'transaction_error' => null,
-                ]
-            );
-
-            if ($order->wasRecentlyCreated) {
-                SendSocialWalletTransactionJob::dispatch($order->id);
+            if (($creator->hasRole('teacher') || $creator->hasRole('director'))) {
+                $assignedSchoolId = $creator->assignedSchoolId();
+                if ($assignedSchoolId === null || ($schoolId !== null && $schoolId !== $assignedSchoolId)) {
+                    return;
+                }
+                $schoolId = $assignedSchoolId;
             }
         }
+        $orders = new \App\Services\Orders\OrderCreationService(
+            $orderEligibilityService ?? app(OrderEligibilityService::class),
+            $orderCalendarService ?? app(OrderCalendarService::class),
+        );
+        $orders->create([
+            'target_type' => 'students',
+            'student_ids' => $this->studentIds,
+            'order_date' => $this->orderDate,
+            'order_time' => $this->orderTime,
+            'school_year' => $this->schoolYear,
+        ], $schoolId, $this->createdByUserId, requireAllStudentIds: false);
     }
 }

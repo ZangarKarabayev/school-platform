@@ -26,8 +26,8 @@ class StudentController extends Controller
     {
         $data = $request->validate([
             'iin' => ['nullable', 'string', 'max:12', 'unique:students,iin'],
-            'last_name' => ['nullable', 'string', 'max:100'],
-            'first_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'first_name' => ['required', 'string', 'max:100'],
             'middle_name' => ['nullable', 'string', 'max:100'],
             'classroom_id' => [
                 'nullable',
@@ -44,8 +44,8 @@ class StudentController extends Controller
         unset($data['meal_benefit_type']);
 
         $data['school_id'] = $this->resolveSchoolIdForUser($request);
-        $data['birth_date'] = $this->extractBirthDateFromIin($data['iin'] ?? null);
-        $data['gender'] = $this->extractGenderFromIin($data['iin'] ?? null);
+        $data['birth_date'] = app(\App\Services\Students\StudentIdentityService::class)->extractBirthDateFromIin($data['iin'] ?? null);
+        $data['gender'] = app(\App\Services\Students\StudentIdentityService::class)->extractGenderFromIin($data['iin'] ?? null);
 
         $student = Student::query()->create($data);
 
@@ -307,8 +307,8 @@ class StudentController extends Controller
     {
         $data = $request->validate([
             'iin' => ['nullable', 'string', 'max:12', Rule::unique('students', 'iin')->ignore($student->id)],
-            'last_name' => ['nullable', 'string', 'max:100'],
-            'first_name' => ['nullable', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'first_name' => ['required', 'string', 'max:100'],
             'middle_name' => ['nullable', 'string', 'max:100'],
             'birth_date' => ['nullable', 'date'],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
@@ -353,10 +353,6 @@ class StudentController extends Controller
 
     public function destroy(Student $student): RedirectResponse
     {
-        if ($student->photo) {
-            Storage::disk('public')->delete($student->photo);
-        }
-
         $student->delete();
 
         return redirect()->route('students.index');
@@ -469,70 +465,4 @@ class StudentController extends Controller
         return in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
     }
 
-    private function extractBirthDateFromIin(?string $iin): ?string
-    {
-        if (! preg_match('/^\d{12}$/', (string) $iin)) {
-            return null;
-        }
-
-        $centuryDigit = (int) $iin[6];
-        $century = match ($centuryDigit) {
-            1, 2 => 1800,
-            3, 4 => 1900,
-            5, 6 => 2000,
-            default => $this->resolveFallbackCenturyFromIin($iin),
-        };
-
-        if ($century === null) {
-            return null;
-        }
-
-        $year = $century + (int) substr($iin, 0, 2);
-        $month = (int) substr($iin, 2, 2);
-        $day = (int) substr($iin, 4, 2);
-
-        if (! checkdate($month, $day, $year)) {
-            return null;
-        }
-
-        return CarbonImmutable::create($year, $month, $day)->format('Y-m-d');
-    }
-
-    private function extractGenderFromIin(?string $iin): ?string
-    {
-        if (! preg_match('/^\d{12}$/', (string) $iin)) {
-            return null;
-        }
-
-        if (! in_array((int) $iin[6], [1, 2, 3, 4, 5, 6], true)) {
-            return null;
-        }
-
-        return ((int) $iin[6]) % 2 === 1 ? 'male' : 'female';
-    }
-
-    private function resolveFallbackCenturyFromIin(string $iin): ?int
-    {
-        $month = (int) substr($iin, 2, 2);
-        $day = (int) substr($iin, 4, 2);
-        $minAge = 5;
-        $maxAge = 25;
-
-        foreach ([2000, 1900, 1800] as $candidateCentury) {
-            $year = $candidateCentury + (int) substr($iin, 0, 2);
-
-            if (! checkdate($month, $day, $year)) {
-                continue;
-            }
-
-            $birthDate = CarbonImmutable::create($year, $month, $day);
-            $age = $birthDate->diffInYears(now(), false);
-
-            if ($age >= $minAge && $age <= $maxAge) {
-                return $candidateCentury;
-            }
-        }
-
-        return null;
-    }
 }

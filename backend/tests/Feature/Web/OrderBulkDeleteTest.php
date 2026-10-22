@@ -31,8 +31,8 @@ class OrderBulkDeleteTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('order_status', __('ui.orders.bulk_deleted', ['count' => 2]));
 
-        $this->assertDatabaseMissing('orders', ['id' => $firstOrder->id]);
-        $this->assertDatabaseMissing('orders', ['id' => $secondOrder->id]);
+        $this->assertSoftDeleted('orders', ['id' => $firstOrder->id]);
+        $this->assertSoftDeleted('orders', ['id' => $secondOrder->id]);
         $this->assertDatabaseHas('orders', ['id' => $untouchedOrder->id]);
     }
 
