@@ -1057,6 +1057,45 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/StudentCreate"
+              },
+              "examples": {
+                "minimal": {
+                  "summary": "Only required fields",
+                  "value": {
+                    "first_name": "Dana",
+                    "last_name": "Student",
+                    "school_year": "2026-2027"
+                  }
+                },
+                "full": {
+                  "summary": "All form fields; synthetic data, classroom_id must exist",
+                  "value": {
+                    "first_name": "Dana",
+                    "last_name": "Student",
+                    "school_year": "2026-2027",
+                    "middle_name": null,
+                    "iin": "160315512345",
+                    "birth_date": "2016-03-15",
+                    "gender": "male",
+                    "classroom_id": 12,
+                    "student_number": "S-123",
+                    "language": "kk",
+                    "shift": 1,
+                    "phone": "+77011234567",
+                    "address": "Example address",
+                    "meal_benefit_type": "susn"
+                  }
+                },
+                "deriveFromIin": {
+                  "summary": "Birth date and gender derived from IIN",
+                  "value": {
+                    "first_name": "Dana",
+                    "last_name": "Student",
+                    "school_year": "2026-2027",
+                    "iin": "160315512345",
+                    "classroom_id": 12
+                  }
+                }
               }
             }
           }
@@ -1519,6 +1558,42 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/StudentUpdate"
+              },
+              "examples": {
+                "nameOnly": {
+                  "summary": "Update only the supplied name; omitted fields stay unchanged",
+                  "value": {
+                    "first_name": "Dana"
+                  }
+                },
+                "formFields": {
+                  "summary": "Update form fields",
+                  "value": {
+                    "first_name": "Dana",
+                    "last_name": "Student",
+                    "school_year": "2026-2027",
+                    "middle_name": null,
+                    "iin": "160315512345",
+                    "birth_date": "2016-03-15",
+                    "gender": "male",
+                    "classroom_id": 12,
+                    "student_number": "S-123",
+                    "language": "kk",
+                    "shift": 1,
+                    "phone": "+77011234567",
+                    "address": "Example address",
+                    "meal_benefit_type": "susn"
+                  }
+                },
+                "clearOptionalFields": {
+                  "summary": "Clear optional fields (null benefit would not remove benefit history)",
+                  "value": {
+                    "middle_name": null,
+                    "phone": null,
+                    "address": null,
+                    "classroom_id": null
+                  }
+                }
               }
             }
           }
@@ -1658,6 +1733,42 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/StudentUpdate"
+              },
+              "examples": {
+                "nameOnly": {
+                  "summary": "Update only the supplied name; omitted fields stay unchanged",
+                  "value": {
+                    "first_name": "Dana"
+                  }
+                },
+                "formFields": {
+                  "summary": "Update form fields",
+                  "value": {
+                    "first_name": "Dana",
+                    "last_name": "Student",
+                    "school_year": "2026-2027",
+                    "middle_name": null,
+                    "iin": "160315512345",
+                    "birth_date": "2016-03-15",
+                    "gender": "male",
+                    "classroom_id": 12,
+                    "student_number": "S-123",
+                    "language": "kk",
+                    "shift": 1,
+                    "phone": "+77011234567",
+                    "address": "Example address",
+                    "meal_benefit_type": "susn"
+                  }
+                },
+                "clearOptionalFields": {
+                  "summary": "Clear optional fields (null benefit would not remove benefit history)",
+                  "value": {
+                    "middle_name": null,
+                    "phone": null,
+                    "address": null,
+                    "classroom_id": null
+                  }
+                }
               }
             }
           }
@@ -2522,7 +2633,7 @@
                   "photo_file": {
                     "type": "string",
                     "format": "binary",
-                    "description": "Image, maximum 2048 KiB. SVG is not accepted."
+                    "description": "Select a real image file, e.g. student.jpg. Maximum 2048 KiB; SVG is not accepted."
                   }
                 },
                 "required": [
@@ -2530,8 +2641,16 @@
                 ]
               }
             }
+          },
+          "description": "Send a real binary file using multipart/form-data field photo_file, maximum 2 MiB. This endpoint does not accept a JSON body or base64. See the cURL example. Let the client set the multipart boundary."
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "Upload photo with cURL",
+            "source": "curl --request POST 'https://api.example.com/api/mobile/v1/students/123/photo' \\\n  --header 'Authorization: Bearer YOUR_TOKEN' \\\n  --header 'Accept: application/json' \\\n  --form 'photo_file=@/path/to/student.jpg'"
           }
-        }
+        ]
       },
       "delete": {
         "tags": [

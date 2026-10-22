@@ -70,6 +70,30 @@ class OpenApiTest extends TestCase
         }
     }
 
+    public function test_non_eds_json_request_bodies_have_valid_examples(): void
+    {
+        $spec = json_decode(file_get_contents(base_path('docs/openapi-mobile.json')), true, flags: JSON_THROW_ON_ERROR);
+        foreach ($spec['paths'] as $path => $operations) {
+            if (str_contains($path, '/eds/')) {
+                continue;
+            }
+            foreach ($operations as $method => $operation) {
+                $media = $operation['requestBody']['content']['application/json'] ?? null;
+                if ($media === null) {
+                    continue;
+                }
+                $this->assertNotEmpty($media['examples'] ?? $media['example'] ?? null, $method.' '.$path);
+                $examples = isset($media['example']) ? [$media['example']] : array_column($media['examples'], 'value');
+                foreach ($examples as $example) {
+                    $this->assertExampleMatchesSchema($example, $media['schema'], $spec, $method.' '.$path);
+                }
+            }
+        }
+        $photo = $spec['paths']['/students/{student}/photo']['post'];
+        $this->assertSame('binary', $photo['requestBody']['content']['multipart/form-data']['schema']['properties']['photo_file']['format']);
+        $this->assertStringContainsString('photo_file=@', $photo['x-codeSamples'][0]['source']);
+    }
+
     private function resolveReference(array $value, array $spec): array
     {
         while (isset($value['$ref'])) {
