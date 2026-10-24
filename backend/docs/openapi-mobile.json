@@ -2918,6 +2918,76 @@
         }
       }
     },
+    "/classes": {
+      "get": {
+        "tags": [
+          "Students"
+        ],
+        "operationId": "listSchoolClasses",
+        "summary": "List classes in the assigned school",
+        "description": "Requires teacher, students.manage and assigned school. Returns classes with at least one student in that school, sorted by grade and letter. students_count includes only students in the assigned school. The separate /classrooms endpoint remains the shared grade/letter catalog.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListSchoolClassesResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Illustrative response; IDs and personal data are synthetic",
+                    "value": {
+                      "classes": [
+                        {
+                          "id": 12,
+                          "grade": 3,
+                          "letter": "A",
+                          "full_name": "3A",
+                          "students_count": 24
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing role, permission or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher student management access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/students/options": {
       "get": {
         "tags": [
@@ -4496,6 +4566,58 @@
           "letter",
           "full_name"
         ]
+      },
+      "SchoolClass": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "grade": {
+            "type": "integer"
+          },
+          "letter": {
+            "type": "string"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "students_count": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "grade",
+          "letter",
+          "full_name",
+          "students_count"
+        ]
+      },
+      "ListSchoolClassesResponse": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolClass"
+            }
+          }
+        },
+        "required": [
+          "classes"
+        ],
+        "example": {
+          "classes": [
+            {
+              "id": 12,
+              "grade": 3,
+              "letter": "A",
+              "full_name": "3A",
+              "students_count": 24
+            }
+          ]
+        }
       },
       "GetCurrentUserResponse": {
         "type": "object",

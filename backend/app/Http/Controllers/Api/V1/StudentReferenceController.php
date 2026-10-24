@@ -24,6 +24,19 @@ class StudentReferenceController extends Controller
             ->get(['id', 'grade', 'letter', 'full_name'])]);
     }
 
+    public function classes(Request $request): JsonResponse
+    {
+        $schoolId = $this->schoolId($request);
+        $classes = AcademicClass::query()
+            ->whereHas('students', fn ($query) => $query->where('school_id', $schoolId))
+            ->withCount(['students' => fn ($query) => $query->where('school_id', $schoolId)])
+            ->orderBy('grade')
+            ->orderBy('letter')
+            ->get(['id', 'grade', 'letter', 'full_name']);
+
+        return response()->json(['classes' => $classes]);
+    }
+
     public function options(Request $request): JsonResponse
     {
         $schoolId = $this->schoolId($request);

@@ -36,6 +36,7 @@ Route::prefix('mobile/v1')->middleware('auth:api')->group(function (): void {
     Route::get('/orders', [OrderListController::class, 'index']);
     Route::get('/students/{student}/orders', [OrderListController::class, 'studentOrders'])->whereNumber('student');
     Route::get('/classrooms', [StudentReferenceController::class, 'classrooms']);
+    Route::get('/classes', [StudentReferenceController::class, 'classes']);
     Route::get('/students/options', [StudentReferenceController::class, 'options']);
     Route::get('/students', StudentListController::class);
     Route::post('/students/{student}/restore', [StudentManageController::class, 'restore'])->whereNumber('student');
