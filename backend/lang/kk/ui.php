@@ -8,6 +8,7 @@ return [
         'kk' => 'Қаз',
     ],
     'common' => [
+        'deleted' => 'жойылған',
         'back' => 'Артқа',
         'login' => 'Кіру',
         'logout' => 'Шығу',

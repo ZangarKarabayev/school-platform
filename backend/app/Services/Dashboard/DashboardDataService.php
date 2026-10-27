@@ -127,7 +127,19 @@ class DashboardDataService
         $susnStudents = (int) ($studentsStats->susn_count ?? 0);
         $voucherStudents = (int) ($studentsStats->voucher_count ?? 0);
         $otherStudents = max($totalStudents - $voucherStudents - $susnStudents, 0);
-        $ordersTable = $this->buildOrdersTable(clone $ordersAggregateBase, $filters);
+        $ordersTableBase = DB::table('students as s')
+            ->leftJoin('orders as o', function ($join) use ($filters): void {
+                $join->on('o.student_id', '=', 's.id')
+                    ->whereNull('o.deleted_at')
+                    ->whereBetween('o.order_date', [$filters['date_from'], $filters['date_to']]);
+            })
+            ->leftJoin('classrooms as c', 'c.id', '=', 'o.classroom_id')
+            ->leftJoin('classrooms as current_c', 'current_c.id', '=', 's.classroom_id')
+            ->leftJoin('schools as sch', 'sch.id', '=', 's.school_id')
+            ->leftJoin('districts as d', 'd.id', '=', 'sch.district_id');
+
+        $this->applyScopeFilterToBuilder($ordersTableBase, $scopeConfig, $filters, 's', 'sch', 'd');
+        $ordersTable = $this->buildOrdersTable($ordersTableBase, $filters);
 
         return [
             'filters' => $filters,
@@ -352,9 +364,10 @@ class DashboardDataService
                 's.last_name',
                 's.first_name',
                 's.middle_name',
-                'c.full_name as classroom_name',
+                's.deleted_at',
                 'o.order_date',
             ])
+            ->selectRaw('COALESCE(c.full_name, current_c.full_name) as classroom_name')
             ->orderBy('s.last_name')
             ->orderBy('s.first_name')
             ->orderBy('s.middle_name')
@@ -367,7 +380,6 @@ class DashboardDataService
 
         foreach ($orders as $order) {
             $studentId = (int) $order->student_id;
-            $dateKey = Carbon::parse($order->order_date)->toDateString();
 
             if (! isset($rows[$studentId])) {
                 $fullName = trim(implode(' ', array_filter([
@@ -379,12 +391,19 @@ class DashboardDataService
                 $rows[$studentId] = [
                     'number' => 0,
                     'student_id' => $studentId,
-                    'full_name' => $fullName !== '' ? $fullName : '#'.$studentId,
+                    'full_name' => ($fullName !== '' ? $fullName : '#'.$studentId)
+                        .($order->deleted_at !== null ? ' ('.__('ui.common.deleted').')' : ''),
                     'classroom_name' => (string) ($order->classroom_name ?? '-'),
                     'values' => array_fill_keys($dayKeys, 0),
                     'total' => 0,
                 ];
             }
+
+            if ($order->order_date === null) {
+                continue;
+            }
+
+            $dateKey = Carbon::parse($order->order_date)->toDateString();
 
             if (! isset($rows[$studentId]['values'][$dateKey]) || $rows[$studentId]['values'][$dateKey] === 1) {
                 continue;

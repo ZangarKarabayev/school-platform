@@ -45,7 +45,9 @@ class DashboardAccessTest extends TestCase
         $region = \App\Modules\Organizations\Models\Region::query()->create(['name' => 'Region', 'code' => 'r']);
         $district = \App\Modules\Organizations\Models\District::query()->create(['name' => 'District', 'code' => 'd', 'region_id' => $region->id]);
         $school = \App\Modules\Organizations\Models\School::query()->create(['name' => 'School', 'code' => 's', 'district_id' => $district->id]);
-        Student::query()->create(['school_id' => $school->id, 'status' => 'active']);
+        $student = Student::query()->create(['school_id' => $school->id, 'status' => 'active', 'last_name' => 'Active']);
+        $deletedStudent = Student::query()->create(['school_id' => $school->id, 'status' => 'active', 'last_name' => 'Deleted']);
+        $deletedStudent->delete();
         Student::query()->create(['school_id' => null, 'status' => 'active']);
         $other = \App\Modules\Organizations\Models\School::query()->create(['name' => 'Other', 'code' => 'o', 'district_id' => $district->id]);
         Student::query()->create(['school_id' => $other->id, 'status' => 'active']);
@@ -54,7 +56,14 @@ class DashboardAccessTest extends TestCase
         $this->withToken(app(IssueApiTokenAction::class)->execute($user)['token']);
         $this->getJson('/api/mobile/v1/dashboard?school_id=99999&scope_kind=region')
             ->assertOk()->assertJsonPath('charts.coverage.0.value', 1)->assertJsonPath('filters.scope_kind', 'school')
-            ->assertJsonPath('filters.school_id', $school->id);
+            ->assertJsonPath('filters.school_id', $school->id)
+            ->assertJsonCount(2, 'ordersTable.rows')
+            ->assertJsonPath('ordersTable.rows.0.student_id', $student->id)
+            ->assertJsonPath('ordersTable.rows.0.total', 0)
+            ->assertJsonPath('ordersTable.rows.1.student_id', $deletedStudent->id)
+            ->assertJsonPath('ordersTable.rows.1.full_name', 'Deleted ('.__('ui.common.deleted').')')
+            ->assertJsonPath('ordersTable.rows.1.total', 0)
+            ->assertJsonPath('ordersTable.grand_total', 0);
     }
 
     public function test_teacher_needs_school_and_director_is_denied(): void
