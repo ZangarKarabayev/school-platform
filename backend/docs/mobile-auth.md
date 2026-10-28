@@ -353,3 +353,67 @@ for compatibility, but mismatching date/year is rejected. Website fields are unc
   "order_date": "2026-10-22"
 }
 ```
+
+## Mobile attendance
+
+`GET /api/mobile/v1/attendance?date=2026-10-28&per_page=15`
+requires a Bearer token and teacher or director role with an assigned school
+(profile or first school scope). Other roles return 403; unauthenticated requests return 401.
+
+Optional filters: `date` (Y-m-d, defaults to today), `search` (name, max 100),
+`classroom` (class ID), `direction` (entry/exit), `page`, `per_page` (1?100).
+Response: `date`, `stats` (total/inside/outside/absent), `latest`, `classrooms`,
+`events`, and `meta` (current_page/per_page/last_page/total).
+Each event contains id, student (id/full_name/classroom_id/classroom),
+direction (nullable for legacy scans), create_time (ISO 8601).
+
+Matches the web attendance page: list shows the first scan per student that day,
+or first matching direction scan. Stats and latest are school-wide, independent
+of list filters; the last scan by event time and ID determines inside/outside.
+Legacy null direction counts as inside. No scan that day means absent.
+Archived students and events with a different school BIN are excluded.
+
+## Mobile library
+
+Base: `/api/mobile/v1/library`, Bearer token and `Accept: application/json`.
+Teacher can read; director/library can read and write. An assigned school is
+required (profile or first school scope). Client school_id never broadens access.
+The book catalog is global; school stock, loans and mutations are scoped.
+Standalone super_admin has no mobile access.
+
+- `GET /books?search=Math&barcode=0012345&page=1&per_page=20` ? shared catalog.
+- `GET /books/{book}` ? book and stock in assigned school (stock may be null).
+- `POST /books`, `PUT /books/{book}` ? shared catalog create/update; require
+  barcode, title, literature_type (educational/fiction). Optional author, publisher,
+  publication_year, grade, language, part, subject. Edits affect every school.
+- `GET /stocks` ? school inventory, search/barcode/page/per_page.
+- `POST /stocks` ? barcode plus quantity to add (default 1), OR total_quantity
+  to set. Cannot set below outstanding copies.
+- `GET /loans` ? search, barcode, student_id, status (active/returned/overdue),
+  from/to (inclusive issue dates), page/per_page.
+- `GET /reports` ? same loan filters; school-wide totals and overdue, filtered
+  period issued/returned quantities. Returns include all returns on matching loans.
+- `GET /lookup?type=book&q=0012345&exact=1` ? school books; type=student
+  supports name or student QR code. Maximum 20 results.
+- `POST /operations` ? atomic issue/return batch, one copy per barcode occurrence.
+
+List responses use books/stocks/loans plus meta(current_page, per_page,
+last_page, total). Default per_page=20, maximum=100. OpenAPI includes all fields,
+request/response examples and cURL for every endpoint.
+
+```json
+{
+  "student_code": "student:123",
+  "barcodes": ["0012345", "0012345"],
+  "mode": "issue",
+  "due_at": "2026-12-01"
+}
+```
+
+Student codes: numeric ID, `student:123`, or JSON encoded as a string with
+student_id. For returns use mode=return and omit due_at. Repeated barcodes
+represent multiple copies. Any failure rolls back the entire batch.
+Operations require no web session/token. Each successful POST is a new mutation;
+after an ambiguous network result check loans before repeating it.
+Overdue counts loan rows; returns are allocated to oldest outstanding loans.
+Spreadsheet import/export remain web features. No new database migration is required.

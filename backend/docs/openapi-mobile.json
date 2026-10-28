@@ -23,6 +23,12 @@
     },
     {
       "name": "Orders"
+    },
+    {
+      "name": "Attendance"
+    },
+    {
+      "name": "Library"
     }
   ],
   "paths": {
@@ -3202,6 +3208,1761 @@
           }
         }
       }
+    },
+    "/attendance": {
+      "get": {
+        "tags": [
+          "Attendance"
+        ],
+        "operationId": "listAttendance",
+        "summary": "Daily attendance for the assigned school",
+        "description": "Teacher or director. Profile school or first school scope. School-wide stats and latest scan ignore list filters. Events contain the first daily scan per student (first matching scan when direction is specified). Latest chronological scan determines inside/outside; legacy null direction counts as entry. Students without daily scans count as absent. Archived students and mismatched school BIN events are excluded. Date defaults to today in application timezone.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "classroom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "entry",
+                "exit"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 15
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily attendance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceResponse"
+                },
+                "example": {
+                  "date": "2026-10-28",
+                  "stats": {
+                    "total": 0,
+                    "inside": 0,
+                    "outside": 0,
+                    "absent": 0
+                  },
+                  "latest": null,
+                  "classrooms": [],
+                  "events": [],
+                  "meta": {
+                    "current_page": 1,
+                    "per_page": 15,
+                    "last_page": 1,
+                    "total": 0
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/library/books": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "listLibraryBooks",
+        "summary": "Search shared book catalog",
+        "description": " Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "books",
+                    "meta"
+                  ],
+                  "properties": {
+                    "books": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LibraryBook"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/LibraryPageMeta"
+                    }
+                  }
+                },
+                "example": {
+                  "books": [
+                    {
+                      "id": 1,
+                      "barcode": "0012345",
+                      "title": "Mathematics",
+                      "author": null,
+                      "publisher": null,
+                      "publication_year": null,
+                      "literature_type": "educational",
+                      "subject": null,
+                      "grade": null,
+                      "language": null,
+                      "part": null,
+                      "created_at": "2026-10-28 09:00:00",
+                      "updated_at": "2026-10-28 09:00:00"
+                    }
+                  ],
+                  "meta": {
+                    "current_page": 1,
+                    "per_page": 20,
+                    "last_page": 1,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "barcode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X GET 'https://school.example/api/mobile/v1/library/books?search=Math&per_page=20' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "createLibraryBook",
+        "summary": "Create a shared catalog book",
+        "description": " Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "book"
+                  ],
+                  "properties": {
+                    "book": {
+                      "$ref": "#/components/schemas/LibraryBook"
+                    }
+                  }
+                },
+                "example": {
+                  "book": {
+                    "id": 1,
+                    "barcode": "0012345",
+                    "title": "Mathematics",
+                    "author": null,
+                    "publisher": null,
+                    "publication_year": null,
+                    "literature_type": "educational",
+                    "subject": null,
+                    "grade": null,
+                    "language": null,
+                    "part": null,
+                    "created_at": "2026-10-28 09:00:00",
+                    "updated_at": "2026-10-28 09:00:00"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryBookRequest"
+              },
+              "example": {
+                "barcode": "0012345",
+                "title": "Mathematics",
+                "literature_type": "educational"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X POST 'https://school.example/api/mobile/v1/library/books' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json' \\\n  -H 'Content-Type: application/json' \\\n  --data '{\"barcode\": \"0012345\", \"title\": \"Mathematics\", \"literature_type\": \"educational\"}'"
+          }
+        ]
+      }
+    },
+    "/library/books/{book}": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "getLibraryBook",
+        "summary": "Book details and assigned-school stock",
+        "description": "stock is null when this school has no inventory for the book. Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "book",
+                    "stock"
+                  ],
+                  "properties": {
+                    "book": {
+                      "$ref": "#/components/schemas/LibraryBook"
+                    },
+                    "stock": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "school_id",
+                        "book_id",
+                        "total_quantity",
+                        "outstanding",
+                        "available",
+                        "title",
+                        "barcode",
+                        "author",
+                        "created_at",
+                        "updated_at",
+                        "grade"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "school_id": {
+                          "type": "integer"
+                        },
+                        "book_id": {
+                          "type": "integer"
+                        },
+                        "total_quantity": {
+                          "type": "integer"
+                        },
+                        "outstanding": {
+                          "type": "integer"
+                        },
+                        "available": {
+                          "type": "integer"
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "barcode": {
+                          "type": "string"
+                        },
+                        "author": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "grade": {
+                          "type": "integer",
+                          "nullable": true
+                        }
+                      },
+                      "nullable": true
+                    }
+                  }
+                },
+                "example": {
+                  "book": {
+                    "id": 1,
+                    "barcode": "0012345",
+                    "title": "Mathematics",
+                    "author": null,
+                    "publisher": null,
+                    "publication_year": null,
+                    "literature_type": "educational",
+                    "subject": null,
+                    "grade": null,
+                    "language": null,
+                    "part": null,
+                    "created_at": "2026-10-28 09:00:00",
+                    "updated_at": "2026-10-28 09:00:00"
+                  },
+                  "stock": {
+                    "id": 1,
+                    "school_id": 1,
+                    "book_id": 1,
+                    "total_quantity": 5,
+                    "outstanding": 1,
+                    "available": 4,
+                    "title": "Mathematics",
+                    "barcode": "0012345",
+                    "author": null,
+                    "grade": null,
+                    "created_at": "2026-10-28 09:00:00",
+                    "updated_at": "2026-10-28 09:00:00"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found within the assigned school (includes students of other schools).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "book",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 1
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X GET 'https://school.example/api/mobile/v1/library/books/1' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "updateLibraryBook",
+        "summary": "Update a shared catalog book",
+        "description": "Required fields: barcode, title, literature_type. Changes affect the shared catalog for every school; omitted optional fields are preserved. Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "book"
+                  ],
+                  "properties": {
+                    "book": {
+                      "$ref": "#/components/schemas/LibraryBook"
+                    }
+                  }
+                },
+                "example": {
+                  "book": {
+                    "id": 1,
+                    "barcode": "0012345",
+                    "title": "Mathematics",
+                    "author": null,
+                    "publisher": null,
+                    "publication_year": null,
+                    "literature_type": "educational",
+                    "subject": null,
+                    "grade": null,
+                    "language": null,
+                    "part": null,
+                    "created_at": "2026-10-28 09:00:00",
+                    "updated_at": "2026-10-28 09:00:00"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found within the assigned school (includes students of other schools).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "book",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 1
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryBookRequest"
+              },
+              "example": {
+                "barcode": "0012345",
+                "title": "Mathematics",
+                "literature_type": "educational"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X PUT 'https://school.example/api/mobile/v1/library/books/1' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json' \\\n  -H 'Content-Type: application/json' \\\n  --data '{\"barcode\": \"0012345\", \"title\": \"Mathematics\", \"literature_type\": \"educational\"}'"
+          }
+        ]
+      }
+    },
+    "/library/stocks": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "listLibraryStocks",
+        "summary": "List assigned-school inventory",
+        "description": " Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "stocks",
+                    "meta"
+                  ],
+                  "properties": {
+                    "stocks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LibraryStock"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/LibraryPageMeta"
+                    }
+                  }
+                },
+                "example": {
+                  "stocks": [
+                    {
+                      "id": 1,
+                      "school_id": 1,
+                      "book_id": 1,
+                      "total_quantity": 5,
+                      "outstanding": 1,
+                      "available": 4,
+                      "title": "Mathematics",
+                      "barcode": "0012345",
+                      "author": null,
+                      "grade": null,
+                      "created_at": "2026-10-28 09:00:00",
+                      "updated_at": "2026-10-28 09:00:00"
+                    }
+                  ],
+                  "meta": {
+                    "current_page": 1,
+                    "per_page": 20,
+                    "last_page": 1,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "barcode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X GET 'https://school.example/api/mobile/v1/library/stocks?barcode=0012345' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "saveLibraryStock",
+        "summary": "Add copies or set school stock",
+        "description": " Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "stock"
+                  ],
+                  "properties": {
+                    "stock": {
+                      "$ref": "#/components/schemas/LibraryStock"
+                    }
+                  }
+                },
+                "example": {
+                  "stock": {
+                    "id": 1,
+                    "school_id": 1,
+                    "book_id": 1,
+                    "total_quantity": 5,
+                    "outstanding": 1,
+                    "available": 4,
+                    "title": "Mathematics",
+                    "barcode": "0012345",
+                    "author": null,
+                    "grade": null,
+                    "created_at": "2026-10-28 09:00:00",
+                    "updated_at": "2026-10-28 09:00:00"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryStockRequest"
+              },
+              "example": {
+                "barcode": "0012345",
+                "total_quantity": 5
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X POST 'https://school.example/api/mobile/v1/library/stocks' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json' \\\n  -H 'Content-Type: application/json' \\\n  --data '{\"barcode\": \"0012345\", \"total_quantity\": 5}'"
+          }
+        ]
+      }
+    },
+    "/library/loans": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "listLibraryLoans",
+        "summary": "List loans and returned quantities",
+        "description": "from/to filter issue date (inclusive); either bound can be supplied independently. overdue means due_at before today and outstanding copies. grade/letter describe the student classroom, book_grade describes the catalog book. Historical loans remain visible after student archival or transfer. Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "loans",
+                    "meta"
+                  ],
+                  "properties": {
+                    "loans": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LibraryLoan"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/LibraryPageMeta"
+                    }
+                  }
+                },
+                "example": {
+                  "loans": [
+                    {
+                      "id": 1,
+                      "stock_id": 1,
+                      "student_id": 123,
+                      "quantity": 1,
+                      "issued_at": "2026-10-28 09:00:00",
+                      "due_at": "2026-12-01",
+                      "issued_by": 43,
+                      "note": null,
+                      "created_at": "2026-10-28 09:00:00",
+                      "updated_at": "2026-10-28 09:00:00",
+                      "title": "Mathematics",
+                      "barcode": "0012345",
+                      "book_grade": null,
+                      "first_name": "Alice",
+                      "last_name": "Example",
+                      "grade": null,
+                      "letter": null,
+                      "returned": 0,
+                      "outstanding": 1
+                    }
+                  ],
+                  "meta": {
+                    "current_page": 1,
+                    "per_page": 20,
+                    "last_page": 1,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "barcode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "student_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "returned",
+                "overdue"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X GET 'https://school.example/api/mobile/v1/library/loans?status=active&student_id=123' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
+          }
+        ]
+      }
+    },
+    "/library/reports": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "getLibraryReports",
+        "summary": "School inventory and lending summary",
+        "description": "totals and overdue are school-wide and ignore filters. period sums issued quantities and all returns attached to matching loans, selected by issue date; it is not a return-date report. overdue counts loan rows, not copies. Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "totals",
+                    "period",
+                    "overdue"
+                  ],
+                  "properties": {
+                    "totals": {
+                      "type": "object",
+                      "required": [
+                        "total",
+                        "outstanding",
+                        "available"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "outstanding": {
+                          "type": "integer"
+                        },
+                        "available": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "period": {
+                      "type": "object",
+                      "required": [
+                        "issued",
+                        "returned"
+                      ],
+                      "properties": {
+                        "issued": {
+                          "type": "integer"
+                        },
+                        "returned": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "overdue": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "example": {
+                  "totals": {
+                    "total": 5,
+                    "outstanding": 1,
+                    "available": 4
+                  },
+                  "period": {
+                    "issued": 1,
+                    "returned": 0
+                  },
+                  "overdue": 0
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "barcode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "student_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "returned",
+                "overdue"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X GET 'https://school.example/api/mobile/v1/library/reports?from=2026-10-01&to=2026-10-28' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
+          }
+        ]
+      }
+    },
+    "/library/lookup": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "lookupLibrary",
+        "summary": "Find students or school books for scanning",
+        "description": "At most 20 results. Book exact=true matches barcode. Student queries accept a name or scanned student code; archived students are excluded. Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "results"
+                  ],
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "value",
+                          "label",
+                          "detail"
+                        ],
+                        "properties": {
+                          "value": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "detail": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "results": [
+                    {
+                      "value": "0012345",
+                      "label": "Mathematics",
+                      "detail": "0012345"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "student",
+                "book"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "exact",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X GET 'https://school.example/api/mobile/v1/library/lookup?type=book&q=0012345&exact=1' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
+          }
+        ]
+      }
+    },
+    "/library/operations": {
+      "post": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "operateLibrary",
+        "summary": "Issue or return scanned book copies",
+        "description": "Atomic batch: any invalid copy rolls back the entire batch. Issue requires an active student and sufficient inventory. Return allocates copies to oldest outstanding loans first, including partial returns. No browser session or operation_token is required. Each successful POST is a new operation; do not automatically retry after an ambiguous network result, check loans first. Bearer authentication required. Teacher, director and library roles can read. Director and library roles can write. An assigned school (profile or first school scope) is required. school_id input never changes the scope. The catalog is shared across schools; stocks, loans and operations belong to the assigned school. Standalone super_admin access is not supported.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "saved"
+                  ],
+                  "properties": {
+                    "saved": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "example": {
+                  "saved": true
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryOperationRequest"
+              },
+              "example": {
+                "student_code": "student:123",
+                "barcodes": [
+                  "0012345"
+                ],
+                "mode": "issue",
+                "due_at": "2026-12-01"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl -X POST 'https://school.example/api/mobile/v1/library/operations' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json' \\\n  -H 'Content-Type: application/json' \\\n  --data '{\"student_code\": \"student:123\", \"barcodes\": [\"0012345\"], \"mode\": \"issue\", \"due_at\": \"2026-12-01\"}'"
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -5056,6 +6817,537 @@
           "order_date"
         ],
         "description": "Submit all selected student IDs, whether selected individually or via classroom checkboxes. No 100-student limit. target_type and classroom_ids are not accepted."
+      },
+      "AttendanceEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "student",
+          "direction",
+          "create_time"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "full_name": {
+                "type": "string"
+              },
+              "classroom_id": {
+                "type": "integer",
+                "nullable": true
+              },
+              "classroom": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "direction": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "entry",
+              "exit",
+              null
+            ]
+          },
+          "create_time": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AttendanceResponse": {
+        "type": "object",
+        "required": [
+          "date",
+          "stats",
+          "latest",
+          "classrooms",
+          "events",
+          "meta"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "inside": {
+                "type": "integer"
+              },
+              "outside": {
+                "type": "integer"
+              },
+              "absent": {
+                "type": "integer"
+              }
+            }
+          },
+          "latest": {
+            "type": "object",
+            "required": [
+              "id",
+              "student",
+              "direction",
+              "create_time"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "student": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer"
+                  },
+                  "full_name": {
+                    "type": "string"
+                  },
+                  "classroom_id": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "classroom": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              },
+              "direction": {
+                "type": "string",
+                "nullable": true,
+                "enum": [
+                  "entry",
+                  "exit",
+                  null
+                ]
+              },
+              "create_time": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "nullable": true
+          },
+          "classrooms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttendanceEvent"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "integer"
+              },
+              "per_page": {
+                "type": "integer"
+              },
+              "last_page": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "LibraryBook": {
+        "type": "object",
+        "required": [
+          "barcode",
+          "title",
+          "author",
+          "publisher",
+          "literature_type",
+          "subject",
+          "language",
+          "part",
+          "publication_year",
+          "grade",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "barcode": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string",
+            "nullable": true
+          },
+          "publisher": {
+            "type": "string",
+            "nullable": true
+          },
+          "literature_type": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "part": {
+            "type": "string",
+            "nullable": true
+          },
+          "publication_year": {
+            "type": "integer",
+            "nullable": true
+          },
+          "grade": {
+            "type": "integer",
+            "nullable": true
+          },
+          "id": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "LibraryStock": {
+        "type": "object",
+        "required": [
+          "id",
+          "school_id",
+          "book_id",
+          "total_quantity",
+          "outstanding",
+          "available",
+          "title",
+          "barcode",
+          "author",
+          "created_at",
+          "updated_at",
+          "grade"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "school_id": {
+            "type": "integer"
+          },
+          "book_id": {
+            "type": "integer"
+          },
+          "total_quantity": {
+            "type": "integer"
+          },
+          "outstanding": {
+            "type": "integer"
+          },
+          "available": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "grade": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "LibraryLoan": {
+        "type": "object",
+        "required": [
+          "id",
+          "stock_id",
+          "student_id",
+          "quantity",
+          "issued_by",
+          "returned",
+          "outstanding",
+          "issued_at",
+          "due_at",
+          "note",
+          "created_at",
+          "updated_at",
+          "title",
+          "barcode",
+          "first_name",
+          "last_name",
+          "letter",
+          "grade",
+          "book_grade"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "stock_id": {
+            "type": "integer"
+          },
+          "student_id": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "issued_by": {
+            "type": "integer",
+            "nullable": true
+          },
+          "returned": {
+            "type": "integer"
+          },
+          "outstanding": {
+            "type": "integer"
+          },
+          "issued_at": {
+            "type": "string"
+          },
+          "due_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "last_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "letter": {
+            "type": "string",
+            "nullable": true
+          },
+          "grade": {
+            "type": "integer",
+            "nullable": true
+          },
+          "book_grade": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "LibraryPageMeta": {
+        "type": "object",
+        "required": [
+          "current_page",
+          "per_page",
+          "last_page",
+          "total"
+        ],
+        "properties": {
+          "current_page": {
+            "type": "integer"
+          },
+          "per_page": {
+            "type": "integer"
+          },
+          "last_page": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      },
+      "LibraryBookRequest": {
+        "type": "object",
+        "required": [
+          "barcode",
+          "title",
+          "literature_type"
+        ],
+        "properties": {
+          "barcode": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "author": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "publisher": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "literature_type": {
+            "type": "string",
+            "enum": [
+              "educational",
+              "fiction"
+            ]
+          },
+          "subject": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "language": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 10
+          },
+          "part": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50
+          },
+          "publication_year": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1000,
+            "maximum": 2100
+          },
+          "grade": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 12
+          }
+        }
+      },
+      "LibraryStockRequest": {
+        "type": "object",
+        "required": [
+          "barcode"
+        ],
+        "properties": {
+          "barcode": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000,
+            "description": "Add copies, defaults to 1 when both quantities are omitted. Mutually exclusive with total_quantity."
+          },
+          "total_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "Set absolute stock; cannot be less than copies currently on loan."
+          }
+        }
+      },
+      "LibraryOperationRequest": {
+        "type": "object",
+        "required": [
+          "student_code",
+          "barcodes",
+          "mode"
+        ],
+        "properties": {
+          "student_code": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Student ID, student:123, or a JSON string containing student_id."
+          },
+          "barcodes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "Each occurrence is one copy. Duplicate barcodes intentionally represent multiple copies."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "issue",
+              "return"
+            ]
+          },
+          "due_at": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Required for issue, today or later when supplied."
+          }
+        }
       }
     },
     "responses": {

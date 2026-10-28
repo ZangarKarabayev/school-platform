@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\DashboardSummaryController;
+use App\Http\Controllers\Api\V1\LibraryController;
 use App\Http\Controllers\Api\V1\OrderCreateController;
 use App\Http\Controllers\Api\V1\OrderDeleteController;
 use App\Http\Controllers\Api\V1\OrderListController;
@@ -30,6 +32,19 @@ Route::prefix('mobile/v1/auth')->group(function (): void {
 });
 
 Route::prefix('mobile/v1')->middleware('auth:api')->group(function (): void {
+    Route::get('/attendance', AttendanceController::class);
+    Route::prefix('library')->controller(LibraryController::class)->group(function (): void {
+        Route::get('/books', 'books');
+        Route::get('/books/{book}', 'showBook')->whereNumber('book');
+        Route::post('/books', 'storeBook');
+        Route::put('/books/{book}', 'updateBook')->whereNumber('book');
+        Route::get('/stocks', 'stocks');
+        Route::post('/stocks', 'storeStock');
+        Route::get('/loans', 'loans');
+        Route::get('/reports', 'reports');
+        Route::get('/lookup', 'lookup');
+        Route::post('/operations', 'operate');
+    });
     Route::get('/dashboard', DashboardSummaryController::class);
     Route::post('/orders', OrderCreateController::class);
     Route::delete('/orders/{order}', OrderDeleteController::class)->whereNumber('order');
