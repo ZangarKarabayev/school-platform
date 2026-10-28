@@ -3230,7 +3230,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-10-28"
           },
           {
             "name": "search",
@@ -3239,7 +3240,8 @@
             "schema": {
               "type": "string",
               "maxLength": 100
-            }
+            },
+            "example": "Math"
           },
           {
             "name": "classroom",
@@ -3248,7 +3250,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 12
           },
           {
             "name": "direction",
@@ -3260,7 +3263,8 @@
                 "entry",
                 "exit"
               ]
-            }
+            },
+            "example": "entry"
           },
           {
             "name": "page",
@@ -3269,7 +3273,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 1
           },
           {
             "name": "per_page",
@@ -3280,7 +3285,8 @@
               "minimum": 1,
               "maximum": 100,
               "default": 15
-            }
+            },
+            "example": 15
           }
         ],
         "responses": {
@@ -3291,22 +3297,75 @@
                 "schema": {
                   "$ref": "#/components/schemas/AttendanceResponse"
                 },
-                "example": {
-                  "date": "2026-10-28",
-                  "stats": {
-                    "total": 0,
-                    "inside": 0,
-                    "outside": 0,
-                    "absent": 0
+                "examples": {
+                  "withScans": {
+                    "summary": "One student entered and later exited",
+                    "value": {
+                      "date": "2026-10-28",
+                      "stats": {
+                        "total": 1,
+                        "inside": 0,
+                        "outside": 1,
+                        "absent": 0
+                      },
+                      "latest": {
+                        "id": 502,
+                        "student": {
+                          "id": 123,
+                          "full_name": "Example Alice",
+                          "classroom_id": 12,
+                          "classroom": "5A"
+                        },
+                        "direction": "exit",
+                        "create_time": "2026-10-28T14:00:00+05:00"
+                      },
+                      "classrooms": [
+                        {
+                          "id": 12,
+                          "name": "5A"
+                        }
+                      ],
+                      "events": [
+                        {
+                          "id": 501,
+                          "student": {
+                            "id": 123,
+                            "full_name": "Example Alice",
+                            "classroom_id": 12,
+                            "classroom": "5A"
+                          },
+                          "direction": "entry",
+                          "create_time": "2026-10-28T08:00:00+05:00"
+                        }
+                      ],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 15,
+                        "last_page": 1,
+                        "total": 1
+                      }
+                    }
                   },
-                  "latest": null,
-                  "classrooms": [],
-                  "events": [],
-                  "meta": {
-                    "current_page": 1,
-                    "per_page": 15,
-                    "last_page": 1,
-                    "total": 0
+                  "emptySchool": {
+                    "summary": "Assigned school has no active students",
+                    "value": {
+                      "date": "2026-10-28",
+                      "stats": {
+                        "total": 0,
+                        "inside": 0,
+                        "outside": 0,
+                        "absent": 0
+                      },
+                      "latest": null,
+                      "classrooms": [],
+                      "events": [],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 15,
+                        "last_page": 1,
+                        "total": 0
+                      }
+                    }
                   }
                 }
               }
@@ -3362,7 +3421,14 @@
               }
             }
           }
-        }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl 'https://school.example/api/mobile/v1/attendance?date=2026-10-28&per_page=15' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
+          }
+        ]
       }
     },
     "/library/books": {
@@ -3488,7 +3554,8 @@
             "schema": {
               "type": "string",
               "maxLength": 255
-            }
+            },
+            "example": "Math"
           },
           {
             "name": "barcode",
@@ -3497,7 +3564,8 @@
             "schema": {
               "type": "string",
               "maxLength": 64
-            }
+            },
+            "example": "0012345"
           },
           {
             "name": "page",
@@ -3506,7 +3574,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 1
           },
           {
             "name": "per_page",
@@ -3517,7 +3586,8 @@
               "minimum": 1,
               "maximum": 100,
               "default": 20
-            }
+            },
+            "example": 20
           }
         ],
         "x-codeSamples": [
@@ -4129,7 +4199,8 @@
             "schema": {
               "type": "string",
               "maxLength": 255
-            }
+            },
+            "example": "Math"
           },
           {
             "name": "barcode",
@@ -4138,7 +4209,8 @@
             "schema": {
               "type": "string",
               "maxLength": 64
-            }
+            },
+            "example": "0012345"
           },
           {
             "name": "page",
@@ -4147,7 +4219,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 1
           },
           {
             "name": "per_page",
@@ -4158,7 +4231,8 @@
               "minimum": 1,
               "maximum": 100,
               "default": 20
-            }
+            },
+            "example": 20
           }
         ],
         "x-codeSamples": [
@@ -4274,9 +4348,19 @@
               "schema": {
                 "$ref": "#/components/schemas/LibraryStockRequest"
               },
-              "example": {
-                "barcode": "0012345",
-                "total_quantity": 5
+              "examples": {
+                "setTotal": {
+                  "value": {
+                    "barcode": "0012345",
+                    "total_quantity": 5
+                  }
+                },
+                "addCopies": {
+                  "value": {
+                    "barcode": "0012345",
+                    "quantity": 2
+                  }
+                }
               }
             }
           }
@@ -4286,6 +4370,11 @@
             "lang": "Shell",
             "label": "cURL",
             "source": "curl -X POST 'https://school.example/api/mobile/v1/library/stocks' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json' \\\n  -H 'Content-Type: application/json' \\\n  --data '{\"barcode\": \"0012345\", \"total_quantity\": 5}'"
+          },
+          {
+            "lang": "Shell",
+            "label": "Add copies",
+            "source": "curl -X POST 'https://school.example/api/mobile/v1/library/stocks' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json' \\\n  -H 'Content-Type: application/json' \\\n  --data '{\"barcode\": \"0012345\", \"quantity\": 2}'"
           }
         ]
       }
@@ -4419,7 +4508,8 @@
             "schema": {
               "type": "string",
               "maxLength": 255
-            }
+            },
+            "example": "Math"
           },
           {
             "name": "barcode",
@@ -4428,7 +4518,8 @@
             "schema": {
               "type": "string",
               "maxLength": 64
-            }
+            },
+            "example": "0012345"
           },
           {
             "name": "student_id",
@@ -4437,7 +4528,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 123
           },
           {
             "name": "status",
@@ -4450,7 +4542,8 @@
                 "returned",
                 "overdue"
               ]
-            }
+            },
+            "example": "active"
           },
           {
             "name": "from",
@@ -4459,7 +4552,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-10-01"
           },
           {
             "name": "to",
@@ -4468,7 +4562,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-10-28"
           },
           {
             "name": "page",
@@ -4477,7 +4572,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 1
           },
           {
             "name": "per_page",
@@ -4488,7 +4584,8 @@
               "minimum": 1,
               "maximum": 100,
               "default": 20
-            }
+            },
+            "example": 20
           }
         ],
         "x-codeSamples": [
@@ -4639,7 +4736,8 @@
             "schema": {
               "type": "string",
               "maxLength": 255
-            }
+            },
+            "example": "Math"
           },
           {
             "name": "barcode",
@@ -4648,7 +4746,8 @@
             "schema": {
               "type": "string",
               "maxLength": 64
-            }
+            },
+            "example": "0012345"
           },
           {
             "name": "student_id",
@@ -4657,7 +4756,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 123
           },
           {
             "name": "status",
@@ -4670,7 +4770,8 @@
                 "returned",
                 "overdue"
               ]
-            }
+            },
+            "example": "active"
           },
           {
             "name": "from",
@@ -4679,7 +4780,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-10-01"
           },
           {
             "name": "to",
@@ -4688,7 +4790,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-10-28"
           }
         ],
         "x-codeSamples": [
@@ -4822,7 +4925,8 @@
                 "student",
                 "book"
               ]
-            }
+            },
+            "example": "book"
           },
           {
             "name": "q",
@@ -4831,7 +4935,8 @@
             "schema": {
               "type": "string",
               "maxLength": 255
-            }
+            },
+            "example": "0012345"
           },
           {
             "name": "exact",
@@ -4839,7 +4944,8 @@
             "required": false,
             "schema": {
               "type": "boolean"
-            }
+            },
+            "example": true
           }
         ],
         "x-codeSamples": [
@@ -4944,13 +5050,26 @@
               "schema": {
                 "$ref": "#/components/schemas/LibraryOperationRequest"
               },
-              "example": {
-                "student_code": "student:123",
-                "barcodes": [
-                  "0012345"
-                ],
-                "mode": "issue",
-                "due_at": "2026-12-01"
+              "examples": {
+                "issue": {
+                  "value": {
+                    "student_code": "student:123",
+                    "barcodes": [
+                      "0012345"
+                    ],
+                    "mode": "issue",
+                    "due_at": "2026-12-01"
+                  }
+                },
+                "return": {
+                  "value": {
+                    "student_code": "student:123",
+                    "barcodes": [
+                      "0012345"
+                    ],
+                    "mode": "return"
+                  }
+                }
               }
             }
           }
@@ -4960,6 +5079,11 @@
             "lang": "Shell",
             "label": "cURL",
             "source": "curl -X POST 'https://school.example/api/mobile/v1/library/operations' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json' \\\n  -H 'Content-Type: application/json' \\\n  --data '{\"student_code\": \"student:123\", \"barcodes\": [\"0012345\"], \"mode\": \"issue\", \"due_at\": \"2026-12-01\"}'"
+          },
+          {
+            "lang": "Shell",
+            "label": "Return copies",
+            "source": "curl -X POST 'https://school.example/api/mobile/v1/library/operations' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json' \\\n  -H 'Content-Type: application/json' \\\n  --data '{\"student_code\": \"student:123\", \"barcodes\": [\"0012345\"], \"mode\": \"return\"}'"
           }
         ]
       }
@@ -5065,9 +5189,9 @@
                 "example": {
                   "student": {
                     "id": 123,
-                    "full_name": "Alice Example",
+                    "full_name": "Example Alice",
                     "classroom_id": 12,
-                    "classroom": "5 A"
+                    "classroom": "5A"
                   },
                   "events": [
                     {
@@ -5195,7 +5319,8 @@
             "schema": {
               "type": "string",
               "maxLength": 255
-            }
+            },
+            "example": "Math"
           },
           {
             "name": "barcode",
@@ -5204,7 +5329,8 @@
             "schema": {
               "type": "string",
               "maxLength": 64
-            }
+            },
+            "example": "0012345"
           },
           {
             "name": "status",
@@ -5217,7 +5343,8 @@
                 "returned",
                 "overdue"
               ]
-            }
+            },
+            "example": "active"
           },
           {
             "name": "from",
@@ -5226,7 +5353,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-10-01"
           },
           {
             "name": "to",
@@ -5235,7 +5363,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-10-28"
           },
           {
             "name": "page",
@@ -5244,7 +5373,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 1
           },
           {
             "name": "per_page",
@@ -5255,7 +5385,8 @@
               "minimum": 1,
               "maximum": 100,
               "default": 20
-            }
+            },
+            "example": 20
           }
         ],
         "responses": {
@@ -5269,9 +5400,9 @@
                 "example": {
                   "student": {
                     "id": 123,
-                    "full_name": "Alice Example",
+                    "full_name": "Example Alice",
                     "classroom_id": 12,
-                    "classroom": "5 A"
+                    "classroom": "5A"
                   },
                   "loans": [
                     {
