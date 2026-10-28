@@ -33,6 +33,8 @@ Route::prefix('mobile/v1/auth')->group(function (): void {
 
 Route::prefix('mobile/v1')->middleware('auth:api')->group(function (): void {
     Route::get('/attendance', AttendanceController::class);
+    Route::get('/students/{student}/attendance', [AttendanceController::class, 'studentHistory'])->whereNumber('student');
+    Route::get('/students/{student}/books', [LibraryController::class, 'studentBooks'])->whereNumber('student');
     Route::prefix('library')->controller(LibraryController::class)->group(function (): void {
         Route::get('/books', 'books');
         Route::get('/books/{book}', 'showBook')->whereNumber('book');

@@ -4963,6 +4963,428 @@
           }
         ]
       }
+    },
+    "/students/{student}/attendance": {
+      "get": {
+        "tags": [
+          "Attendance"
+        ],
+        "operationId": "getStudentAttendance",
+        "summary": "Attendance scan history for one student",
+        "description": "Teacher or director with assigned school (profile or first school scope). Foreign or missing students return 404. Archived students remain accessible within their current school. Only events whose BIN matches the assigned school are returned. Every matching scan is included, without daily deduplication, sorted by create_time DESC then id DESC. No dates means all available history. date selects one day; date_from/date_to are inclusive independent bounds. Combined date filters intersect. Dates use application timezone. Null direction is preserved for legacy scans. Client school_id/student_id never override the path or school scope. No sensitive student identifiers or raw terminal payloads are included.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 123
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-10-28"
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-10-01"
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-10-28"
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "entry",
+                "exit"
+              ]
+            },
+            "example": "entry"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "example": 50
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All matching student scans, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentAttendanceResponse"
+                },
+                "example": {
+                  "student": {
+                    "id": 123,
+                    "full_name": "Alice Example",
+                    "classroom_id": 12,
+                    "classroom": "5 A"
+                  },
+                  "events": [
+                    {
+                      "id": 502,
+                      "direction": "exit",
+                      "create_time": "2026-10-28T14:00:00+05:00"
+                    },
+                    {
+                      "id": 501,
+                      "direction": "entry",
+                      "create_time": "2026-10-28T08:00:00+05:00"
+                    }
+                  ],
+                  "meta": {
+                    "current_page": 1,
+                    "per_page": 50,
+                    "last_page": 1,
+                    "total": 2
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found within the assigned school (includes students of other schools).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl 'https://school.example/api/mobile/v1/students/123/attendance?date_from=2026-10-01&date_to=2026-10-28&per_page=50' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
+          }
+        ]
+      }
+    },
+    "/students/{student}/books": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "operationId": "getStudentBookHistory",
+        "summary": "Book lending and return history for one student",
+        "description": "Teacher, director or library role with an assigned school (profile or first school scope). Missing or foreign student returns 404. Archived students retain history access within their current school. Only loans from the assigned school stock are returned. school_id and student_id inputs cannot override the path or school scope. All issue records are returned, including active, overdue and fully returned loans, newest issued_at then ID first. from/to filter inclusive issue dates; either bound can be omitted. No dates means all history. Each loan contains total quantity, returned, outstanding and individual returns (id, quantity, returned_at), ordered oldest first by timestamp then ID. Return history includes all returns attached to matching loans, regardless of return date. Database timestamps use application timezone. Default per_page=20, maximum=100. Empty history returns loans=[].",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "student",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 123
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "barcode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "returned",
+                "overdue"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Student lending history with individual returns",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentBookHistoryResponse"
+                },
+                "example": {
+                  "student": {
+                    "id": 123,
+                    "full_name": "Alice Example",
+                    "classroom_id": 12,
+                    "classroom": "5 A"
+                  },
+                  "loans": [
+                    {
+                      "id": 1,
+                      "stock_id": 1,
+                      "student_id": 123,
+                      "quantity": 3,
+                      "issued_at": "2026-10-28 09:00:00",
+                      "due_at": "2026-12-01",
+                      "issued_by": 43,
+                      "note": null,
+                      "created_at": "2026-10-28 09:00:00",
+                      "updated_at": "2026-10-28 09:00:00",
+                      "title": "Mathematics",
+                      "barcode": "0012345",
+                      "book_grade": null,
+                      "first_name": "Alice",
+                      "last_name": "Example",
+                      "grade": null,
+                      "letter": null,
+                      "returned": 1,
+                      "outstanding": 2,
+                      "returns": [
+                        {
+                          "id": 1,
+                          "quantity": 1,
+                          "returned_at": "2026-10-28 12:00:00"
+                        }
+                      ]
+                    }
+                  ],
+                  "meta": {
+                    "current_page": 1,
+                    "per_page": 20,
+                    "last_page": 1,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Missing teacher role, students.manage or school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "Teacher order access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Student not found within the assigned school (includes students of other schools).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "No query results for model [App\\Models\\Student] 999999"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "label": "cURL",
+            "source": "curl 'https://school.example/api/mobile/v1/students/123/books?from=2026-10-01&to=2026-10-28&per_page=20' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -7346,6 +7768,238 @@
             "format": "date",
             "nullable": true,
             "description": "Required for issue, today or later when supplied."
+          }
+        }
+      },
+      "StudentAttendanceResponse": {
+        "type": "object",
+        "required": [
+          "student",
+          "events",
+          "meta"
+        ],
+        "properties": {
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "full_name": {
+                "type": "string"
+              },
+              "classroom_id": {
+                "type": "integer",
+                "nullable": true
+              },
+              "classroom": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "direction",
+                "create_time"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "direction": {
+                  "type": "string",
+                  "nullable": true,
+                  "enum": [
+                    "entry",
+                    "exit",
+                    null
+                  ]
+                },
+                "create_time": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "integer"
+              },
+              "per_page": {
+                "type": "integer"
+              },
+              "last_page": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      },
+      "StudentBookHistoryLoan": {
+        "type": "object",
+        "required": [
+          "id",
+          "stock_id",
+          "student_id",
+          "quantity",
+          "issued_by",
+          "returned",
+          "outstanding",
+          "issued_at",
+          "due_at",
+          "note",
+          "created_at",
+          "updated_at",
+          "title",
+          "barcode",
+          "first_name",
+          "last_name",
+          "letter",
+          "grade",
+          "book_grade",
+          "returns"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "stock_id": {
+            "type": "integer"
+          },
+          "student_id": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "issued_by": {
+            "type": "integer",
+            "nullable": true
+          },
+          "returned": {
+            "type": "integer"
+          },
+          "outstanding": {
+            "type": "integer"
+          },
+          "issued_at": {
+            "type": "string"
+          },
+          "due_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "updated_at": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "barcode": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "last_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "letter": {
+            "type": "string",
+            "nullable": true
+          },
+          "grade": {
+            "type": "integer",
+            "nullable": true
+          },
+          "book_grade": {
+            "type": "integer",
+            "nullable": true
+          },
+          "returns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "quantity",
+                "returned_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "returned_at": {
+                  "type": "string",
+                  "description": "Database timestamp in application timezone (YYYY-MM-DD HH:mm:ss)."
+                }
+              }
+            }
+          }
+        }
+      },
+      "StudentBookHistoryResponse": {
+        "type": "object",
+        "required": [
+          "student",
+          "loans",
+          "meta"
+        ],
+        "properties": {
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "full_name": {
+                "type": "string"
+              },
+              "classroom_id": {
+                "type": "integer",
+                "nullable": true
+              },
+              "classroom": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "loans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentBookHistoryLoan"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/LibraryPageMeta"
           }
         }
       }

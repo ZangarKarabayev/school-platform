@@ -417,3 +417,42 @@ Operations require no web session/token. Each successful POST is a new mutation;
 after an ambiguous network result check loans before repeating it.
 Overdue counts loan rows; returns are allocated to oldest outstanding loans.
 Spreadsheet import/export remain web features. No new database migration is required.
+
+## Student attendance history
+
+`GET /api/mobile/v1/students/123/attendance?date_from=2026-10-01&date_to=2026-10-28`
+
+Bearer token; teacher/director with assigned school. Missing or foreign student: 404.
+Archived students within the assigned school retain history access. Only events
+matching the student's ID and assigned school's BIN are returned.
+
+Optional filters: date (one day), date_from/date_to (inclusive, either may be
+omitted), direction (entry/exit), page, per_page (default 50, max 100). Combined
+date filters intersect. No dates means all available history. Dates use app timezone.
+Unlike the daily attendance list, history includes every scan, ordered by event
+time descending and ID descending. Legacy null direction is preserved.
+
+Response: student(id/full_name/classroom_id/classroom), events(id/direction/
+create_time in ISO 8601, nullable if terminal omitted timestamp), and
+meta(current_page/per_page/last_page/total). Empty history returns events=[].
+OpenAPI includes the response schema, JSON example, query examples and cURL.
+
+## Student book history
+
+`GET /api/mobile/v1/students/123/books?from=2026-10-01&to=2026-10-28&per_page=20`
+
+Bearer authentication; teacher/director/library with assigned school. Foreign
+or missing student returns 404. Archived students retain school-scoped access.
+Client school_id/student_id cannot redirect this history to another student/school.
+
+Filters: search (book title or partial barcode), barcode (exact), status
+(active/returned/overdue), from/to (inclusive issue dates, either independently),
+page, per_page (default 20, max 100). No dates means all available history.
+
+Response: student(id/full_name/classroom_id/classroom), loans, meta.
+Loans have the same fields as `/library/loans`, plus returns[] containing
+id, quantity, returned_at. quantity/returned/outstanding show issued, returned
+and remaining copies. Every individual return on a matching loan is included,
+regardless of return date, oldest first. Database timestamps use app timezone.
+Loans sort by issued_at descending, then ID descending. Empty history: loans=[].
+OpenAPI includes full schemas, JSON response example and a cURL request example.

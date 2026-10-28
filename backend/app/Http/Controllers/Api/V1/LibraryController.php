@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Student;
 use App\Services\Library\LibraryService;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
@@ -41,9 +42,9 @@ class LibraryController extends Controller
         ]);
     }
 
-    private function page(string $key, LengthAwarePaginator $page): JsonResponse
+    private function page(string $key, LengthAwarePaginator $page, array $extra = []): JsonResponse
     {
-        return response()->json([$key => $page->items(), 'meta' => [
+        return response()->json($extra + [$key => $page->items(), 'meta' => [
             'current_page' => $page->currentPage(), 'per_page' => $page->perPage(),
             'last_page' => $page->lastPage(), 'total' => $page->total(),
         ]]);
@@ -145,11 +146,11 @@ class LibraryController extends Controller
         return response()->json(['stock' => $this->stock($this->library->stockQuery($schoolId)->where('b.barcode', $data['barcode'])->first())]);
     }
 
-    private function loansQuery(Request $request, int $schoolId): Builder
+    private function loansQuery(Request $request, int $schoolId, ?int $studentId = null): Builder
     {
         // Date validation is performed by filters(), including an independent upper bound.
         return $this->library->loanQuery($schoolId)
-            ->when($request->filled('student_id'), fn ($q) => $q->where('l.student_id', $request->integer('student_id')))
+            ->when($studentId !== null || $request->filled('student_id'), fn ($q) => $q->where('l.student_id', $studentId ?? $request->integer('student_id')))
             ->when($request->filled('barcode'), fn ($q) => $q->where('b.barcode', $request->input('barcode')))
             ->when($request->filled('search'), fn ($q) => $q->where(fn ($q) => $q
                 ->where('b.title', 'like', '%'.$request->input('search').'%')->orWhere('b.barcode', 'like', '%'.$request->input('search').'%')))
@@ -166,6 +167,30 @@ class LibraryController extends Controller
         $filters = $this->filters($request);
 
         return $this->page('loans', $this->loansQuery($request, $schoolId)->orderByDesc('l.issued_at')->orderByDesc('l.id')->paginate($filters['per_page'] ?? 20)->through(fn ($loan) => $this->loan($loan)));
+    }
+
+    public function studentBooks(Request $request, int $student): JsonResponse
+    {
+        $schoolId = $this->school($request);
+        $person = Student::withTrashed()->with('classroom')->where('school_id', $schoolId)->findOrFail($student);
+        $filters = $this->filters($request);
+        $loans = $this->loansQuery($request, $schoolId, $person->id)
+            ->orderByDesc('l.issued_at')->orderByDesc('l.id')->paginate($filters['per_page'] ?? 20);
+        $returns = DB::table('library_returns')->whereIn('loan_id', $loans->getCollection()->pluck('id'))
+            ->orderBy('returned_at')->orderBy('id')->get(['id', 'loan_id', 'quantity', 'returned_at'])->groupBy('loan_id');
+        $loans->through(function ($loan) use ($returns): object {
+            $loan = $this->loan($loan);
+            $loan->returns = $returns->get($loan->id, collect())->map(fn ($return): array => [
+                'id' => $return->id, 'quantity' => (int) $return->quantity, 'returned_at' => $return->returned_at,
+            ])->values()->all();
+
+            return $loan;
+        });
+
+        return $this->page('loans', $loans, ['student' => [
+            'id' => $person->id, 'full_name' => $person->full_name,
+            'classroom_id' => $person->classroom_id, 'classroom' => $person->classroom?->full_name,
+        ]]);
     }
 
     public function reports(Request $request): JsonResponse

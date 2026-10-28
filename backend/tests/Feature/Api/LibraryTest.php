@@ -126,6 +126,56 @@ class LibraryTest extends TestCase
             ->assertOk()->assertJsonPath('meta.total', 0);
     }
 
+    public function test_student_book_history_includes_partial_returns_and_cannot_be_redirected(): void
+    {
+        $f = $this->fixture(scope: true);
+        $loan = DB::table('library_loans')->insertGetId([
+            'stock_id' => $f['stock'], 'student_id' => $f['student']->id,
+            'quantity' => 3, 'issued_at' => '2026-10-20 08:00:00', 'due_at' => today()->subDay(),
+        ]);
+        $first = DB::table('library_returns')->insertGetId(['loan_id' => $loan, 'quantity' => 1, 'returned_at' => '2026-10-21 09:00:00']);
+        $second = DB::table('library_loans')->insertGetId([
+            'stock_id' => $f['stock'], 'student_id' => $f['student']->id,
+            'quantity' => 1, 'issued_at' => '2026-10-20 08:00:00',
+        ]);
+        $peer = Student::create(['school_id' => $f['school'], 'first_name' => 'Peer']);
+        DB::table('library_loans')->insert([
+            'stock_id' => $f['stock'], 'student_id' => $peer->id, 'quantity' => 1, 'issued_at' => now(),
+        ]);
+        $url = '/api/mobile/v1/students/'.$f['student']->id.'/books';
+        $this->getJson($url.'?school_id='.$f['other'].'&student_id='.$peer->id.'&per_page=1')
+            ->assertOk()->assertJsonPath('student.full_name', 'Alice')->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('loans.0.id', $second)->assertJsonPath('loans.0.returns', [])
+            ->assertJsonMissingPath('student.iin');
+        $this->getJson($url.'?per_page=1&page=2')->assertOk()->assertJsonPath('loans.0.id', $loan)
+            ->assertJsonPath('loans.0.quantity', 3)->assertJsonPath('loans.0.returned', 1)
+            ->assertJsonPath('loans.0.outstanding', 2)->assertJsonPath('loans.0.returns.0.id', $first)
+            ->assertJsonPath('loans.0.returns.0.quantity', 1)->assertJsonPath('loans.0.returns.0.returned_at', '2026-10-21 09:00:00');
+        $this->getJson($url.'?status=overdue&barcode=0012345&from=2026-10-20&to=2026-10-20&search=Math')
+            ->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('loans.0.id', $loan);
+        DB::table('library_returns')->insert(['loan_id' => $loan, 'quantity' => 2, 'returned_at' => '2026-10-22 10:00:00']);
+        $this->getJson($url.'?status=returned')->assertOk()->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('loans.0.outstanding', 0)->assertJsonCount(2, 'loans.0.returns');
+        $this->getJson($url.'?from=2026-10-21')->assertOk()->assertJsonPath('loans', []);
+    }
+
+    public function test_student_book_history_school_access_empty_and_archived_students(): void
+    {
+        $this->getJson('/api/mobile/v1/students/1/books')->assertUnauthorized();
+        $f = $this->fixture('teacher');
+        $url = '/api/mobile/v1/students/'.$f['student']->id.'/books';
+        $this->getJson($url)->assertOk()->assertJsonPath('loans', []);
+        $this->getJson('/api/mobile/v1/students/'.$f['foreign']->id.'/books')->assertNotFound();
+        $this->getJson('/api/mobile/v1/students/999999/books')->assertNotFound();
+        $f['student']->delete();
+        $this->getJson($url)->assertOk()->assertJsonPath('student.id', $f['student']->id);
+        $this->getJson($url.'?from=2026-10-28&to=2026-10-01&status=bad&page=0&per_page=101')
+            ->assertUnprocessable()->assertJsonValidationErrors(['to', 'status', 'page', 'per_page']);
+        $f['user']->update(['school_id' => null]);
+        app('auth')->forgetGuards();
+        $this->getJson($url)->assertForbidden();
+    }
+
     public function test_teacher_is_read_only_and_unassigned_users_are_denied(): void
     {
         $f = $this->fixture('teacher');
@@ -143,5 +193,6 @@ class LibraryTest extends TestCase
     {
         $f = $this->fixture('super_admin');
         $this->getJson('/api/mobile/v1/library/books?school_id='.$f['other'])->assertForbidden();
+        $this->getJson('/api/mobile/v1/students/'.$f['student']->id.'/books')->assertForbidden();
     }
 }
