@@ -7,6 +7,11 @@ return [
         'settings' => 'Настройки',
     ],
     'labels' => [
+        'parent_full_name' => 'ФИО родителя',
+        'remove_parent_confirm' => 'Удалить родителя?',
+        'parents' => 'Родители',
+        'add_parent' => 'Добавить родителя',
+        'remove_parent' => 'Удалить',
         'name' => 'Название',
         'name_ru' => 'Название (RU)',
         'name_kk' => 'Название (KK)',
@@ -101,4 +106,3 @@ return [
         'paid' => 'Платно',
     ],
 ];
-

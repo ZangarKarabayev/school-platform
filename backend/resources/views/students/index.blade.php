@@ -1269,6 +1269,8 @@
                         {{ __('ui.students.import_hint') }}
                     </div>
 
+                    @include('students.parents', ['student' => null, 'parentFieldClass' => 'field'])
+
                     <div class="students-actions" style="margin-top: 16px;">
                         <a class="btn secondary"
                             href="{{ route('students.import.template') }}">{{ __('ui.students.import_template') }}</a>

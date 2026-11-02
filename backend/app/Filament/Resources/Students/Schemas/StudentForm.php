@@ -6,11 +6,14 @@ use App\Models\AcademicClass;
 use App\Models\MealBenefit;
 use App\Models\Student;
 use App\Rules\ValidSchoolYear;
+use Filament\Actions\Action;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -104,6 +107,24 @@ class StudentForm
                             $component->state($record->latestMealBenefit?->type);
                         }
                     }),
+                Section::make(__('admin.labels.parents'))
+                    ->schema([
+                        Repeater::make('parents')
+                            ->hiddenLabel()
+                            ->addActionLabel(__('admin.labels.add_parent'))
+                            ->reorderable(false)
+                            ->relationship()
+                            ->schema([
+                                TextInput::make('full_name')->label(__('admin.labels.parent_full_name'))->maxLength(255),
+                                TextInput::make('iin')->label(__('admin.labels.iin'))->nullable()->regex('/^[0-9]{12}$/')->maxLength(12),
+                                TextInput::make('phone')->label(__('admin.labels.phone'))->tel()->mask('+7 (999) 999-99-99')->placeholder('+7 (777) 777-77-77')->required()->maxLength(20)->regex('/^(?:\+7|8)(?:[ ()-]*[0-9]){10}$/'),
+                            ])
+                            ->deleteAction(fn (Action $action): Action => $action->requiresConfirmation()->modalHeading(__('admin.labels.remove_parent_confirm')))
+                            ->defaultItems(0)
+                            ->columns(2)
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpanFull(),
             ]);
     }
 }

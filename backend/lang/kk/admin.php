@@ -7,6 +7,11 @@ return [
         'settings' => 'Баптаулар',
     ],
     'labels' => [
+        'parent_full_name' => 'Ата-ананың аты-жөні',
+        'remove_parent_confirm' => 'Ата-ананы жою керек пе?',
+        'parents' => 'Ата-аналар',
+        'add_parent' => 'Ата-ананы қосу',
+        'remove_parent' => 'Жою',
         'name' => 'Атауы',
         'name_ru' => 'Атауы (RU)',
         'name_kk' => 'Атауы (KK)',
@@ -70,7 +75,7 @@ return [
         'enabled' => 'Қосылған',
         'terminal' => "\u{0422}\u{0435}\u{0440}\u{043C}\u{0438}\u{043D}\u{0430}\u{043B}",
         'terminals' => "\u{0422}\u{0435}\u{0440}\u{043C}\u{0438}\u{043D}\u{0430}\u{043B}\u{0434}\u{0430}\u{0440}",
-        'device_id' => "Device ID",
+        'device_id' => 'Device ID',
         'last_heartbeat' => "\u{0421}\u{043E}\u{04A3}\u{0493}\u{044B} heartbeat",
         'menu_item' => 'Мәзір тармағы',
         'menu_items' => 'Мәзір тармақтары',
@@ -101,4 +106,3 @@ return [
         'paid' => 'Ақылы',
     ],
 ];
-

@@ -10,10 +10,10 @@ use App\Models\StudentImport;
 use App\Modules\Organizations\Models\School;
 use App\Rules\ValidSchoolYear;
 use App\Services\Students\StudentImportService;
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -32,13 +32,22 @@ class StudentController extends Controller
             'classroom_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('classrooms', 'id')->where(fn($query) => $query->where('grade', '>', 0)),
+                Rule::exists('classrooms', 'id')->where(fn ($query) => $query->where('grade', '>', 0)),
             ],
             'language' => ['nullable', Rule::in(['ru', 'kk'])],
             'shift' => ['nullable', Rule::in([1, 2, '1', '2'])],
             'school_year' => ['required', 'string', new ValidSchoolYear],
             'meal_benefit_type' => ['nullable', Rule::in(MealBenefit::TYPES)],
+            'parents' => ['sometimes', 'array'],
+            'parents.*' => ['array:full_name,iin,phone,gender'],
+            'parents.*.full_name' => ['nullable', 'string', 'max:255'],
+            'parents.*.iin' => ['nullable', 'string', 'regex:/^[0-9]{12}$/'],
+            'parents.*.phone' => ['required', 'string', 'max:20', 'regex:/^(?:\+7|8)(?:[ ()-]*[0-9]){10}$/'],
+            'parents.*.gender' => ['nullable', Rule::in(['male', 'female'])],
         ]);
+
+        $parents = $data['parents'] ?? ($request->boolean('parents_submitted') ? [] : null);
+        unset($data['parents']);
 
         $mealBenefitType = $data['meal_benefit_type'] ?? null;
         unset($data['meal_benefit_type']);
@@ -47,7 +56,12 @@ class StudentController extends Controller
         $data['birth_date'] = app(\App\Services\Students\StudentIdentityService::class)->extractBirthDateFromIin($data['iin'] ?? null);
         $data['gender'] = app(\App\Services\Students\StudentIdentityService::class)->extractGenderFromIin($data['iin'] ?? null);
 
-        $student = Student::query()->create($data);
+        $student = DB::transaction(function () use ($data, $parents): Student {
+            $student = Student::query()->create($data);
+            $student->parents()->createMany($parents ?? []);
+
+            return $student;
+        });
 
         if ($mealBenefitType !== null && $mealBenefitType !== '') {
             $student->mealBenefits()->create([
@@ -99,7 +113,7 @@ class StudentController extends Controller
             abort(500, 'Unable to create temporary template file.');
         }
 
-        $xlsxPath = $tempPath . '.xlsx';
+        $xlsxPath = $tempPath.'.xlsx';
 
         @unlink($tempPath);
 
@@ -143,7 +157,7 @@ class StudentController extends Controller
 
         $students = Student::query()
             ->with(['classroom', 'school', 'latestMealBenefit'])
-            ->when($restrictClassroomFilter && $userSchoolId !== null, fn($query) => $query->where('school_id', $userSchoolId))
+            ->when($restrictClassroomFilter && $userSchoolId !== null, fn ($query) => $query->where('school_id', $userSchoolId))
             ->when($filters['search'] !== '', function ($query) use ($filters): void {
                 $search = $filters['search'];
 
@@ -156,14 +170,14 @@ class StudentController extends Controller
                         ->orWhere('middle_name', 'like', "%{$search}%");
                 });
             })
-            ->when($filters['classroom_id'] !== null, fn($query) => $query->where('classroom_id', $filters['classroom_id']))
-            ->when($filters['school_id'] !== null, fn($query) => $query->where('school_id', $filters['school_id']))
+            ->when($filters['classroom_id'] !== null, fn ($query) => $query->where('classroom_id', $filters['classroom_id']))
+            ->when($filters['school_id'] !== null, fn ($query) => $query->where('school_id', $filters['school_id']))
             ->when($filters['status'] !== '', function ($query) use ($filters): void {
                 $query->whereHas('latestMealBenefit', function ($mealBenefitQuery) use ($filters): void {
                     $mealBenefitQuery->where('type', $filters['status']);
                 });
             })
-            ->when($filters['photo'] === 'with', fn($query) => $query->whereNotNull('photo')->where('photo', '!=', ''))
+            ->when($filters['photo'] === 'with', fn ($query) => $query->whereNotNull('photo')->where('photo', '!=', ''))
             ->when($filters['photo'] === 'without', function ($query): void {
                 $query->where(function ($photoQuery): void {
                     $photoQuery
@@ -171,7 +185,7 @@ class StudentController extends Controller
                         ->orWhere('photo', '');
                 });
             })
-            ->when($filters['photo_sync'] === 'synced', fn($query) => $query->whereNotNull('photo_synced_at'))
+            ->when($filters['photo_sync'] === 'synced', fn ($query) => $query->whereNotNull('photo_synced_at'))
             ->when($filters['photo_sync'] === 'not_synced', function ($query): void {
                 $query->where(function ($syncQuery): void {
                     $syncQuery
@@ -283,10 +297,11 @@ class StudentController extends Controller
         return view('students.edit', [
             'user' => $request->user()?->loadMissing('roles', 'scopes'),
             'student' => $student->load([
+                'parents',
                 'classroom',
                 'school',
                 'latestMealBenefit',
-                'orders' => fn($query) => $query
+                'orders' => fn ($query) => $query
                     ->with('dish')
                     ->orderByDesc('order_date')
                     ->orderByDesc('id'),
@@ -315,7 +330,7 @@ class StudentController extends Controller
             'classroom_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('classrooms', 'id')->where(fn($query) => $query->where('grade', '>', 0)),
+                Rule::exists('classrooms', 'id')->where(fn ($query) => $query->where('grade', '>', 0)),
             ],
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:65535'],
@@ -324,12 +339,21 @@ class StudentController extends Controller
             'shift' => ['nullable', Rule::in([1, 2, '1', '2'])],
             'school_year' => ['required', 'string', new ValidSchoolYear],
             'meal_benefit_type' => ['nullable', Rule::in(MealBenefit::TYPES)],
+            'parents' => ['sometimes', 'array'],
+            'parents.*' => ['array:full_name,iin,phone,gender'],
+            'parents.*.full_name' => ['nullable', 'string', 'max:255'],
+            'parents.*.iin' => ['nullable', 'string', 'regex:/^[0-9]{12}$/'],
+            'parents.*.phone' => ['required', 'string', 'max:20', 'regex:/^(?:\+7|8)(?:[ ()-]*[0-9]){10}$/'],
+            'parents.*.gender' => ['nullable', Rule::in(['male', 'female'])],
         ]);
 
         if (array_key_exists('phone', $data)) {
             $normalizedPhone = preg_replace('/\s+/', '', (string) $data['phone']) ?? '';
             $data['phone'] = $normalizedPhone !== '' ? $normalizedPhone : null;
         }
+
+        $parents = $data['parents'] ?? ($request->boolean('parents_submitted') ? [] : null);
+        unset($data['parents']);
 
         $mealBenefitType = $data['meal_benefit_type'] ?? null;
         unset($data['meal_benefit_type']);
@@ -340,7 +364,13 @@ class StudentController extends Controller
             $data['school_id'] = $userSchoolId;
         }
 
-        $student->update($data);
+        DB::transaction(function () use ($student, $data, $parents): void {
+            $student->update($data);
+            if ($parents !== null) {
+                $student->parents()->delete();
+                $student->parents()->createMany($parents);
+            }
+        });
 
         if ($mealBenefitType !== null && $mealBenefitType !== '' && $student->latestMealBenefit?->type !== $mealBenefitType) {
             $student->mealBenefits()->create([
@@ -431,7 +461,7 @@ class StudentController extends Controller
         }
 
         $extension = $matches['type'] === 'jpeg' ? 'jpg' : $matches['type'];
-        $path = 'user/photos/student-' . $student->id . '-' . now()->format('YmdHis') . '.' . $extension;
+        $path = 'user/photos/student-'.$student->id.'-'.now()->format('YmdHis').'.'.$extension;
 
         Storage::disk('public')->put($path, $binary);
 
@@ -447,7 +477,7 @@ class StudentController extends Controller
         }
 
         return $user?->scopes
-            ->first(fn($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
+            ->first(fn ($scope) => $scope->scope_type === 'school' && $scope->scope_id !== null)
             ?->scope_id;
     }
 
@@ -464,5 +494,4 @@ class StudentController extends Controller
 
         return in_array('teacher', $roleCodes, true) || in_array('director', $roleCodes, true);
     }
-
 }

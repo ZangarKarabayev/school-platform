@@ -132,6 +132,11 @@ class Student extends Model
         });
     }
 
+    public function parents(): HasMany
+    {
+        return $this->hasMany(StudentParent::class);
+    }
+
     public function classroom(): BelongsTo
     {
         return $this->belongsTo(AcademicClass::class, 'classroom_id');

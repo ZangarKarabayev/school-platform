@@ -907,6 +907,8 @@
                         </div>
                     </div>
 
+                    @include('students.parents')
+
                     <div class="student-edit-actions">
                         <button class="btn" type="submit">{{ __('ui.common.save') }}</button>
                         <a class="btn secondary" href="{{ route('students.index') }}">{{ __('ui.common.back') }}</a>
