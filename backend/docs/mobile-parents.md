@@ -8,8 +8,9 @@ Endpoints are limited to 30 requests per minute.
    Only the account's OTP-verified phone is allowed. Returns `found` and `parents`
    (contact IDs and names). No match: `{"found":false,"parents":[]}`.
 2. `POST /api/mobile/v1/parents/check-student-iin` with `{"iin":"160101500001"}`.
-   Returns `found` and `student` (`id`, `full_name`). A match requires an existing
-   contact for this child with the verified phone. No match: `{"found":false,"student":null}`.
+   Returns `found`, `student` (`id`, `full_name`) and `parent_id` for the matching
+   contact. A match requires an existing contact for this child with the verified
+   phone. No match: `{"found":false,"student":null,"parent_id":null}`.
 3. `POST /api/mobile/v1/parents/link-student` with `{"parent_id":1,"student_id":21}`.
    Returns `{"linked":true,"parent_id":1,"student_id":21}`. Repeat requests are safe.
    Try each contact ID from step 1 if the phone occurs on several child records;

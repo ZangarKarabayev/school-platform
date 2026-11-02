@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Student;
 use App\Models\StudentParent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -75,12 +74,15 @@ class ParentLinkController extends Controller
     {
         $phone = $this->verifiedPhone($request);
         $data = $request->validate(['iin' => ['required', 'string', 'regex:/^[0-9]{12}$/']]);
-        $student = Student::query()->where('iin', $data['iin'])
-            ->whereIn('id', $this->eligibleParents($request, $phone)->select('student_id'))->first();
+        $parent = $this->eligibleParents($request, $phone)
+            ->whereHas('student', fn ($query) => $query->where('iin', $data['iin']))
+            ->with('student')->orderBy('id')->first();
+        $student = $parent?->student;
 
         return response()->json([
             'found' => $student !== null,
             'student' => $student ? ['id' => $student->id, 'full_name' => $student->full_name] : null,
+            'parent_id' => $parent?->id,
         ]);
     }
 

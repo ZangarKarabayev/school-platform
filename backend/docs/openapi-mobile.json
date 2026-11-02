@@ -5718,7 +5718,8 @@
                   "type": "object",
                   "required": [
                     "found",
-                    "student"
+                    "student",
+                    "parent_id"
                   ],
                   "properties": {
                     "found": {
@@ -5739,6 +5740,10 @@
                         }
                       },
                       "nullable": true
+                    },
+                    "parent_id": {
+                      "type": "integer",
+                      "nullable": true
                     }
                   }
                 },
@@ -5747,7 +5752,8 @@
                   "student": {
                     "id": 1,
                     "full_name": "Child Example"
-                  }
+                  },
+                  "parent_id": 1
                 }
               }
             }

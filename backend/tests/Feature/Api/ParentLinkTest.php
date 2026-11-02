@@ -110,13 +110,18 @@ class ParentLinkTest extends TestCase
     public function test_verified_parent_can_check_and_link_multiple_children_idempotently(): void
     {
         $user = $this->login();
+        $studentsAndParents = [];
         foreach (['160101500001', '170101500001'] as $iin) {
             $student = Student::query()->create(['iin' => $iin, 'first_name' => 'Child']);
             $parent = $student->parents()->create(['full_name' => 'Parent', 'phone' => '8 (700) 123-45-67']);
-            $this->postJson('/api/mobile/v1/parents/check-phone', ['phone' => '+7 (700) 123-45-67'])
-                ->assertOk()->assertJsonPath('found', true);
-            $this->postJson('/api/mobile/v1/parents/check-student-iin', ['iin' => $iin])
-                ->assertOk()->assertJsonPath('student.id', $student->id);
+            $studentsAndParents[] = [$student, $parent];
+        }
+        $this->postJson('/api/mobile/v1/parents/check-phone', ['phone' => '+7 (700) 123-45-67'])
+            ->assertOk()->assertJsonPath('found', true);
+        foreach ($studentsAndParents as [$student, $parent]) {
+            $this->postJson('/api/mobile/v1/parents/check-student-iin', ['iin' => $student->iin])
+                ->assertOk()->assertJsonPath('student.id', $student->id)
+                ->assertJsonPath('parent_id', $parent->id);
             for ($i = 0; $i < 2; $i++) {
                 $this->postJson('/api/mobile/v1/parents/link-student', ['parent_id' => $parent->id, 'student_id' => $student->id])
                     ->assertOk()->assertJsonPath('linked', true);
@@ -133,7 +138,7 @@ class ParentLinkTest extends TestCase
         $foreign = $student->parents()->create(['phone' => '+77009999999']);
         $this->postJson('/api/mobile/v1/parents/check-phone', ['phone' => '+77009999999'])->assertForbidden();
         $this->postJson('/api/mobile/v1/parents/check-student-iin', ['iin' => $student->iin])
-            ->assertOk()->assertJsonPath('found', false)->assertJsonPath('student', null);
+            ->assertOk()->assertJsonPath('found', false)->assertJsonPath('student', null)->assertJsonPath('parent_id', null);
         $this->postJson('/api/mobile/v1/parents/link-student', ['parent_id' => $foreign->id, 'student_id' => $student->id])->assertNotFound();
         $own = $student->parents()->create(['phone' => '+77001234567']);
         $this->postJson('/api/mobile/v1/parents/link-student', ['parent_id' => $own->id, 'student_id' => 99999])->assertNotFound();
