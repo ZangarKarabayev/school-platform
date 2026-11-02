@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\LibraryController;
 use App\Http\Controllers\Api\V1\OrderCreateController;
 use App\Http\Controllers\Api\V1\OrderDeleteController;
 use App\Http\Controllers\Api\V1\OrderListController;
+use App\Http\Controllers\Api\V1\ParentLinkController;
 use App\Http\Controllers\Api\V1\StudentListController;
 use App\Http\Controllers\Api\V1\StudentManageController;
 use App\Http\Controllers\Api\V1\StudentReferenceController;
@@ -32,6 +33,12 @@ Route::prefix('mobile/v1/auth')->group(function (): void {
 });
 
 Route::prefix('mobile/v1')->middleware('auth:api')->group(function (): void {
+    Route::prefix('parents')->middleware('throttle:30,1')->group(function (): void {
+        Route::get('/me', [ParentLinkController::class, 'me']);
+        Route::post('/check-phone', [ParentLinkController::class, 'checkPhone']);
+        Route::post('/check-student-iin', [ParentLinkController::class, 'checkStudent']);
+        Route::post('/link-student', [ParentLinkController::class, 'link']);
+    });
     Route::get('/attendance', AttendanceController::class);
     Route::get('/students/{student}/attendance', [AttendanceController::class, 'studentHistory'])->whereNumber('student');
     Route::get('/students/{student}/books', [LibraryController::class, 'studentBooks'])->whereNumber('student');

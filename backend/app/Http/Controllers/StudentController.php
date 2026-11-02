@@ -367,8 +367,15 @@ class StudentController extends Controller
         DB::transaction(function () use ($student, $data, $parents): void {
             $student->update($data);
             if ($parents !== null) {
-                $student->parents()->delete();
-                $student->parents()->createMany($parents);
+                $keptIds = [];
+                foreach ($parents as $parentData) {
+                    $digits = preg_replace('/\D/', '', $parentData['phone']);
+                    $parentData['phone'] = '+7'.substr($digits, 1);
+                    $parent = $student->parents()->firstOrNew(['phone' => $parentData['phone']]);
+                    $parent->fill($parentData)->save();
+                    $keptIds[] = $parent->id;
+                }
+                $student->parents()->whereNotIn('id', $keptIds)->delete();
             }
         });
 

@@ -29,6 +29,9 @@
     },
     {
       "name": "Library"
+    },
+    {
+      "name": "Parents"
     }
   ],
   "paths": {
@@ -5515,6 +5518,711 @@
             "source": "curl 'https://school.example/api/mobile/v1/students/123/books?from=2026-10-01&to=2026-10-28&per_page=20' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Accept: application/json'"
           }
         ]
+      }
+    },
+    "/parents/check-phone": {
+      "post": {
+        "tags": [
+          "Parents"
+        ],
+        "operationId": "checkParentPhone",
+        "summary": "Check contacts matching the authenticated OTP-verified phone. Other phone numbers return 403. No match returns found=false and parents=[].",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phone"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "phone": "+77001234567"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "found",
+                    "parents"
+                  ],
+                  "properties": {
+                    "found": {
+                      "type": "boolean"
+                    },
+                    "parents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "full_name"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "full_name": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "found": true,
+                  "parents": [
+                    {
+                      "id": 1,
+                      "full_name": "Parent Example"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Unauthenticated."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Verify your phone with OTP first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Verify your phone with OTP first."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The given data was invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "The given data was invalid."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Attempts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Too Many Attempts."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parents/check-student-iin": {
+      "post": {
+        "tags": [
+          "Parents"
+        ],
+        "operationId": "checkParentStudentIin",
+        "summary": "Find an active student by IIN only when a parent contact matches the authenticated verified phone. Otherwise found=false and student=null.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "iin"
+                ],
+                "properties": {
+                  "iin": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "iin": "160101500001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "found",
+                    "student"
+                  ],
+                  "properties": {
+                    "found": {
+                      "type": "boolean"
+                    },
+                    "student": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "full_name"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "full_name": {
+                          "type": "string"
+                        }
+                      },
+                      "nullable": true
+                    }
+                  }
+                },
+                "example": {
+                  "found": true,
+                  "student": {
+                    "id": 1,
+                    "full_name": "Child Example"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Unauthenticated."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Verify your phone with OTP first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Verify your phone with OTP first."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The given data was invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "The given data was invalid."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Attempts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Too Many Attempts."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parents/link-student": {
+      "post": {
+        "tags": [
+          "Parents"
+        ],
+        "operationId": "linkParentStudent",
+        "summary": "Idempotently link the matching existing parent contact to the authenticated account via parents.user_id. Parent contact must already belong to this active student and match the verified phone; cannot claim another account contact. Multiple children are supported using separate contact records.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "parent_id",
+                  "student_id"
+                ],
+                "properties": {
+                  "parent_id": {
+                    "type": "integer"
+                  },
+                  "student_id": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "example": {
+                "parent_id": 1,
+                "student_id": 1
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "linked",
+                    "parent_id",
+                    "student_id"
+                  ],
+                  "properties": {
+                    "linked": {
+                      "type": "boolean"
+                    },
+                    "parent_id": {
+                      "type": "integer"
+                    },
+                    "student_id": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "example": {
+                  "linked": true,
+                  "parent_id": 1,
+                  "student_id": 1
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Unauthenticated."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Verify your phone with OTP first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Verify your phone with OTP first."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The given data was invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "The given data was invalid."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Attempts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Too Many Attempts."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Not found."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parents/me": {
+      "get": {
+        "tags": [
+          "Parents"
+        ],
+        "operationId": "getParentProfile",
+        "summary": "Get the authenticated parent and linked active children",
+        "description": "Requires an OTP-verified account phone. Uses only parents.user_id for the current account and matching verified phone; excludes unlinked, other-account and archived records. Children are deduplicated. Parent name and IIN use the first non-empty linked contact values ordered by ID; name falls back to account name. No user_id parameter is accepted for selecting another account.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current parent and linked children. Empty children array when no active links exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "parent",
+                    "children"
+                  ],
+                  "properties": {
+                    "parent": {
+                      "type": "object",
+                      "required": [
+                        "user_id",
+                        "full_name",
+                        "iin",
+                        "phone"
+                      ],
+                      "properties": {
+                        "user_id": {
+                          "type": "integer"
+                        },
+                        "full_name": {
+                          "type": "string"
+                        },
+                        "iin": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "phone": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "children": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "parent_id",
+                          "first_name",
+                          "last_name",
+                          "middle_name",
+                          "full_name",
+                          "iin",
+                          "birth_date",
+                          "gender",
+                          "classroom_id",
+                          "classroom",
+                          "school_id",
+                          "school",
+                          "school_year",
+                          "photo_url"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "parent_id": {
+                            "type": "integer"
+                          },
+                          "first_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "last_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "middle_name": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "full_name": {
+                            "type": "string"
+                          },
+                          "iin": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "birth_date": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "gender": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "classroom_id": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "classroom": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "school_id": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "school": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "school_year": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "photo_url": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "linked": {
+                    "value": {
+                      "parent": {
+                        "user_id": 10,
+                        "full_name": "Parent Example",
+                        "iin": "800101300001",
+                        "phone": "+77001234567"
+                      },
+                      "children": [
+                        {
+                          "id": 21,
+                          "parent_id": 1,
+                          "first_name": "Child",
+                          "last_name": "Example",
+                          "middle_name": null,
+                          "full_name": "Example Child",
+                          "iin": "160101500001",
+                          "birth_date": "2016-01-01",
+                          "gender": "male",
+                          "classroom_id": null,
+                          "classroom": null,
+                          "school_id": null,
+                          "school": null,
+                          "school_year": "2026-2027",
+                          "photo_url": null
+                        }
+                      ]
+                    }
+                  },
+                  "empty": {
+                    "value": {
+                      "parent": {
+                        "user_id": 10,
+                        "full_name": "Parent Example",
+                        "iin": null,
+                        "phone": "+77001234567"
+                      },
+                      "children": []
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthenticated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Unauthenticated."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Verify your phone with OTP first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Verify your phone with OTP first."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Attempts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Too Many Attempts."
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
