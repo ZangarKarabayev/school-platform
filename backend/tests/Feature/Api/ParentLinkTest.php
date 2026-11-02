@@ -23,6 +23,36 @@ class ParentLinkTest extends TestCase
         return $user;
     }
 
+    public function test_public_phone_check_returns_only_boolean_and_normalizes_phone(): void
+    {
+        $student = Student::query()->create(['first_name' => 'Secret child']);
+        $parent = $student->parents()->create(['full_name' => 'Secret parent', 'iin' => '800101300001', 'phone' => '+77001234567']);
+        $parent->user_id = User::factory()->create()->id;
+        $parent->save();
+        foreach (['+77001234567', '8 (700) 123-45-67', '+7 (700) 123-45-67'] as $phone) {
+            $this->postJson('/api/mobile/v1/parents/phone-exists', ['phone' => $phone])
+                ->assertOk()->assertExactJson(['found' => true])->assertHeader('Cache-Control', 'no-store, private');
+        }
+        $this->postJson('/api/mobile/v1/parents/phone-exists', ['phone' => '+77009999999'])
+            ->assertOk()->assertExactJson(['found' => false]);
+        $student->delete();
+        $this->postJson('/api/mobile/v1/parents/phone-exists', ['phone' => '+77001234567'])
+            ->assertOk()->assertExactJson(['found' => false]);
+        $this->assertDatabaseCount('otp_codes', 0);
+        $this->assertDatabaseCount('api_tokens', 0);
+    }
+
+    public function test_public_phone_check_validates_and_rate_limits_requests(): void
+    {
+        $this->postJson('/api/mobile/v1/parents/phone-exists', [])->assertUnprocessable()->assertJsonValidationErrors('phone');
+        $this->postJson('/api/mobile/v1/parents/phone-exists', ['phone' => 'letters'])->assertUnprocessable();
+        for ($i = 0; $i < 8; $i++) {
+            $this->postJson('/api/mobile/v1/parents/phone-exists', ['phone' => '+77001234567'])->assertOk();
+        }
+        $this->postJson('/api/mobile/v1/parents/phone-exists', ['phone' => '+77009999999'])
+            ->assertStatus(429)->assertHeader('Retry-After');
+    }
+
     public function test_parent_token_cannot_access_staff_student_endpoints(): void
     {
         $this->login();

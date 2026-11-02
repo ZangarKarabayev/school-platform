@@ -32,6 +32,9 @@ Route::prefix('mobile/v1/auth')->group(function (): void {
     });
 });
 
+Route::post('mobile/v1/parents/phone-exists', [ParentLinkController::class, 'phoneExists'])
+    ->middleware('throttle:parent-phone-check');
+
 Route::prefix('mobile/v1')->middleware('auth:api')->group(function (): void {
     Route::prefix('parents')->middleware('throttle:30,1')->group(function (): void {
         Route::get('/me', [ParentLinkController::class, 'me']);

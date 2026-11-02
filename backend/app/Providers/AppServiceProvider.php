@@ -38,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('parent-phone-check', static fn (Request $request) => Limit::perMinute(10)->by('parent-phone-check:'.$request->ip()));
+
         RateLimiter::for('mobile-login', static function (Request $request): array {
             $phone = preg_replace('/\D+/', '', (string) $request->input('phone', ''));
             if (strlen($phone) === 11 && str_starts_with($phone, '8')) {

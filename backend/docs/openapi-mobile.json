@@ -6224,6 +6224,107 @@
           }
         }
       }
+    },
+    "/parents/phone-exists": {
+      "post": {
+        "tags": [
+          "Parents"
+        ],
+        "operationId": "checkParentPhoneBeforeOtp",
+        "summary": "Check parent phone before requesting OTP (no authentication)",
+        "description": "Accepts +7 or 8 with optional spaces, parentheses and hyphens; normalizes to +7XXXXXXXXXX. Maximum 10 requests per minute per IP, including invalid requests. Does not send SMS, create accounts or tokens, or link children. Response uses Cache-Control: no-store. After found=true, use auth/phone/request-otp then auth/phone/verify-otp and the protected parents/check-phone to obtain parent_id. Real SMS delivery is not configured.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "phone"
+                ],
+                "properties": {
+                  "phone": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "phone": "+77001234567"
+              }
+            }
+          }
+        },
+        "responses": {
+          "422": {
+            "description": "The given data was invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "The given data was invalid."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Attempts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "message": "Too Many Attempts."
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Only existence is returned. Includes linked and unlinked contacts of non-archived students; never returns contact IDs, names, children or tokens.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "found"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "found": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "examples": {
+                  "found": {
+                    "value": {
+                      "found": true
+                    }
+                  },
+                  "notFound": {
+                    "value": {
+                      "found": false
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

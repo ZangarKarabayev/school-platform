@@ -11,6 +11,18 @@ use Illuminate\Support\Facades\DB;
 
 class ParentLinkController extends Controller
 {
+    public function phoneExists(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'phone' => ['required', 'string', 'max:20', 'regex:/^(?:\+7|8)(?:[ ()-]*[0-9]){10}$/'],
+        ]);
+
+        return response()->json([
+            'found' => StudentParent::query()->where('phone', $this->normalizePhone($data['phone']))
+                ->whereHas('student')->exists(),
+        ])->header('Cache-Control', 'no-store');
+    }
+
     public function me(Request $request): JsonResponse
     {
         $phone = $this->verifiedPhone($request);

@@ -1,6 +1,6 @@
 # Parent mobile linking
 
-All endpoints require `Authorization: Bearer <token>` and `Accept: application/json`.
+All protected endpoints below require `Authorization: Bearer <token>` and `Accept: application/json`.
 Sign in and verify the account phone through the existing phone OTP flow first.
 Endpoints are limited to 30 requests per minute.
 
@@ -34,3 +34,19 @@ without duplicates. Before linking, `children` is an empty array. Parent name an
 IIN come from the first non-empty linked contacts by ID; name falls back to the
 account name. Other account IDs supplied in query parameters do not change scope.
 Full response examples are in `/api/openapi.json` under `/parents/me`.
+
+## Public phone check before OTP
+
+`POST /api/mobile/v1/parents/phone-exists` needs no token.
+Request: `{"phone":"+7 (700) 123-45-67"}`.
+Response: exactly `{"found":true}` or `{"found":false}`.
+Checks contacts of active (non-archived) children, including contacts already
+linked to an account. Does not disclose names, IDs or children. Does not create
+an account, send a code or issue a token. Limit: 10 requests per minute per IP,
+including invalid requests; 429 includes Retry-After. Invalid phones return 422.
+
+Flow: phone-exists -> auth/phone/request-otp -> auth/phone/verify-otp -> token ->
+parents/check-phone (obtain parent_id) -> parents/check-student-iin ->
+parents/link-student -> parents/me.
+The protected check-phone endpoint and its response remain unchanged.
+Real SMS delivery still needs a provider; local/testing returns debug_code.
