@@ -958,10 +958,10 @@
                                         data-student-bulk-checkbox>
                                     @if ($student->photo)
                                         <img class="student-photo"
-                                            src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo) }}"
+                                            src="{{ route('students.photo.show', $student) }}"
                                             alt="{{ $student->full_name }}" data-photo-open="{{ $student->id }}"
                                             data-camera-name="{{ $student->full_name ?: __('ui.dashboard.user_fallback') }}"
-                                            data-photo-url="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo) }}"
+                                            data-photo-url="{{ route('students.photo.show', $student) }}"
                                             data-photo-initial="{{ mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1) }}">
                                     @else
                                         <div class="student-photo-placeholder" data-photo-open="{{ $student->id }}"
@@ -1075,11 +1075,11 @@
 
                                             @if ($student->photo)
                                                 <img class="student-photo"
-                                                    src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo) }}"
+                                                    src="{{ route('students.photo.show', $student) }}"
                                                     alt="{{ $student->full_name }}"
                                                     data-photo-open="{{ $student->id }}"
                                                     data-camera-name="{{ $student->full_name ?: __('ui.dashboard.user_fallback') }}"
-                                                    data-photo-url="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($student->photo) }}"
+                                                    data-photo-url="{{ route('students.photo.show', $student) }}"
                                                     data-photo-initial="{{ mb_substr($student->last_name ?: $student->first_name ?: 'S', 0, 1) }}">
                                             @else
                                                 <div class="student-photo-placeholder"
@@ -1471,6 +1471,7 @@
                     photoPreviewPlaceholder.style.display = 'grid';
                 }
 
+                photoModal.dataset.updateUrl = `/students/${studentId}/photo`;
                 photoModal.dataset.open = 'true';
             };
 
@@ -1731,4 +1732,5 @@
             syncBulkSelection();
         })();
     </script>
+    @include('students.photo-editor')
 @endsection

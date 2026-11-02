@@ -611,6 +611,7 @@
                         photoPreviewPlaceholder.style.display = 'grid';
                     }
 
+                    photoModal.dataset.updateUrl = @json(route('students.photo.update', $student));
                     photoModal.dataset.open = 'true';
                 };
 
@@ -1126,4 +1127,5 @@
             });
         })();
     </script>
+    @include('students.photo-editor')
 @endsection
