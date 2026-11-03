@@ -1,5 +1,11 @@
 @extends('layouts.auth-minimal')
 
+@if ($school)
+    @section('page-heading')
+        {{ $school->display_name }}
+    @endsection
+@endif
+
 @section('content')
     <style>
         .kitchen-page {

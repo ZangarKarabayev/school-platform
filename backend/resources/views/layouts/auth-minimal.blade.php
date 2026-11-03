@@ -56,6 +56,23 @@
             overflow: hidden;
         }
 
+        .page-heading-group {
+            width: 100%;
+            display: grid;
+            justify-items: center;
+            gap: 24px;
+        }
+
+        .page-heading {
+            margin: 0;
+            max-width: 960px;
+            color: var(--text);
+            font-size: clamp(22px, 3vw, 32px);
+            line-height: 1.3;
+            text-align: center;
+            overflow-wrap: anywhere;
+        }
+
         .hero {
             padding: 18px 22px;
             background: var(--primary);
@@ -225,6 +242,10 @@
 
 <body>
     <div class="wrap">
+        @hasSection('page-heading')
+            <div class="page-heading-group">
+                <h2 class="page-heading">@yield('page-heading')</h2>
+        @endif
         <div class="card">
             <div class="hero">
                 <h1>{{ __('ui.app_name') }}</h1>
@@ -234,6 +255,9 @@
                 @yield('content')
             </div>
         </div>
+        @hasSection('page-heading')
+            </div>
+        @endif
     </div>
     @include('auth.partials.phone-mask-script')
     @include('auth.partials.password-toggle-script')
