@@ -45,6 +45,8 @@
 
         .kitchen-toolbar-actions {
             display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
             justify-content: flex-end;
         }
 
@@ -516,6 +518,7 @@
                     @endif
                 </div>
                 <div class="kitchen-toolbar-actions">
+                    <a class="kitchen-btn secondary" href="{{ route('dashboard') }}">{{ __('ui.common.home') }}</a>
                     <form class="kitchen-logout-form" method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button class="kitchen-btn secondary" type="submit">{{ __('ui.common.logout') }}</button>

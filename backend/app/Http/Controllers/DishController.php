@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Dish;
 use App\Models\DishCategory;
+use App\Modules\Access\Enums\RoleCode;
 use App\Modules\Organizations\Models\School;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -44,6 +45,7 @@ class DishController extends Controller
         return view('dishes.index', [
             'user' => $request->user()?->loadMissing('roles', 'scopes'),
             'dishes' => $dishes,
+            'canManageDishes' => $request->user()->hasRole(RoleCode::Kitchen->value),
             'filters' => $filters,
             'schoolId' => $schoolId,
             'schools' => $request->user()->assignedSchoolId() === null
@@ -58,6 +60,8 @@ class DishController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->hasRole(RoleCode::Kitchen->value), 403);
+
         $schoolId = $this->schoolId($request);
         $data = $request->validate([
             'school_id' => [Rule::requiredIf($schoolId === null), 'nullable', 'integer', 'exists:schools,id'],
@@ -123,6 +127,8 @@ class DishController extends Controller
 
     public function updateMain(Request $request, Dish $dish): RedirectResponse
     {
+        abort_unless($request->user()->hasRole(RoleCode::Kitchen->value), 403);
+
         abort_unless($dish->school_id !== null && $this->schoolId($request) === (int) $dish->school_id, 403);
         $data = $request->validate(['is_main' => ['required', 'boolean']]);
 
@@ -139,6 +145,8 @@ class DishController extends Controller
 
     public function updatePhoto(Request $request, Dish $dish): RedirectResponse
     {
+        abort_unless($request->user()->hasRole(RoleCode::Kitchen->value), 403);
+
         abort_unless($dish->school_id !== null && $this->schoolId($request) === (int) $dish->school_id, 403);
         $request->validate([
             'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
@@ -169,6 +177,8 @@ class DishController extends Controller
 
     public function destroy(Request $request, Dish $dish): RedirectResponse
     {
+        abort_unless($request->user()->hasRole(RoleCode::Kitchen->value), 403);
+
         abort_unless($dish->school_id !== null && $this->schoolId($request) === (int) $dish->school_id, 403);
         $dish->delete();
 

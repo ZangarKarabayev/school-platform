@@ -44,7 +44,8 @@ class KitchenAccessTest extends TestCase
     {
         $this->get(route('kitchen.index'))
             ->assertOk()
-            ->assertSee('/kitchen/{token}', false);
+            ->assertSee('/kitchen/{token}', false)
+            ->assertSee('href="'.route('dashboard').'"', false);
     }
 
     public function test_kitchen_scan_creates_only_one_order_per_student_per_day(): void

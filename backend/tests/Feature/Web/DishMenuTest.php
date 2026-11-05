@@ -4,6 +4,7 @@ namespace Tests\Feature\Web;
 
 use App\Models\Dish;
 use App\Models\User;
+use App\Modules\Access\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -13,6 +14,43 @@ use Tests\TestCase;
 class DishMenuTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function kitchenUser(array $attributes = []): User
+    {
+        $user = User::factory()->create($attributes);
+        $role = Role::firstOrCreate(['code' => 'kitchen'], ['name' => 'Kitchen']);
+        $user->roles()->attach($role);
+
+        return $user;
+    }
+
+    public function test_only_kitchen_role_can_modify_menu(): void
+    {
+        $school = $this->school('roles');
+        $dish = Dish::create(['school_id' => $school, 'name' => 'Bread', 'category' => 'Bread', 'price' => 100]);
+
+        foreach ([null, 'teacher', 'director', 'library', 'super_admin', 'support_admin'] as $code) {
+            $user = User::factory()->create(['school_id' => $school]);
+            if ($code !== null) {
+                $user->roles()->attach(Role::firstOrCreate(['code' => $code], ['name' => $code]));
+            }
+            $this->actingAs($user);
+            $this->get(route('dishes.index'))->assertOk()
+                ->assertDontSee('class="dishes-form"', false)
+                ->assertDontSee('id="dish-photo-upload"', false)
+                ->assertDontSee('class="btn dish-delete"', false);
+            $this->post(route('dishes.store'), [])->assertForbidden();
+            $this->patch(route('dishes.main', $dish), ['is_main' => true])->assertForbidden();
+            $this->post(route('dishes.photo', $dish), [])->assertForbidden();
+            $this->delete(route('dishes.destroy', $dish))->assertForbidden();
+        }
+
+        $this->assertDatabaseHas('dishes', ['id' => $dish->id, 'is_main' => false, 'deleted_at' => null]);
+        $this->actingAs($this->kitchenUser(['school_id' => $school]));
+        $this->get(route('dishes.index'))->assertOk()->assertSee('class="dishes-form"', false);
+        $this->patch(route('dishes.main', $dish), ['is_main' => true])->assertRedirect();
+        $this->assertTrue($dish->fresh()->is_main);
+    }
 
     private function school(string $code): int
     {
@@ -29,7 +67,7 @@ class DishMenuTest extends TestCase
         Dish::create(['school_id' => $school, 'name' => 'Own dish', 'category' => 'Хлеб', 'price' => 100]);
         Dish::create(['school_id' => $other, 'name' => 'Other dish', 'category' => 'Хлеб', 'price' => 200]);
 
-        $this->actingAs(User::factory()->create(['school_id' => $school]))
+        $this->actingAs($this->kitchenUser(['school_id' => $school]))
             ->get(route('dishes.index', ['school_id' => $other, 'lang' => 'kk']))
             ->assertOk()->assertSee('Own dish')->assertDontSee('Other dish')
             ->assertSee('Санат')->assertSee('Нан')->assertDontSee('Calories');
@@ -44,7 +82,7 @@ class DishMenuTest extends TestCase
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='
         ));
 
-        $this->actingAs(User::factory()->create(['school_id' => $school]))
+        $this->actingAs($this->kitchenUser(['school_id' => $school]))
             ->post(route('dishes.store'), [
                 'school_id' => $other, 'name' => 'School bread', 'description' => 'Own description',
                 'category' => 'Хлеб', 'price' => '125.50', 'photo' => $photo,
@@ -59,7 +97,7 @@ class DishMenuTest extends TestCase
 
     public function test_invalid_price_category_and_photo_are_rejected(): void
     {
-        $this->actingAs(User::factory()->create(['school_id' => $this->school('one')]))
+        $this->actingAs($this->kitchenUser(['school_id' => $this->school('one')]))
             ->post(route('dishes.store'), [
                 'name' => 'Invalid', 'category' => 'Unknown', 'price' => '-1',
                 'photo' => UploadedFile::fake()->create('file.txt', 1, 'text/plain'),
@@ -69,7 +107,7 @@ class DishMenuTest extends TestCase
 
     public function test_creation_rejects_missing_fields_and_excessive_lengths_and_precision(): void
     {
-        $this->actingAs(User::factory()->create(['school_id' => $this->school('one')]));
+        $this->actingAs($this->kitchenUser(['school_id' => $this->school('one')]));
         $this->post(route('dishes.store'), [])->assertSessionHasErrors(['name', 'category', 'price']);
         $this->post(route('dishes.store'), [
             'name' => str_repeat('a', 256), 'category' => 'Хлеб',
@@ -90,9 +128,9 @@ class DishMenuTest extends TestCase
         Storage::disk('public')->put('dish.png', 'photo');
         $school = $this->school('one');
         $dish = Dish::create(['school_id' => $school, 'name' => 'Dish', 'category' => 'Хлеб', 'price' => 100, 'photo_path' => 'dish.png']);
-        $this->actingAs(User::factory()->create(['school_id' => $this->school('two')]))
+        $this->actingAs($this->kitchenUser(['school_id' => $this->school('two')]))
             ->delete(route('dishes.destroy', $dish), ['school_id' => $school])->assertForbidden();
-        $this->actingAs(User::factory()->create(['school_id' => $school]))
+        $this->actingAs($this->kitchenUser(['school_id' => $school]))
             ->delete(route('dishes.destroy', $dish))->assertRedirect();
         $this->assertSoftDeleted($dish);
         $this->assertNull(Dish::find($dish->id));
@@ -107,7 +145,7 @@ class DishMenuTest extends TestCase
         $school = $this->school('one');
         $dish = Dish::create(['school_id' => $school, 'name' => 'Dish', 'category' => 'Хлеб', 'price' => 100, 'photo_path' => 'old.png']);
         Storage::disk('public')->put('old.png', 'old photo');
-        $this->actingAs(User::factory()->create(['school_id' => $school]));
+        $this->actingAs($this->kitchenUser(['school_id' => $school]));
         $this->post(route('dishes.photo', $dish), [
             'photo' => UploadedFile::fake()->create('bad.txt', 1, 'text/plain'),
         ])->assertSessionHasErrors('photo');
@@ -121,7 +159,7 @@ class DishMenuTest extends TestCase
         Storage::disk('public')->assertExists($path);
         Storage::disk('public')->assertMissing('old.png');
 
-        $this->actingAs(User::factory()->create(['school_id' => $this->school('two')]))
+        $this->actingAs($this->kitchenUser(['school_id' => $this->school('two')]))
             ->post(route('dishes.photo', $dish), ['school_id' => $school])->assertForbidden();
         $this->assertSame($path, $dish->fresh()->photo_path);
     }
@@ -133,7 +171,7 @@ class DishMenuTest extends TestCase
         $previous = Dish::create(['school_id' => $school, 'name' => 'Previous', 'category' => 'Хлеб', 'price' => 100, 'is_main' => true]);
         $selected = Dish::create(['school_id' => $school, 'name' => 'Selected', 'category' => 'Хлеб', 'price' => 250]);
         $foreign = Dish::create(['school_id' => $other, 'name' => 'Foreign', 'category' => 'Хлеб', 'price' => 300, 'is_main' => true]);
-        $this->actingAs(User::factory()->create(['school_id' => $school]));
+        $this->actingAs($this->kitchenUser(['school_id' => $school]));
         $this->patch(route('dishes.main', $selected), ['is_main' => 1])->assertRedirect();
         $this->assertFalse($previous->fresh()->is_main);
         $this->assertTrue($selected->fresh()->is_main);

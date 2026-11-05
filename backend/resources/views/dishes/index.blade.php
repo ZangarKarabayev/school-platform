@@ -65,7 +65,8 @@
     </style>
 
     <section class="dishes-page">
-        <div class="dishes-grid">
+        <div class="dishes-grid" @if (! $canManageDishes) style="grid-template-columns: 1fr" @endif>
+            @if ($canManageDishes)
             <div class="dishes-card">
                 <div class="dishes-card-header">
                     <div class="muted">{{ __('ui.common.home') }}</div>
@@ -141,6 +142,7 @@
                 </div>
             </div>
 
+            @endif
             <div class="dishes-card">
                 <div class="dishes-card-header">
                     <h2>{{ __('admin.labels.dishes') }}</h2>
@@ -200,7 +202,7 @@
                                     <th>{{ __('dishes.price') }}</th>
                                     <th>{{ __('dishes.is_main') }}</th>
                                     <th>{{ __('admin.labels.status') }}</th>
-                                    <th>{{ __('dishes.actions') }}</th>
+                                    @if ($canManageDishes)<th>{{ __('dishes.actions') }}</th>@endif
                                 </tr>
                             </thead>
                             <tbody>
@@ -215,12 +217,13 @@
                                                 <button type="button" class="dish-photo-button" data-photo-action="{{ route('dishes.photo', $dish) }}" data-school-id="{{ $dish->school_id }}" aria-label="{{ __('dishes.enlarge_photo', ['name' => $dish->name]) }}" aria-haspopup="dialog" aria-controls="dish-photo-dialog">
                                                     <img class="dish-photo" src="{{ Storage::disk('public')->url($dish->photo_path) }}" alt="{{ $dish->name }}" width="48" height="40" loading="lazy">
                                                 </button>
-                                            @else
+                                            @elseif ($canManageDishes)
                                                 <button type="button" class="dish-photo-button" data-photo-action="{{ route('dishes.photo', $dish) }}" data-school-id="{{ $dish->school_id }}" aria-haspopup="dialog" aria-controls="dish-photo-dialog">{{ __('dishes.add_photo') }}</button>
                                             @endif
                                         </td>
                                         <td>{{ $dish->price !== null ? number_format((float) $dish->price, 2, ',', ' ').' ₸' : '—' }}</td>
                                         <td>
+                                            @if ($canManageDishes)
                                             <form method="POST" action="{{ route('dishes.main', $dish) }}">
                                                 @csrf
                                                 @method('PATCH')
@@ -228,12 +231,16 @@
                                                 <input type="hidden" name="is_main" value="0">
                                                 <input type="checkbox" name="is_main" value="1" @checked($dish->is_main) aria-label="{{ __('dishes.is_main') }}: {{ $dish->name }}" onchange="this.form.submit()">
                                             </form>
+                                            @else
+                                                <input type="checkbox" disabled @checked($dish->is_main) aria-label="{{ __('dishes.is_main') }}: {{ $dish->name }}">
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="dish-badge {{ $dish->is_active ? '' : 'inactive' }}">
                                                 {{ $dish->is_active ? __('ui.common.active') : __('ui.common.inactive') }}
                                             </span>
                                         </td>
+                                        @if ($canManageDishes)
                                         <td>
                                             <form method="POST" action="{{ route('dishes.destroy', $dish) }}" data-confirm="{{ __('dishes.delete_confirm') }}" onsubmit="return window.confirm(this.dataset.confirm)">
                                                 @csrf
@@ -242,6 +249,7 @@
                                                 <button type="submit" class="btn dish-delete">{{ __('dishes.delete') }}</button>
                                             </form>
                                         </td>
+                                        @endif
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -269,12 +277,14 @@
     <dialog id="dish-photo-dialog" class="dish-photo-dialog" aria-label="{{ __('dishes.photo') }}">
         <button type="button" class="dish-photo-close" aria-label="{{ __('dishes.close') }}" autofocus>&times;</button>
         <img alt="">
+        @if ($canManageDishes)
         <form id="dish-photo-upload" method="POST" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="school_id">
             <input type="file" id="dish-photo-file" name="photo" accept="image/jpeg,image/png,image/webp" hidden onchange="if (this.files.length) this.form.requestSubmit()">
             <button type="button" class="btn" onclick="document.getElementById('dish-photo-file').click()">{{ __('dishes.replace_photo') }}</button>
         </form>
+        @endif
     </dialog>
     <script>
         (() => {
@@ -282,10 +292,10 @@
             const preview = dialog.querySelector('img');
             const upload = dialog.querySelector('form');
             const creationForm = document.querySelector('.dishes-form');
-            const photoInput = creationForm.elements.photo;
+            const photoInput = creationForm?.elements.photo;
             const uploadPreview = document.getElementById('dish-upload-preview');
             let uploadPreviewUrl;
-            photoInput.addEventListener('change', () => {
+            photoInput?.addEventListener('change', () => {
                 const file = photoInput.files[0];
                 let message = '';
                 if (file && file.size > 5 * 1024 * 1024) {
@@ -313,9 +323,11 @@
                         preview.src = photo.currentSrc || photo.src;
                         preview.alt = photo.alt;
                     }
-                    upload.action = button.dataset.photoAction;
-                    upload.elements.school_id.value = button.dataset.schoolId;
-                    upload.elements.photo.value = '';
+                    if (upload) {
+                        upload.action = button.dataset.photoAction;
+                        upload.elements.school_id.value = button.dataset.schoolId;
+                        upload.elements.photo.value = '';
+                    }
                     dialog.showModal();
                 });
             });
@@ -333,8 +345,8 @@
             dialog.addEventListener('close', () => {
                 preview.removeAttribute('src');
                 preview.alt = '';
-                upload.reset();
-                upload.removeAttribute('action');
+                upload?.reset();
+                upload?.removeAttribute('action');
             });
         })();
     </script>
