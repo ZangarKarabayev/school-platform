@@ -57,17 +57,27 @@ class SocialWalletServiceTest extends TestCase
 
                 return $page === 0
                     ? Http::response([
-                        'content' => ['123456789012'],
+                        'content' => [
+                            ['iin' => '123456789012', 'voucherCreatedAt' => '2026-09-08T14:20:20.412301'],
+                        ],
                         'last' => false,
                     ], 200)
                     : Http::response([
-                        'content' => ['123456789013', '999999999999'],
+                        'content' => [
+                            ['iin' => '123456789013', 'voucherCreatedAt' => '2026-09-09T08:25:37.450645'],
+                            ['iin' => '999999999999', 'voucherCreatedAt' => '2026-09-09T08:40:14.604248'],
+                            ['iin' => '123456789012', 'voucherCreatedAt' => '2026-09-08T14:20:20.412301'],
+                            ['voucherCreatedAt' => '2026-09-09T08:40:14.604248'],
+                        ],
                         'last' => true,
                     ], 200);
             },
         ]);
 
         $result = app(SocialWalletService::class)->syncActiveVouchersForSchool($school);
+
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($request) => (int) $request['page'] === 1 && $request['schoolBin'] === $school->bin);
 
         $this->assertSame(3, $result['total']);
         $this->assertSame(2, $result['matched']);
@@ -76,6 +86,11 @@ class SocialWalletServiceTest extends TestCase
         $this->assertSame(1, $result['unmatched']);
 
         $this->assertNotNull($existingVoucher->fresh()->voucher_update_datetime);
+        $this->assertSame('2026-09-08 14:20:20', $existingVoucher->fresh()->social_wallet_voucher_created_at->format('Y-m-d H:i:s'));
+        $this->assertSame(
+            '2026-09-09 08:25:37',
+            $studentWithoutVoucher->mealBenefits()->where('type', 'voucher')->firstOrFail()->social_wallet_voucher_created_at->format('Y-m-d H:i:s')
+        );
         $this->assertTrue(
             MealBenefit::query()
                 ->where('student_id', $studentWithoutVoucher->id)

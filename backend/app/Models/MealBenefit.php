@@ -17,6 +17,7 @@ class MealBenefit extends Model
         'student_id',
         'type',
         'voucher_update_datetime',
+        'social_wallet_voucher_created_at',
         'start_date',
         'end_date',
     ];
@@ -25,6 +26,7 @@ class MealBenefit extends Model
     {
         return [
             'voucher_update_datetime' => 'datetime',
+            'social_wallet_voucher_created_at' => 'datetime',
             'start_date' => 'date',
             'end_date' => 'date',
         ];

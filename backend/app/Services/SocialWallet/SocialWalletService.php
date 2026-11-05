@@ -29,12 +29,8 @@ class SocialWalletService
             throw new RuntimeException("School {$school->id} does not have a BIN.");
         }
 
-        $voucherIins = $this->fetchAllActiveVoucherIins($schoolBin, $filters);
-        $uniqueIins = collect($voucherIins)
-            ->map(fn(mixed $iin): string => trim((string) $iin))
-            ->filter()
-            ->unique()
-            ->values();
+        $vouchers = collect($this->fetchAllActiveVouchers($schoolBin, $filters))->keyBy('iin');
+        $uniqueIins = $vouchers->keys()->map(fn(mixed $iin): string => (string) $iin);
 
         $students = $school->students()
             ->with('latestMealBenefit')
@@ -58,6 +54,7 @@ class SocialWalletService
             if ($latestBenefit?->type === 'voucher') {
                 $latestBenefit->forceFill([
                     'voucher_update_datetime' => $timestamp,
+                    'social_wallet_voucher_created_at' => $vouchers->get($iin)['voucherCreatedAt'],
                 ])->save();
 
                 $updated++;
@@ -69,6 +66,7 @@ class SocialWalletService
                 'student_id' => $student->id,
                 'type' => 'voucher',
                 'voucher_update_datetime' => $timestamp,
+                'social_wallet_voucher_created_at' => $vouchers->get($iin)['voucherCreatedAt'],
             ]);
 
             $created++;
@@ -146,13 +144,13 @@ class SocialWalletService
     }
 
     /**
-     * @return list<string>
+     * @return list<array{iin:string,voucherCreatedAt:?string}>
      */
-    private function fetchAllActiveVoucherIins(string $schoolBin, array $filters = []): array
+    private function fetchAllActiveVouchers(string $schoolBin, array $filters = []): array
     {
         $page = max(0, (int) ($filters['page'] ?? 0));
         $size = min(500, max(1, (int) ($filters['size'] ?? 500)));
-        $allIins = [];
+        $allVouchers = [];
 
         do {
             $query = array_filter([
@@ -174,18 +172,22 @@ class SocialWalletService
 
             $payload = $response->json();
             $content = collect($payload['content'] ?? [])
-                ->filter(fn(mixed $value): bool => is_string($value) || is_numeric($value))
-                ->map(fn(mixed $value): string => trim((string) $value))
-                ->filter()
+                ->map(fn(mixed $voucher): array => is_array($voucher) ? $voucher : ['iin' => $voucher])
+                ->filter(fn(array $voucher): bool => is_string($voucher['iin'] ?? null) || is_numeric($voucher['iin'] ?? null))
+                ->map(fn(array $voucher): array => [
+                    'iin' => trim((string) $voucher['iin']),
+                    'voucherCreatedAt' => $voucher['voucherCreatedAt'] ?? null,
+                ])
+                ->filter(fn(array $voucher): bool => $voucher['iin'] !== '')
                 ->all();
 
-            $allIins = [...$allIins, ...$content];
+            $allVouchers = [...$allVouchers, ...$content];
 
             $last = (bool) ($payload['last'] ?? true);
             $page++;
         } while (!$last);
 
-        return $allIins;
+        return $allVouchers;
     }
 
     private function client()
