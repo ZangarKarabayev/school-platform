@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\DashboardSummaryController;
+use App\Http\Controllers\Api\V1\DishListController;
 use App\Http\Controllers\Api\V1\LibraryController;
 use App\Http\Controllers\Api\V1\OrderCreateController;
 use App\Http\Controllers\Api\V1\OrderDeleteController;
@@ -58,6 +59,7 @@ Route::prefix('mobile/v1')->middleware('auth:api')->group(function (): void {
         Route::post('/operations', 'operate');
     });
     Route::get('/dashboard', DashboardSummaryController::class);
+    Route::get('/dishes', DishListController::class);
     Route::post('/orders', OrderCreateController::class);
     Route::delete('/orders/{order}', OrderDeleteController::class)->whereNumber('order');
     Route::get('/orders', [OrderListController::class, 'index']);

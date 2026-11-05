@@ -6,6 +6,7 @@ use App\Models\Dish;
 use App\Services\Dashboard\DashboardDataService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
@@ -21,8 +22,13 @@ class DashboardController extends Controller
 {
     private const PDF_MEAL_PRICE = 100.00;
 
-    public function __invoke(Request $request, DashboardDataService $dashboardData): View
+    public function __invoke(Request $request, DashboardDataService $dashboardData): View|RedirectResponse
     {
+        $user = $request->user()->loadMissing('roles');
+        if ($user->roles->count() === 1 && $user->hasRole('library')) {
+            return redirect()->route('library.index');
+        }
+
         $data = $this->buildDashboardData($request, $dashboardData);
 
         return view('dashboard', [

@@ -47,6 +47,27 @@ class OrderListTest extends TestCase
         return Order::query()->create($data + ['student_id' => $student->id, 'order_date' => $date, 'status' => 'created']);
     }
 
+    public function test_kitchen_can_read_only_its_school_orders(): void
+    {
+        $school = $this->school('Own');
+        $other = $this->school('Other');
+        $student = Student::create(['school_id' => $school->id]);
+        $foreign = Student::create(['school_id' => $other->id]);
+        $order = $this->order($student);
+        $this->order($foreign);
+        $this->login($school, 'kitchen', scope: true);
+        $this->getJson('/api/mobile/v1/orders?school_id='.$other->id)->assertOk()
+            ->assertJsonCount(1, 'orders')->assertJsonPath('orders.0.id', $order->id);
+        $this->getJson('/api/mobile/v1/students/'.$foreign->id.'/orders')->assertNotFound();
+        $this->getJson('/api/mobile/v1/students/'.$student->id.'/orders')->assertOk()->assertJsonCount(1, 'orders');
+    }
+
+    public function test_kitchen_without_school_cannot_read_orders(): void
+    {
+        $this->login(null, 'kitchen');
+        $this->getJson('/api/mobile/v1/orders')->assertForbidden();
+    }
+
     public function test_lists_are_school_scoped_and_student_path_cannot_be_overridden(): void
     {
         $school = $this->school('Own');

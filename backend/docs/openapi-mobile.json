@@ -32,6 +32,9 @@
     },
     {
       "name": "Parents"
+    },
+    {
+      "name": "Menu"
     }
   ],
   "paths": {
@@ -1859,13 +1862,13 @@
           "Orders"
         ],
         "operationId": "listOrders",
-        "summary": "List orders in the teacher school",
+        "summary": "List orders in the user school",
         "security": [
           {
             "bearerAuth": []
           }
         ],
-        "description": "Requires teacher role, students.manage and school assignment (profile or first school scope). Always constrained to that school. Ordered by order_date and ID descending. Classroom and school_year refer to the order history. Search matches student name tokens; no IIN search. Filters are combined with AND. No student IIN, benefit or upstream transaction_error is returned. Dates are inclusive; date_to must be >= date_from when both are supplied. Includes order history of archived students.",
+        "description": "Requires kitchen role OR teacher role with students.manage, plus school assignment (profile or first school scope). Always constrained to that school. Ordered by order_date and ID descending. Classroom and school_year refer to the order history. Search matches student name tokens; no IIN search. Filters are combined with AND. No student IIN, benefit or upstream transaction_error is returned. Dates are inclusive; date_to must be >= date_from when both are supplied. Includes order history of archived students. Example: GET /api/mobile/v1/orders?date_from=2026-11-01&date_to=2026-11-05&per_page=20&page=1 with Authorization: Bearer <token> and Accept: application/json.",
         "parameters": [
           {
             "name": "page",
@@ -1874,7 +1877,8 @@
               "type": "integer",
               "minimum": 1,
               "default": 1
-            }
+            },
+            "example": 1
           },
           {
             "name": "per_page",
@@ -1884,7 +1888,8 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50
-            }
+            },
+            "example": 20
           },
           {
             "name": "student_id",
@@ -1892,7 +1897,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 123
           },
           {
             "name": "classroom_id",
@@ -1900,7 +1906,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 12
           },
           {
             "name": "search",
@@ -1908,7 +1915,8 @@
             "schema": {
               "type": "string",
               "maxLength": 255
-            }
+            },
+            "example": "Dana"
           },
           {
             "name": "order_date",
@@ -1916,7 +1924,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-11-05"
           },
           {
             "name": "date_from",
@@ -1924,7 +1933,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-11-01"
           },
           {
             "name": "date_to",
@@ -1932,7 +1942,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-11-05"
           },
           {
             "name": "school_year",
@@ -1940,7 +1951,8 @@
             "schema": {
               "type": "string",
               "example": "2026-2027"
-            }
+            },
+            "example": "2026-2027"
           },
           {
             "name": "status",
@@ -1953,7 +1965,8 @@
                 "completed",
                 "failed"
               ]
-            }
+            },
+            "example": "completed"
           },
           {
             "name": "transaction_status",
@@ -1961,7 +1974,8 @@
             "schema": {
               "type": "boolean",
               "description": "Use query values 0 or 1."
-            }
+            },
+            "example": 1
           }
         ],
         "responses": {
@@ -2022,7 +2036,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Missing teacher role, students.manage or school assignment.",
+            "description": "Requires kitchen role OR teacher role with students.manage, plus school assignment.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2032,7 +2046,7 @@
                   "permissionDenied": {
                     "summary": "Required role or permission is missing",
                     "value": {
-                      "message": "Teacher order access is required."
+                      "message": "School order access is required."
                     }
                   },
                   "unassignedSchool": {
@@ -2284,13 +2298,13 @@
           "Orders"
         ],
         "operationId": "listStudentOrders",
-        "summary": "List orders of a student in the teacher school",
+        "summary": "List orders of a student in the user school",
         "security": [
           {
             "bearerAuth": []
           }
         ],
-        "description": "Requires teacher role, students.manage and school assignment (profile or first school scope). Always constrained to that school. Ordered by order_date and ID descending. Classroom and school_year refer to the order history. Search matches student name tokens; no IIN search. Filters are combined with AND. No student IIN, benefit or upstream transaction_error is returned. Dates are inclusive; date_to must be >= date_from when both are supplied. The path student ID is always enforced; student_id query cannot override it. An existing student with no orders returns an empty list. Includes order history of archived students.",
+        "description": "Requires kitchen role OR teacher role with students.manage, plus school assignment (profile or first school scope). Always constrained to that school. Ordered by order_date and ID descending. Classroom and school_year refer to the order history. Search matches student name tokens; no IIN search. Filters are combined with AND. No student IIN, benefit or upstream transaction_error is returned. Dates are inclusive; date_to must be >= date_from when both are supplied. The path student ID is always enforced; student_id query cannot override it. An existing student with no orders returns an empty list. Includes order history of archived students. Example: GET /api/mobile/v1/students/123/orders?date_from=2026-11-01&date_to=2026-11-05&per_page=20&page=1 with Authorization: Bearer <token> and Accept: application/json.",
         "parameters": [
           {
             "name": "student",
@@ -2308,7 +2322,8 @@
               "type": "integer",
               "minimum": 1,
               "default": 1
-            }
+            },
+            "example": 1
           },
           {
             "name": "per_page",
@@ -2318,7 +2333,8 @@
               "minimum": 1,
               "maximum": 100,
               "default": 50
-            }
+            },
+            "example": 20
           },
           {
             "name": "student_id",
@@ -2326,7 +2342,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 123
           },
           {
             "name": "classroom_id",
@@ -2334,7 +2351,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1
-            }
+            },
+            "example": 12
           },
           {
             "name": "search",
@@ -2342,7 +2360,8 @@
             "schema": {
               "type": "string",
               "maxLength": 255
-            }
+            },
+            "example": "Dana"
           },
           {
             "name": "order_date",
@@ -2350,7 +2369,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-11-05"
           },
           {
             "name": "date_from",
@@ -2358,7 +2378,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-11-01"
           },
           {
             "name": "date_to",
@@ -2366,7 +2387,8 @@
             "schema": {
               "type": "string",
               "format": "date"
-            }
+            },
+            "example": "2026-11-05"
           },
           {
             "name": "school_year",
@@ -2374,7 +2396,8 @@
             "schema": {
               "type": "string",
               "example": "2026-2027"
-            }
+            },
+            "example": "2026-2027"
           },
           {
             "name": "status",
@@ -2387,7 +2410,8 @@
                 "completed",
                 "failed"
               ]
-            }
+            },
+            "example": "completed"
           },
           {
             "name": "transaction_status",
@@ -2395,7 +2419,8 @@
             "schema": {
               "type": "boolean",
               "description": "Use query values 0 or 1."
-            }
+            },
+            "example": 1
           }
         ],
         "responses": {
@@ -2456,7 +2481,7 @@
             "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Missing teacher role, students.manage or school assignment.",
+            "description": "Requires kitchen role OR teacher role with students.manage, plus school assignment.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2466,7 +2491,7 @@
                   "permissionDenied": {
                     "summary": "Required role or permission is missing",
                     "value": {
-                      "message": "Teacher order access is required."
+                      "message": "School order access is required."
                     }
                   },
                   "unassignedSchool": {
@@ -6331,6 +6356,204 @@
           }
         }
       }
+    },
+    "/dishes": {
+      "get": {
+        "tags": [
+          "Menu"
+        ],
+        "operationId": "listDishes",
+        "summary": "List dishes in the user school",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Requires kitchen role OR teacher role with students.manage, plus school assignment (profile or first school scope). Only dishes of that school are returned; school_id cannot override access. Soft-deleted dishes are excluded. Both active and inactive dishes are returned unless filtered. Ordered by name and ID ascending. Filters are combined with AND. Search matches name or description. Price is a decimal string in KZT; photo_url is an absolute URL or null. Example: GET /api/mobile/v1/dishes?is_active=1&is_main=1&per_page=20&page=1 with Authorization: Bearer <token> and Accept: application/json.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "example": 1
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "example": 20
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "example": "Soup"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "example": "First courses"
+          },
+          {
+            "name": "is_active",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "description": "Use 0 or 1 in query string."
+            },
+            "example": 1
+          },
+          {
+            "name": "is_main",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "description": "Use 0 or 1 in query string."
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated school menu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListDishesResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Menu with an active main dish",
+                    "value": {
+                      "dishes": [
+                        {
+                          "id": 42,
+                          "school_id": 7,
+                          "name": "Vegetable soup",
+                          "category": "First courses",
+                          "description": "Soup with seasonal vegetables",
+                          "price": "125.50",
+                          "photo_url": "https://altyn-as.kz/storage/schools/7/dishes/soup.png",
+                          "is_active": true,
+                          "is_main": true
+                        }
+                      ],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 20,
+                        "last_page": 1,
+                        "total": 1
+                      }
+                    }
+                  },
+                  "empty": {
+                    "summary": "No matching dishes",
+                    "value": {
+                      "dishes": [],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 20,
+                        "last_page": 1,
+                        "total": 0
+                      }
+                    }
+                  },
+                  "withoutPhoto": {
+                    "summary": "Nullable fields for an existing dish",
+                    "value": {
+                      "dishes": [
+                        {
+                          "id": 43,
+                          "school_id": 7,
+                          "name": "Bread",
+                          "category": "Bread",
+                          "description": null,
+                          "price": null,
+                          "photo_url": null,
+                          "is_active": false,
+                          "is_main": false
+                        }
+                      ],
+                      "meta": {
+                        "current_page": 1,
+                        "per_page": 20,
+                        "last_page": 1,
+                        "total": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Requires kitchen role OR teacher role with students.manage, plus school assignment.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "permissionDenied": {
+                    "summary": "Required role or permission is missing",
+                    "value": {
+                      "message": "School menu access is required."
+                    }
+                  },
+                  "unassignedSchool": {
+                    "summary": "User has no school assignment",
+                    "value": {
+                      "message": "A school assignment is required."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed, incorrect credentials, invalid/expired/used OTP or EDS challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validation": {
+                    "summary": "Invalid request field (message depends on locale)",
+                    "value": {
+                      "message": "The per page field is invalid.",
+                      "errors": {
+                        "per_page": [
+                          "The per page field is invalid."
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8946,6 +9169,92 @@
           },
           "meta": {
             "$ref": "#/components/schemas/LibraryPageMeta"
+          }
+        }
+      },
+      "MenuDish": {
+        "type": "object",
+        "required": [
+          "id",
+          "school_id",
+          "name",
+          "category",
+          "description",
+          "price",
+          "photo_url",
+          "is_active",
+          "is_main"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "school_id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "price": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decimal amount in KZT with two fractional digits."
+          },
+          "photo_url": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "is_main": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ListDishesResponse": {
+        "type": "object",
+        "required": [
+          "dishes",
+          "meta"
+        ],
+        "properties": {
+          "dishes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MenuDish"
+            }
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "current_page": {
+                "type": "integer"
+              },
+              "per_page": {
+                "type": "integer"
+              },
+              "last_page": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "current_page",
+              "per_page",
+              "last_page",
+              "total"
+            ]
           }
         }
       }

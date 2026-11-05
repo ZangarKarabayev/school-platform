@@ -34,6 +34,15 @@ class LibraryPagesTest extends TestCase
         return compact('user', 'school', 'otherSchool', 'student', 'otherStudent', 'book', 'stock');
     }
 
+    public function test_library_home_opens_catalog_and_hides_order_dashboard_link(): void
+    {
+        $this->setupLibrary();
+
+        $this->get(route('dashboard'))->assertRedirect(route('library.index'));
+        $this->get(route('library.index'))->assertOk()
+            ->assertDontSee('href="'.route('dashboard').'"', false);
+    }
+
     private function operation(array $fixture, string $mode = 'issue', array $extra = [])
     {
         $this->get(route('library.operations', ['student_code' => 'student:'.$fixture['student']->id, 'barcode' => '0012345', 'mode' => $mode]))->assertOk();

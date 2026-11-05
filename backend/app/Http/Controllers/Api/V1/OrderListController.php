@@ -27,7 +27,7 @@ class OrderListController extends Controller
     {
         /** @var User $user */
         $user = $request->user()->loadMissing('roles.permissions', 'scopes');
-        abort_unless($user->hasRole('teacher') && $user->hasPermission('students.manage'), 403, 'Teacher order access is required.');
+        abort_unless($user->hasRole('kitchen') || ($user->hasRole('teacher') && $user->hasPermission('students.manage')), 403, 'School order access is required.');
         $schoolId = $user->assignedSchoolId();
         abort_if($schoolId === null, 403, 'A school assignment is required.');
 

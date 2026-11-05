@@ -145,6 +145,10 @@
                     return in_array($item['key'], ['kitchen', 'dishes'], true);
                 }
 
+                if (count($roleCodes) === 1 && in_array('library', $roleCodes, true) && $item['key'] === 'dashboard') {
+                    return false;
+                }
+
                 if ($canManageMenu) {
                     return true;
                 }
