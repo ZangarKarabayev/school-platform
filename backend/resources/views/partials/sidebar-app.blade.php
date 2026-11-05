@@ -142,7 +142,7 @@
                 }
 
                 if ($isKitchenOnlyUser) {
-                    return false;
+                    return in_array($item['key'], ['kitchen', 'dishes'], true);
                 }
 
                 if ($canManageMenu) {
