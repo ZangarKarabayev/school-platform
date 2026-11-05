@@ -35,7 +35,7 @@ return [
         'meal_benefits' => 'Льготы на питание',
         'dish' => 'Блюдо',
         'dishes' => 'Меню',
-        'category' => 'Category',
+        'category' => 'Категория',
         'calories' => 'Calories',
         'type' => 'Тип',
         'voucher_update_datetime' => 'Дата обновления ваучера',

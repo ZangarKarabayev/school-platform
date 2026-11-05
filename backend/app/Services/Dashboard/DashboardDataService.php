@@ -361,6 +361,7 @@ class DashboardDataService
         $orders = $ordersAggregateBase
             ->select([
                 's.id as student_id',
+                's.school_id',
                 's.last_name',
                 's.first_name',
                 's.middle_name',
@@ -391,6 +392,7 @@ class DashboardDataService
                 $rows[$studentId] = [
                     'number' => 0,
                     'student_id' => $studentId,
+                    'school_id' => $order->school_id,
                     'full_name' => ($fullName !== '' ? $fullName : '#'.$studentId)
                         .($order->deleted_at !== null ? ' ('.__('ui.common.deleted').')' : ''),
                     'classroom_name' => (string) ($order->classroom_name ?? '-'),

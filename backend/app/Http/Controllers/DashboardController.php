@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Dish;
 use App\Services\Dashboard\DashboardDataService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\Response;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use OpenSpout\Common\Entity\Cell;
@@ -46,25 +47,25 @@ class DashboardController extends Controller
             abort(500, 'Unable to create export file.');
         }
 
-        $xlsxPath = $tempPath . '.xlsx';
+        $xlsxPath = $tempPath.'.xlsx';
         @rename($tempPath, $xlsxPath);
 
-        $headerStyle = (new Style())
+        $headerStyle = (new Style)
             ->setFontBold()
             ->setBackgroundColor('DCE9F9')
             ->setCellAlignment(CellAlignment::CENTER);
-        $dayHeaderStyle = (new Style())
+        $dayHeaderStyle = (new Style)
             ->setFontBold()
             ->setBackgroundColor('DCE9F9')
             ->setCellAlignment(CellAlignment::CENTER)
             ->setTextRotation(90);
-        $totalStyle = (new Style())
+        $totalStyle = (new Style)
             ->setFontBold()
             ->setBackgroundColor('DCE9F9')
             ->setCellAlignment(CellAlignment::CENTER);
-        $centerStyle = (new Style())
+        $centerStyle = (new Style)
             ->setCellAlignment(CellAlignment::CENTER);
-        $boldStyle = (new Style())
+        $boldStyle = (new Style)
             ->setFontBold();
 
         $days = collect($ordersTable['days'] ?? []);
@@ -72,7 +73,7 @@ class DashboardController extends Controller
         $classSummaryRows = $this->buildClassSummaryRows($rows, $days);
         $scopeTitle = $this->resolveDashboardScopeTitle($data);
 
-        $writer = new Writer();
+        $writer = new Writer;
         $writer->openToFile($xlsxPath);
         $sheet = $writer->getCurrentSheet();
         $sheet->setName(__('ui.dashboard_page.summary_sheet'));
@@ -205,8 +206,8 @@ class DashboardController extends Controller
             });
         $writer->close();
 
-        $filename = 'dashboard-orders-' . Str::of((string) ($data['filters']['date_from'] ?? now()->toDateString()))->replace('-', '.')
-            . '-' . Str::of((string) ($data['filters']['date_to'] ?? now()->toDateString()))->replace('-', '.') . '.xlsx';
+        $filename = 'dashboard-orders-'.Str::of((string) ($data['filters']['date_from'] ?? now()->toDateString()))->replace('-', '.')
+            .'-'.Str::of((string) ($data['filters']['date_to'] ?? now()->toDateString()))->replace('-', '.').'.xlsx';
 
         return response()->download($xlsxPath, (string) $filename)->deleteFileAfterSend(true);
     }
@@ -238,8 +239,8 @@ class DashboardController extends Controller
     }
 
     /**
-     * @param Collection<int, array<string, mixed>> $rows
-     * @param Collection<int, array<string, mixed>> $days
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @param  Collection<int, array<string, mixed>>  $days
      * @return Collection<int, array<string, mixed>>
      */
     private function buildClassSummaryRows(Collection $rows, Collection $days): Collection
@@ -269,7 +270,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     private function resolveDashboardScopeTitle(array $data): string
     {
@@ -320,14 +321,27 @@ class DashboardController extends Controller
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     private function buildOrdersTablePdfData(array $data): array
     {
         $ordersTable = $data['ordersTable'] ?? [];
         $rows = collect($ordersTable['rows'] ?? []);
-        $mealPrice = self::PDF_MEAL_PRICE;
+        $schoolId = $data['filters']['school_id'] ?? null;
+        if ($schoolId === null && collect($data['scopeConfig']['schools'] ?? [])->count() === 1) {
+            $schoolId = collect($data['scopeConfig']['schools'])->first()->id;
+        }
+        $schoolIds = $rows->pluck('school_id')->filter()->push($schoolId)->filter()->unique();
+        $prices = Dish::query()->whereIn('school_id', $schoolIds)
+            ->where('is_main', true)->where('is_active', true)->whereNotNull('price')
+            ->pluck('price', 'school_id');
+        $mealPrice = (float) ($prices[$schoolId] ?? self::PDF_MEAL_PRICE);
+        $pricedRows = $rows->map(function (array $row) use ($prices, $mealPrice): array {
+            $row['meal_price'] = (float) ($prices[$row['school_id'] ?? null] ?? (isset($row['school_id']) ? self::PDF_MEAL_PRICE : $mealPrice));
+
+            return $row;
+        });
         $scopeTitle = $this->resolveDashboardScopeTitle($data);
         $dateFrom = (string) ($data['filters']['date_from'] ?? '');
         $dateTo = (string) ($data['filters']['date_to'] ?? '');
@@ -340,6 +354,7 @@ class DashboardController extends Controller
             (string) $studentsCount,
             (string) $grandTotal,
             number_format($mealPrice, 2, '.', ''),
+            $pricedRows->pluck('meal_price')->toJson(),
         ])), 0, 16));
 
         return [
@@ -347,8 +362,9 @@ class DashboardController extends Controller
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
             'days' => $ordersTable['days'] ?? [],
-            'rows' => $rows->map(function (array $row) use ($mealPrice): array {
+            'rows' => $pricedRows->map(function (array $row): array {
                 $daysTotal = (int) ($row['total'] ?? 0);
+                $mealPrice = $row['meal_price'];
 
                 return [
                     'number' => $row['number'] ?? '',
@@ -363,11 +379,11 @@ class DashboardController extends Controller
             })->all(),
             'studentsCount' => $studentsCount,
             'grandTotal' => $grandTotal,
-            'grandAmount' => $grandTotal * $mealPrice,
+            'grandAmount' => $pricedRows->sum(fn (array $row): float => (int) ($row['total'] ?? 0) * $row['meal_price']),
             'mealPrice' => $mealPrice,
             'documentHash' => $documentHash,
-            'filename' => 'dashboard-orders-' . Str::of($dateFrom ?: now()->toDateString())->replace('-', '.')
-                . '-' . Str::of($dateTo ?: now()->toDateString())->replace('-', '.') . '.pdf',
+            'filename' => 'dashboard-orders-'.Str::of($dateFrom ?: now()->toDateString())->replace('-', '.')
+                .'-'.Str::of($dateTo ?: now()->toDateString())->replace('-', '.').'.pdf',
         ];
     }
 
@@ -394,12 +410,12 @@ class DashboardController extends Controller
             ->map(function (string $part): string {
                 $initial = mb_substr($part, 0, 1);
 
-                return $initial !== '' ? mb_strtoupper($initial) . '.' : '';
+                return $initial !== '' ? mb_strtoupper($initial).'.' : '';
             })
             ->filter()
             ->implode('');
 
-        return trim($lastName . ' ' . $initials);
+        return trim($lastName.' '.$initials);
     }
 
     private function prepareRuntimeForPdfExport(): void

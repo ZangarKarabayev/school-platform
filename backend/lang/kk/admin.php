@@ -35,7 +35,7 @@ return [
         'meal_benefits' => 'Тамақтану жеңілдіктері',
         'dish' => 'Тағам',
         'dishes' => 'Мәзір',
-        'category' => 'Category',
+        'category' => 'Санат',
         'calories' => 'Calories',
         'type' => 'Түрі',
         'voucher_update_datetime' => 'Ваучер жаңартылған уақыты',

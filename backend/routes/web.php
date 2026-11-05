@@ -18,7 +18,7 @@ Route::get('/dashboard/export-orders-table/pdf/verify', [DashboardController::cl
     ->name('dashboard.verify-orders-table-pdf');
 
 Route::middleware('guest')->group(function (): void {
-    Route::get('/', fn() => redirect()->route('login'));
+    Route::get('/', fn () => redirect()->route('login'));
     Route::get('/login', [WebAuthController::class, 'showLogin'])->name('login');
     Route::get('/login/eds', [WebAuthController::class, 'showEdsLogin'])->name('login.eds');
     Route::get('/register', [WebAuthController::class, 'showRegister'])->name('register');
@@ -68,6 +68,9 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/classes/{academicClass}', [ClassroomController::class, 'show'])->name('classes.show');
         Route::get('/dishes', [DishController::class, 'index'])->name('dishes.index');
         Route::post('/dishes', [DishController::class, 'store'])->name('dishes.store');
+        Route::patch('/dishes/{dish}/main', [DishController::class, 'updateMain'])->name('dishes.main');
+        Route::post('/dishes/{dish}/photo', [DishController::class, 'updatePhoto'])->name('dishes.photo');
+        Route::delete('/dishes/{dish}', [DishController::class, 'destroy'])->name('dishes.destroy');
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
         Route::post('/orders/bulk-delete', [OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
