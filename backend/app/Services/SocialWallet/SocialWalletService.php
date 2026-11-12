@@ -110,6 +110,7 @@ class SocialWalletService
                 ]);
 
             Log::info('Social wallet transaction rejected', [
+                'iin' => $iin,
                 'date' => $this->formatOrderTimestampForSocialWallet($order),
                 'school_bin' => $schoolBin,
             ]);
