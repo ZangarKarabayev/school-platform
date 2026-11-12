@@ -10,6 +10,7 @@ use App\Modules\Organizations\Models\Region;
 use App\Modules\Organizations\Models\School;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class SendSocialWalletTransactionJobTest extends TestCase
@@ -96,6 +97,63 @@ class SendSocialWalletTransactionJobTest extends TestCase
         $this->assertSame(Order::STATUS_FAILED, $order->status);
         $this->assertFalse($order->transaction_status);
         $this->assertSame('[404] iin не найден', $order->transaction_error);
+    }
+
+    public static function transactionTimestamps(): array
+    {
+        return [
+            'daytime' => ['12:00:00', '2026-03-29 07:00:00'],
+            'previous UTC day' => ['02:30:00', '2026-03-28 21:30:00'],
+        ];
+    }
+
+    #[DataProvider('transactionTimestamps')]
+    public function test_it_sends_transaction_timestamp_in_utc(string $localTime, string $utcTimestamp): void
+    {
+        config()->set('app.timezone', 'Asia/Qyzylorda');
+        config()->set('services.social_wallet.base_url', 'https://api.dev.socialwallet.kz');
+        config()->set('services.social_wallet.username', 'demo');
+        config()->set('services.social_wallet.password', 'secret');
+
+        $school = $this->makeSchool();
+
+        $student = Student::query()->create([
+            'school_id' => $school->id,
+            'first_name' => 'Ivan',
+            'last_name' => 'Ivanov',
+            'iin' => '123456789012',
+            'status' => 'active',
+        ]);
+
+        $order = Order::query()->create([
+            'student_id' => $student->id,
+            'order_date' => '2026-03-29',
+            'order_time' => $localTime,
+            'status' => 'created',
+            'transaction_status' => null,
+            'transaction_error' => null,
+        ]);
+
+        Http::fake([
+            'https://api.dev.socialwallet.kz/api/v1/sdu/meal/transaction' => Http::response([
+                'success' => true,
+            ], 200),
+        ]);
+
+        (new SendSocialWalletTransactionJob($order->id))->handle(app(\App\Services\SocialWallet\SocialWalletService::class));
+
+        $order->refresh();
+
+        Http::assertSentCount(1);
+        Http::assertSent(fn ($request) => $request->method() === 'POST'
+            && $request->url() === 'https://api.dev.socialwallet.kz/api/v1/sdu/meal/transaction'
+            && $request['date'] === $utcTimestamp
+            && $request['iin'] === $student->iin
+            && $request['school_bin'] === $school->bin);
+        $this->assertSame('2026-03-29', $order->order_date->toDateString());
+        $this->assertSame($localTime, $order->order_time);
+        $this->assertTrue($order->transaction_status);
+        $this->assertNull($order->transaction_error);
     }
 
     private function makeSchool(): School
