@@ -1060,7 +1060,7 @@
                         <div class="orders-form-field full">
                             <div class="orders-target-switcher">
                                 <label class="orders-target-option">
-                                    <input type="radio" name="target_type" value="all" @checked(old('target_type', 'all') === 'all')>
+                                    <input type="radio" name="target_type" value="all" @checked(old('target_type', 'students') === 'all')>
                                     <span>{{ __('ui.orders.recipient_all') }}</span>
                                 </label>
                                 <label class="orders-target-option">
@@ -1070,7 +1070,7 @@
                                 </label>
                                 <label class="orders-target-option">
                                     <input type="radio" name="target_type" value="students"
-                                        @checked(old('target_type') === 'students')>
+                                        @checked(old('target_type', 'students') === 'students')>
                                     <span>{{ __('ui.orders.recipient_students') }}</span>
                                 </label>
                             </div>
@@ -1122,7 +1122,7 @@
                         </div>
 
                         <div class="orders-form-field full" data-target-section="students"
-                            style="{{ old('target_type') === 'students' ? '' : 'display:none;' }}">
+                            style="{{ old('target_type', 'students') === 'students' ? '' : 'display:none;' }}">
                             <div class="orders-target-panel">
                                 <div class="orders-target-toolbar">
                                     <input class="orders-student-search" type="search" id="student-search"
@@ -1309,7 +1309,7 @@
             const getTargetType = () => {
                 const selected = Array.from(targetTypeInputs).find((input) => input.checked);
 
-                return selected ? selected.value : 'all';
+                return selected ? selected.value : 'students';
             };
 
             const syncTargetSections = () => {
