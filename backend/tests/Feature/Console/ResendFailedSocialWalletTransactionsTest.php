@@ -58,6 +58,39 @@ class ResendFailedSocialWalletTransactionsTest extends TestCase
         });
     }
 
+    public function test_it_resends_only_failed_orders_on_or_after_the_requested_date(): void
+    {
+        Queue::fake();
+
+        $student = $this->makeStudent($this->makeSchool());
+        $this->makeOrder($student, '2026-08-31', false);
+        $firstOrder = $this->makeOrder($student, '2026-09-01', false);
+        $laterOrder = $this->makeOrder($student, '2026-11-17', false);
+        $this->makeOrder($student, '2026-09-02', true);
+        $this->makeOrder($student, '2026-09-03', null);
+
+        $this->artisan('social-wallet:resend-failed-transactions', [
+            '--from_date' => '2026-09-01',
+        ])->assertExitCode(0);
+
+        Queue::assertPushed(SendSocialWalletTransactionJob::class, 2);
+        foreach ([$firstOrder, $laterOrder] as $order) {
+            Queue::assertPushed(SendSocialWalletTransactionJob::class,
+                fn (SendSocialWalletTransactionJob $job): bool => $job->orderId === $order->id);
+        }
+    }
+
+    public function test_it_rejects_an_invalid_start_date_without_queuing_orders(): void
+    {
+        Queue::fake();
+
+        $this->artisan('social-wallet:resend-failed-transactions', [
+            '--from_date' => '2026-02-30',
+        ])->assertExitCode(1);
+
+        Queue::assertNothingPushed();
+    }
+
     private function makeStudent(School $school, string $iin = '123456789012'): Student
     {
         return Student::query()->create([
