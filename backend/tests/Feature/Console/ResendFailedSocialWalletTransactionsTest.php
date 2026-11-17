@@ -91,6 +91,32 @@ class ResendFailedSocialWalletTransactionsTest extends TestCase
         Queue::assertNothingPushed();
     }
 
+    public function test_it_resends_only_network_errors_since_the_requested_date(): void
+    {
+        Queue::fake();
+
+        $student = $this->makeStudent($this->makeSchool());
+        $this->makeOrder($student, '2026-08-31', false, 'cURL error 6: Could not resolve host');
+        $dnsOrder = $this->makeOrder($student, '2026-09-01', false, 'cURL error 6: Could not resolve host');
+        $timeoutOrder = $this->makeOrder($student, '2026-09-02', false, 'cURL error 28: Resolving timed out');
+        $this->makeOrder($student, '2026-09-03', false, '[404] IIN not found');
+        $this->makeOrder($student, '2026-09-04', false, 'Missing student IIN or school BIN for social wallet transaction.');
+        $this->makeOrder($student, '2026-09-05', true);
+        $this->makeOrder($student, '2026-09-06', false, 'cURL error 60: SSL certificate problem');
+        $this->makeOrder($student, '2026-09-07', false, '[400] cURL error 6: Invalid request');
+
+        $this->artisan('social-wallet:resend-failed-transactions', [
+            '--from_date' => '2026-09-01',
+            '--network-only' => true,
+        ])->assertExitCode(0);
+
+        Queue::assertPushed(SendSocialWalletTransactionJob::class, 2);
+        foreach ([$dnsOrder, $timeoutOrder] as $order) {
+            Queue::assertPushed(SendSocialWalletTransactionJob::class,
+                fn (SendSocialWalletTransactionJob $job): bool => $job->orderId === $order->id);
+        }
+    }
+
     private function makeStudent(School $school, string $iin = '123456789012'): Student
     {
         return Student::query()->create([

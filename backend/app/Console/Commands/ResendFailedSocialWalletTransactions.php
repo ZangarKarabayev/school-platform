@@ -13,6 +13,7 @@ class ResendFailedSocialWalletTransactions extends Command
         {--order_id= : Resend only one order by ID}
         {--school_id= : Resend only orders from one school}
         {--from_date= : Resend orders on or after this order date (YYYY-MM-DD)}
+        {--network-only : Resend only cURL DNS, connection, timeout and interrupted transfer errors}
         {--limit= : Maximum number of failed orders to resend}
         {--sync : Send transactions immediately instead of dispatching queue jobs}';
 
@@ -34,6 +35,13 @@ class ResendFailedSocialWalletTransactions extends Command
         $query = Order::query()
             ->where('transaction_status', false)
             ->whereNotNull('transaction_error')
+            ->when($this->option('network-only'), function ($query): void {
+                $query->where(function ($errors): void {
+                    foreach ([5, 6, 7, 18, 28, 52, 55, 56] as $code) {
+                        $errors->orWhere('transaction_error', 'like', 'cURL error '.$code.':%');
+                    }
+                });
+            })
             ->when($fromDate, fn ($query, $date) => $query->whereDate('order_date', '>=', $date))
             ->when($this->option('order_id'), fn ($query, $orderId) => $query->whereKey((int) $orderId))
             ->when($this->option('school_id'), function ($query, $schoolId): void {
